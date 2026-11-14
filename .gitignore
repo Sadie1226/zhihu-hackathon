@@ -1,0 +1,48 @@
+# 依赖与构建
+node_modules/
+.pnp
+.pnp.js
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+.turbo/
+
+# 数据库（本地文件，绝不入库）
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+data/
+
+# 上传的用户内容
+uploads/
+public/uploads/
+
+# 密钥与环境（**绝不入库**）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# 日志与临时
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+coverage/
+*.png.tmp
+
+# 系统垃圾
+__pycache__/
+*.pyc
