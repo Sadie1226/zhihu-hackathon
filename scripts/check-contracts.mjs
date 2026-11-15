@@ -174,12 +174,31 @@ mustFail('回应什么都不指向 → 拦', () =>
   db.prepare(`insert into reply (id,text,created_at)
               values ('r5','悬空','2026-11-16T02:00:00Z')`).run())
 
-// 幂等：同一条邀请只能回一次
+// 幂等：**两条路径都要测**。只测一条就是没测。
+// 2026-11-15 a 实测出过这个缺陷：邀请有唯一索引，礼物没有，礼物的第二次提交插进去了。
 db.prepare(`insert into reply (id,invitation_id,text,created_at)
             values ('r6','inv_1','第一次回应','2026-11-16T02:00:00Z')`).run()
 mustFail('同一条邀请回两次（重复点击提交）→ 拦，幂等靠这条兜住', () =>
   db.prepare(`insert into reply (id,invitation_id,text,created_at)
               values ('r7','inv_1','重复提交','2026-11-16T02:01:00Z')`).run())
+
+db.prepare(`insert into reply (id,exchange_id,text,created_at)
+            values ('r8','ex_1','第一次回礼物','2026-11-16T02:00:00Z')`).run()
+mustFail('同一个礼物回两次（同一条交换的第二个入口）→ 拦，两条路径必须一样', () =>
+  db.prepare(`insert into reply (id,exchange_id,text,created_at)
+              values ('r9','ex_1','重复回礼物','2026-11-16T02:01:00Z')`).run())
+
+// 两个索引必须都在。少一个就是「一半的幂等」，比完全没有更危险。
+const uniqIdx = db.prepare(`
+  select name from sqlite_master
+   where type='index' and tbl_name='reply' and sql like '%UNIQUE%'
+   order by name
+`).all().map((r) => r.name)
+if (uniqIdx.length === 2 && uniqIdx.includes('uniq_reply_invitation') && uniqIdx.includes('uniq_reply_exchange')) {
+  ok(`reply 的两个来源都有唯一索引：${uniqIdx.join(' + ')}`)
+} else {
+  bad('reply 的来源唯一索引不全 —— 重复提交会漏掉其中一条路径', `实际只有：${uniqIdx.join('、') || '（一个都没有）'}`)
+}
 
 // relation
 mustFail('关系里两只狗顺序反了（避免同一对存两条）→ 拦', () =>

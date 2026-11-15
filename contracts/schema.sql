@@ -437,11 +437,16 @@ CREATE TABLE reply (
   CHECK (text IS NOT NULL OR photo_url IS NOT NULL)
 );
 
--- 同一条邀请只能被回应一次（重复点击靠这条兜住幂等）。
+-- 同一个来源只能被回应一次。**两条路径都要有，只做一半就是漏。**
+--
+-- 重复点击提交是「提交这个动作」的幂等，它不区分来源 —— 邀请和礼物是同一个
+-- 提交能力的两个入口。哪条路径缺索引，b 照说明写就会在那条路径上漏。
+-- 2026-11-15 a 实测出过这个缺陷：只有 invitation 那条，礼物能插进两条。
 CREATE UNIQUE INDEX uniq_reply_invitation ON reply(invitation_id)
   WHERE invitation_id IS NOT NULL;
 
-CREATE INDEX idx_reply_exchange ON reply(exchange_id);
+CREATE UNIQUE INDEX uniq_reply_exchange ON reply(exchange_id)
+  WHERE exchange_id IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- relation · 邻里关系（4.1 / 4.3）

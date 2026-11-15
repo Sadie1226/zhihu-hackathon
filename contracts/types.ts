@@ -258,6 +258,9 @@ export interface InvitationView extends Invitation {
 /**
  * 一次回应（2.4）。写入方：b，**唯一实现**，d 来调它。
  * 来源恰好一个：exchangeId 或 invitationId。
+ *
+ * **两个来源各有唯一索引，重复提交在两条路径上都被数据库拦住。**
+ * 只给一条做去重就是漏 —— 这是同一个提交能力的两个入口。
  */
 export interface Reply {
   id: string
