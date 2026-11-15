@@ -3,6 +3,7 @@ node_modules/
 .pnp
 .pnp.js
 .next/
+.nuxt/
 out/
 build/
 dist/
@@ -44,12 +45,13 @@ Thumbs.db
 coverage/
 *.png.tmp
 
-# 系统垃圾
+# Python（美术脚本用）
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .pytest_cache/
+
+# 本地状态
 .codex/
 .local/
-.nuxt/
