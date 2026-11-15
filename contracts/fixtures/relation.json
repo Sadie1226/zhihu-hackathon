@@ -1,0 +1,16 @@
+{
+  "sourceMode": "fixture",
+  "note": "关系表不在九类实体里，但 d 的匹配函数要用（排除已交换过的、排除拉黑）。dog_a 必须按字典序小于 dog_b，否则插不进去 —— 这是为了防止同一对关系存成两条、两个版本。",
+  "relations": [
+    {
+      "id": "rel_001",
+      "dog_a": "dog_owner",
+      "dog_b": "dog_seed_07",
+      "first_met_at": "2026-11-16T01:30:00Z",
+      "last_met_at": "2026-11-16T09:00:00Z",
+      "met_count": 2,
+      "is_blocked": false,
+      "blocked_at": null
+    }
+  ]
+}

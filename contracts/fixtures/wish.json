@@ -1,0 +1,30 @@
+{
+  "sourceMode": "fixture",
+  "note": "三条心愿，第三条已撤销（revoked_at 有值，不是被删掉——手账还要能翻回去）。category 必须是六类之一，c 拿它查 CATEGORY_KEYWORDS 做搜索。",
+  "wishes": [
+    {
+      "id": "wish_001",
+      "dog_id": "dog_owner",
+      "text": "最近好想看看下雪的地方",
+      "category": "自然风景",
+      "created_at": "2026-11-16T00:20:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "wish_002",
+      "dog_id": "dog_owner",
+      "text": "想知道别人家的老城区都长什么样",
+      "category": "城市角落",
+      "created_at": "2026-11-16T00:22:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "wish_003",
+      "dog_id": "dog_owner",
+      "text": "找点冷知识看看",
+      "category": "冷知识",
+      "created_at": "2026-11-16T00:25:00Z",
+      "revoked_at": "2026-11-16T01:00:00Z"
+    }
+  ]
+}

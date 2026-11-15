@@ -1,0 +1,27 @@
+{
+  "sourceMode": "fixture",
+  "note": "归来的一句话，b 写。⚠️ trip_002 是 timeout，但它也有一句话——超时不是空状态，界面上应该是「今天它回来得晚，没带回什么」，不是报错也不是缺口。dog_owner 没有话痨/寡言标签，所以不受 20–35 或 8–15 的字数区间约束。",
+  "messages": [
+    {
+      "id": "msg_001",
+      "trip_id": "trip_001",
+      "text": "巷子里那面墙红透了，只有靠窗那块还是绿的。",
+      "mentions_find_id": "find_s1",
+      "created_at": "2026-11-16T01:04:00Z"
+    },
+    {
+      "id": "msg_002",
+      "trip_id": "trip_002",
+      "text": "今天走得有点远，回来晚了，没顾上带什么。",
+      "mentions_find_id": null,
+      "created_at": "2026-11-16T09:03:00Z"
+    },
+    {
+      "id": "msg_seed_01",
+      "trip_id": "trip_seed_01",
+      "text": "缸沿磕了两个口，茶是满的。",
+      "mentions_find_id": "find_seed1",
+      "created_at": "2026-11-16T02:05:00Z"
+    }
+  ]
+}

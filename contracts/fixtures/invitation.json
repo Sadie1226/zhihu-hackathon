@@ -1,0 +1,27 @@
+{
+  "sourceMode": "fixture",
+  "note": "三条邀请，正好覆盖 b 和 e 要的三种状态。⚠️ 没有 status 列，也没有 expires_at —— 状态全部从 trip 和 reply 推出来（schema.sql 的 v_invitation_state 视图）。inv_waiting 的时间故意排在所有出行之后，所以它算「它在等」；inv_gone_alone 排在下一次出行之前，所以它算「它自己去了」。改时间会改状态，这是设计如此。",
+  "invitations": [
+    {
+      "id": "replied",
+      "dog_id": "dog_owner",
+      "text": "巷口那家店开了多久，你看得出来吗。下次路过帮我看一眼。不方便就算了，我下次自己看。",
+      "based_on_find_id": "find_m1",
+      "created_at": "2026-11-16T01:05:00Z"
+    },
+    {
+      "id": "gone_alone",
+      "dog_id": "dog_owner",
+      "text": "你那边下雪了吗。拍一张给我看看，我还没见过雪。没下也没关系。",
+      "based_on_find_id": "find_z1",
+      "created_at": "2026-11-16T01:06:00Z"
+    },
+    {
+      "id": "waiting",
+      "dog_id": "dog_owner",
+      "text": "下次看到晾着的被子，拍一张给我。我老路过那些楼，看不出住的是谁，被子大概能看出来。不方便就算了。",
+      "based_on_find_id": "find_s1",
+      "created_at": "2026-11-16T10:00:00Z"
+    }
+  ]
+}

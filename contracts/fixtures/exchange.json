@@ -1,0 +1,58 @@
+{
+  "sourceMode": "fixture",
+  "note": "四行覆盖 e 需要的三种界面状态：已到已读 / 已到未读 / 还在路上（delivered_at 为 null）。⚠️ deliver_after_trip_seq 不是时间戳，是「收件狗第几次出行」。ex_greeting 指向种子狗的第 2 次出行，而它还没发生过，所以永远显示「在路上」——这正是要演的样子。⚠️ ex_co_owner 是捎话，种子狗没有真人主人，永远不会有人回它，界面必须写「可能不会回话」。",
+  "exchanges": [
+    {
+      "id": "ex_gift",
+      "from_dog": "dog_seed_07",
+      "to_dog": "dog_owner",
+      "kind": "gift",
+      "payload": { "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了" },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T01:30:00Z",
+      "delivered_at": "2026-11-16T09:00:00Z",
+      "replied_at": "2026-11-16T09:20:00Z",
+      "read_at": "2026-11-16T09:10:00Z"
+    },
+    {
+      "id": "ex_find",
+      "from_dog": "dog_seed_07",
+      "to_dog": "dog_owner",
+      "kind": "find",
+      "payload": {
+        "findTitle": "修鞋摊旁边的搪瓷缸",
+        "findExcerpt": "缸沿上磕了两个口，茶还是满的。",
+        "sourceUrl": null
+      },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T02:10:00Z",
+      "delivered_at": "2026-11-16T09:00:00Z",
+      "replied_at": null,
+      "read_at": null
+    },
+    {
+      "id": "ex_greeting",
+      "from_dog": "dog_owner",
+      "to_dog": "dog_seed_07",
+      "kind": "greeting",
+      "payload": { "line": "这边下了两天雨，你那边呢", "weather": "雨" },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T09:30:00Z",
+      "delivered_at": null,
+      "replied_at": null,
+      "read_at": null
+    },
+    {
+      "id": "ex_co_owner",
+      "from_dog": "dog_owner",
+      "to_dog": "dog_seed_07",
+      "kind": "co_owner_message",
+      "payload": { "message": "楼下的桂花开了，你那边闻得到吗", "fromOwnerOf": "dog_owner" },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T09:35:00Z",
+      "delivered_at": null,
+      "replied_at": null,
+      "read_at": null
+    }
+  ]
+}

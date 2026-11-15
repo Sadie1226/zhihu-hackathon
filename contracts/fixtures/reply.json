@@ -1,0 +1,30 @@
+{
+  "sourceMode": "fixture",
+  "note": "三条回应，覆盖 b 的三种交付形态。⚠️ 没有 'none' 这一种：不回应就是没有这条记录，不是一条空的记录。r_002 是文字加图片（b 今天交付里的第 3 条正常示例），kind 由数据库自动推成 both。⚠️ 同一条邀请只能回一次，靠唯一索引兜住重复点击。",
+  "replies": [
+    {
+      "id": "r_001",
+      "exchange_id": null,
+      "invitation_id": "replied",
+      "text": "看到了，巷口那家修表店开了三十多年。",
+      "photo_url": null,
+      "created_at": "2026-11-16T01:40:00Z"
+    },
+    {
+      "id": "r_002",
+      "exchange_id": "ex_gift",
+      "invitation_id": null,
+      "text": "毛线收下了，我缝在袖口上了，天冷了正合适。",
+      "photo_url": "/assets/photos/fixture-sleeve.webp",
+      "created_at": "2026-11-16T09:20:00Z"
+    },
+    {
+      "id": "r_003",
+      "exchange_id": "ex_find",
+      "invitation_id": null,
+      "text": null,
+      "photo_url": "/assets/photos/fixture-teacup.webp",
+      "created_at": "2026-11-16T09:22:00Z"
+    }
+  ]
+}

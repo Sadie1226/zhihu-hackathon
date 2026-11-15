@@ -1,0 +1,36 @@
+{
+  "sourceMode": "fixture",
+  "note": "狗的 seq 是「第几次出行」，从 1 开始只增不减。trip_002 故意设成 timeout：超时是一个正常结束的状态，界面上应该是「今天它回来得晚，没带回什么」，不是空状态也不是报错。",
+  "trips": [
+    {
+      "id": "trip_001",
+      "dog_id": "dog_owner",
+      "seq": 1,
+      "status": "done",
+      "trigger": "auto",
+      "created_at": "2026-11-16T01:00:00Z",
+      "started_at": "2026-11-16T01:00:00Z",
+      "ended_at": "2026-11-16T01:04:00Z"
+    },
+    {
+      "id": "trip_002",
+      "dog_id": "dog_owner",
+      "seq": 2,
+      "status": "timeout",
+      "trigger": "wish",
+      "created_at": "2026-11-16T09:00:00Z",
+      "started_at": "2026-11-16T09:00:00Z",
+      "ended_at": "2026-11-16T09:03:00Z"
+    },
+    {
+      "id": "trip_seed_01",
+      "dog_id": "dog_seed_07",
+      "seq": 1,
+      "status": "done",
+      "trigger": "auto",
+      "created_at": "2026-11-16T02:00:00Z",
+      "started_at": "2026-11-16T02:00:00Z",
+      "ended_at": "2026-11-16T02:05:00Z"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "sourceMode": "fixture",
+  "note": "一次出行 3–5 条。⚠️ source_mode 只对 kind='zhihu' 有意义，scene / moment 必须是 null —— 给自家画的东西标 fixture 会让每一程都像假数据，标 live 就是撒谎。trip_002 是 timeout，所以它没有 find，这是对的。",
+  "finds": [
+    {
+      "id": "find_z1",
+      "trip_id": "trip_001",
+      "kind": "zhihu",
+      "title": "北京初雪一般落在什么时候",
+      "excerpt": "城区平均初雪日在 11 月下旬到 12 月初，郊区更早。近十年最早的一次是 11 月初。",
+      "source_url": "https://www.zhihu.com/question/000000000/answer/000000001",
+      "source_mode": "live",
+      "authority_level": 4,
+      "vote_up_count": 1832,
+      "created_at": "2026-11-16T01:01:00Z"
+    },
+    {
+      "id": "find_z2",
+      "trip_id": "trip_001",
+      "kind": "zhihu",
+      "title": "老城区的房子为什么窗子都开得很小",
+      "excerpt": "早年的砖木结构承重靠墙，开大窗会削弱墙体，所以窗洞偏小，进深却很深。",
+      "source_url": "https://www.zhihu.com/question/000000000/answer/000000002",
+      "source_mode": "cache",
+      "authority_level": 3,
+      "vote_up_count": 604,
+      "created_at": "2026-11-16T01:01:30Z"
+    },
+    {
+      "id": "find_s1",
+      "trip_id": "trip_001",
+      "kind": "scene",
+      "title": "一面长满爬山虎的墙",
+      "excerpt": "整面墙都红透了，只有靠窗那一块还是绿的。",
+      "source_url": null,
+      "source_mode": null,
+      "authority_level": null,
+      "vote_up_count": null,
+      "created_at": "2026-11-16T01:02:00Z"
+    },
+    {
+      "id": "find_m1",
+      "trip_id": "trip_001",
+      "kind": "moment",
+      "title": "有人把旧椅子搬到门口晒太阳",
+      "excerpt": null,
+      "source_url": null,
+      "source_mode": null,
+      "authority_level": null,
+      "vote_up_count": null,
+      "created_at": "2026-11-16T01:03:00Z"
+    },
+    {
+      "id": "find_seed1",
+      "trip_id": "trip_seed_01",
+      "kind": "moment",
+      "title": "修鞋摊旁边的搪瓷缸",
+      "excerpt": "缸沿上磕了两个口，茶还是满的。",
+      "source_url": null,
+      "source_mode": null,
+      "authority_level": null,
+      "vote_up_count": null,
+      "created_at": "2026-11-16T02:02:00Z"
+    }
+  ]
+}
