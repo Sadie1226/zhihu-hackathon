@@ -28,6 +28,7 @@ public/uploads/
 *.pem
 *.key
 secrets/
+credentials.json
 
 # 日志与临时
 *.log
@@ -45,4 +46,10 @@ coverage/
 
 # 系统垃圾
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.codex/
+.local/
+.nuxt/
