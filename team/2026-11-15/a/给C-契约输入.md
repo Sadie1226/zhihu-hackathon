@@ -39,12 +39,15 @@
 | `blocked_topics` | string[] | `['宠物离世']` | **写入方是 b，不是 a**。全局最高优先级过滤器 |
 | `created_at` | timestamp | — | |
 
-`assembly` 的形状固定六个键，**多一个都不许加**：
+`assembly` 的形状固定**四个键**，**多一个都不许加**：
 
 ```json
-{ "base": "tpl-a", "skin": { "color": "red", "pattern": "spot" },
-  "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" }
+{ "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" }
 ```
+
+> **11-16 改（a 裁定）：原六个键里的 `base`（体型）和 `skin`（配色 × 花纹）已删。**
+> 刘看山 IP 只有一种体型与一套配色。删键而不是收窄成单值枚举，因为 schema 只对**键数**有强制力，
+> 留着单值字段 d 直接产 JSON 时能填错而库不拦。c 已按此改 `schema.sql` 的两个触发器（`<> 4`）。
 
 ### `snapshot` — 状态快照（写入方：d）
 

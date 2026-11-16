@@ -238,7 +238,8 @@ git diff --cached | grep -iE 'secret|token|password|api[_-]?key' | grep -v '.env
 
 ## 八、本地跑起来
 
-**目前 `package.json` 还没建（c 的 c2，11-17 部署那天出）。** 建好之前这一段跑不通，别当它是坏了。
+**11-16 已建（c 的 c2）。** Node 24+、`node:sqlite` 内置、零 ORM。`npm install` 之后 `npm run dev` 能起本地服务。
+公网部署仍是 **BLOCKED**（暂无服务器），只有本地验收和 `deploy/` 部署包。
 
 ```bash
 git clone https://github.com/Sadie1226/zhihu-hackathon.git
