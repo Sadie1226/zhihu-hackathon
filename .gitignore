@@ -31,6 +31,14 @@ public/uploads/
 secrets/
 credentials.json
 
+# 项目内部记录（**绝不入库**）
+# 它们在项目根目录 E:\Hackathon\，不在本仓库。这几行是防呆：
+# 万一有人在 kan/ 里重建了同名文件，git 也不会收进来。
+PROJECT_STATE.md
+项目记录/
+*对话记录*.md
+*密钥*.md
+
 # 日志与临时
 *.log
 npm-debug.log*
