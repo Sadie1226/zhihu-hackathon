@@ -289,6 +289,31 @@ export interface Relation {
   blockedAt: IsoTime | null
 }
 
+/** c3 v2：关系读取中的对方狗公开白名单，不返回完整 Dog。 */
+export interface PublicDogSummary {
+  id: Dog['id']
+  name: Dog['name']
+  assembly: Assembly
+  isSample: Dog['isSample']
+}
+
+/** 只读关系及对方最新快照；没有快照时为 null，不改变 Snapshot 内部空值规则。 */
+export interface RelationView {
+  relation: Relation
+  otherDog: PublicDogSummary
+  snapshot: Snapshot | null
+}
+
+/** GET /api/dogs/:id/relations；请求狗必须属于服务端当前匿名 session。 */
+export interface RelationsResponse {
+  relations: RelationView[]
+}
+
+/** GET /api/exchanges?from_dog=:id；只返回当前 session 所属发送狗的记录。 */
+export interface ExchangesResponse {
+  exchanges: Exchange[]
+}
+
 // ===========================================================================
 // 四、错误码 —— 与 errors.md 一致
 // ===========================================================================

@@ -4,19 +4,21 @@
  * 这是 c 的活，不是任何人的活。跑法（Node 22+，零依赖）：
  *   node scripts/check-contracts.mjs
  *
- * 它做六件事，**每一件都是「不通过就退出码 1」**：
+ * 它检查以下项目，**不通过就退出码 1**（不等于 HTTP 或全部产品规则验收）：
  *   1. schema.sql 能建库，且外键真的开着
  *   2. 每一条约束真的拦得住（故意塞错数据，必须报错）
- *   3. 九份 fixtures 能逐条插进去，一条都不许失败
+ *   3. 十份 fixtures 能逐条插进去，一条都不许失败
  *   4. personality_tags 的三条规矩：3 个、都在 12 个标签里、来自 3 个不同维度、不含互斥对
  *   5. fixtures 里每只狗都满足上面第 4 条（这条 SQL 的 CHECK 写不了，只能在这里查）
  *   6. 邀请三态视图推得对（它在等 / 已回应 / 它自己去了）
+ *   7. c3 v2 读取索引、session 范围、双向关系、排序、快照与公开字段
  *
  * 第 2 条是这份脚本存在的理由：约束写了但没生效，比没写更危险——
  * 它会让人以为数据是干净的。
  */
 
 import { DatabaseSync } from 'node:sqlite'
+import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -37,7 +39,7 @@ const db = new DatabaseSync(':memory:')
 db.exec('PRAGMA foreign_keys = ON')
 try {
   db.exec(read('contracts/schema.sql'))
-  ok('九张表 + 两个视图建起来')
+  ok('schema.sql 执行成功（对象集合另外检查）')
 } catch (e) {
   bad('schema.sql 执行失败', e.message)
   process.exit(1)
@@ -209,7 +211,7 @@ mustPass('关系按字典序排列能插', () =>
               values ('rel_1','dog_b','dog_t','2026-11-16T03:00:00Z','2026-11-16T03:00:00Z')`).run())
 
 // ---------------------------------------------------------------- 3. fixtures
-console.log('\n3. 九份 fixtures 逐条插进去')
+console.log('\n3. 十份 fixtures 逐条插进去')
 
 // 每份 fixtures 的顶层数组键名（表名 → 键名）
 const FX_KEYS = {
@@ -227,6 +229,14 @@ for (const [table, key] of Object.entries(FX_KEYS)) {
     fx[table] = raw[key]
     ok(`fixtures/${table}.json 是合法 JSON，${raw[key].length} 条`)
   } catch (e) { bad(`fixtures/${table}.json 读不了`, e.message) }
+}
+
+for (const e of fx.exchange ?? []) {
+  mustPass(`exchange fixture ${e.id}: payload.kind 与外层 kind 一致`, () => {
+    assert.equal(typeof e.payload, 'object')
+    assert.notEqual(e.payload, null)
+    assert.equal(e.payload.kind, e.kind)
+  })
 }
 
 // 清空，用 fixtures 重建一遍，证明 fixtures 和 schema 是一套
@@ -271,7 +281,7 @@ insertAll('message', fx.message, ['id', 'trip_id', 'text', 'mentions_find_id', '
 insertAll('invitation', fx.invitation, ['id', 'dog_id', 'text', 'based_on_find_id', 'created_at'])
 insertAll('reply', fx.reply, ['id', 'exchange_id', 'invitation_id', 'text', 'photo_url', 'created_at'])
 
-// 关系表不在九类实体里，但它也得能插（d 要用）
+// relation 是十类实体之一，也必须能插（d 要用）
 // checksum：脚本自己按字典序排，fixtures 里写反了也不算错
 for (const r of (fx.relation ?? [])) {
   const [a, b] = [r.dog_a, r.dog_b].sort()
@@ -334,10 +344,155 @@ const hasStatusCol = db.prepare("select count(*) c from pragma_table_info('invit
 hasStatusCol === 0 ? ok('invitation 表没有 status / expires_at 列（不存状态，也不许过期）')
                    : bad('invitation 表混进了 status 或 expires_at —— 会造出第二个写入方')
 
+// ---------------------------------------------------------------- 7. v2 读取契约
+console.log('\n7. c3 v2 读取契约（直接执行 api.md 的 SQL，不代表 HTTP 路由已上线）')
+
+const expectedReadIndexes = {
+  idx_exchange_outbox: ['exchange', [['from_dog', 0], ['created_at', 1]]],
+  idx_relation_dog_a_recent: ['relation', [['dog_a', 0], ['last_met_at', 1], ['id', 0]]],
+  idx_relation_dog_b_recent: ['relation', [['dog_b', 0], ['last_met_at', 1], ['id', 0]]],
+}
+for (const [name, [table, columns]] of Object.entries(expectedReadIndexes)) {
+  mustPass(`${name}: 表、列顺序及升降序正确`, () => {
+    assert.equal(db.prepare("select tbl_name from sqlite_master where type='index' and name=?").get(name)?.tbl_name, table)
+    const actual = db.prepare('select name, desc from pragma_index_xinfo(?) where key=1 order by seqno').all(name)
+    assert.deepEqual(actual.map((c) => [c.name, c.desc]), columns)
+  })
+}
+
+const api = read('contracts/api.md').replace(/\r\n/g, '\n')
+const types = read('contracts/types.ts')
+const publicKeys = ['id', 'name', 'assembly', 'isSample'].sort()
+mustPass('PublicDogSummary 类型与文档示例严格限定四个公开字段，无私有狗字段', () => {
+  const body = types.match(/export interface PublicDogSummary\s*\{([^}]+)\}/)?.[1]
+  assert.ok(body, '缺少 PublicDogSummary')
+  const keys = [...body.matchAll(/^\s*(\w+)\s*:/gm)].map((m) => m[1]).sort()
+  assert.deepEqual(keys, publicKeys)
+  const samples = [...api.matchAll(/```json\s*\n([\s\S]*?)\n```/g)].map((m) => JSON.parse(m[1]))
+  const sample = samples.find((s) => Array.isArray(s.relations))
+  assert.ok(sample?.relations.length, '缺少关系响应 JSON 示例')
+  for (const r of sample.relations) assert.deepEqual(Object.keys(r.otherDog).sort(), publicKeys)
+  assert.match(types, /export interface RelationView\s*\{\s*relation: Relation\s+otherDog: PublicDogSummary\s+snapshot: Snapshot \| null\s*\}/)
+  assert.match(types, /export interface RelationsResponse\s*\{\s*relations: RelationView\[\]\s*\}/)
+  assert.match(types, /export interface ExchangesResponse\s*\{\s*exchanges: Exchange\[\]\s*\}/)
+})
+
+// 查询参考由 api.md 提供，测试不再另抄一份 SQL；sessionId 模拟服务端可信上下文。
+const readSql = (name) => {
+  const block = [...api.matchAll(/```sql\s*\n([\s\S]*?)\n```/g)]
+    .map((m) => m[1]).find((sql) => sql.startsWith(`-- c3-v2: ${name}\n`))
+  assert.ok(block, `api.md 缺少 ${name} SQL`)
+  return db.prepare(block)
+}
+try {
+  const ownedDog = readSql('owned-dog')
+  const relations = readSql('relations')
+  const outbox = readSql('outbox')
+  const owner = { dogId: 'dog_owner', sessionId: 's_demo_001' }
+  const seed = { dogId: 'dog_seed_07', sessionId: 'seed' }
+  const ids = (rows) => rows.map((r) => r.id)
+
+  mustPass('关系读取：请求狗为 dog_a，otherDog 为 dog_b', () => {
+    const rows = relations.all(owner)
+    assert.deepEqual(ids(rows), ['rel_001'])
+    assert.equal(rows[0].other_id, 'dog_seed_07')
+    assert.equal(rows[0].snapshot_dog_id, 'dog_seed_07')
+  })
+  mustPass('关系读取：请求狗为 dog_b，otherDog 为 dog_a', () => {
+    const rows = relations.all(seed)
+    assert.deepEqual(ids(rows), ['rel_001'])
+    assert.equal(rows[0].other_id, 'dog_owner')
+    assert.equal(rows[0].snapshot_dog_id, 'dog_owner')
+  })
+  mustPass('归属查询区分合法狗；不存在、跨 session、伪造 ID 均查不到', () => {
+    assert.equal(ownedDog.get(owner)?.id, owner.dogId)
+    for (const params of [
+      { ...owner, sessionId: 'wrong-session' },
+      { ...owner, dogId: 'missing-dog' },
+      { ...owner, dogId: "dog_owner' OR 1=1 --" },
+    ]) {
+      assert.equal(ownedDog.get(params), undefined)
+      assert.deepEqual(relations.all(params), [])
+      assert.deepEqual(outbox.all(params), [])
+    }
+  })
+  mustPass('发件读取：仅返回指定发送狗，收件狗的反向记录不混入', () => {
+    assert.deepEqual(ids(outbox.all(owner)), ['ex_co_owner', 'ex_greeting'])
+    assert.deepEqual(ids(outbox.all(seed)), ['ex_find', 'ex_gift'])
+  })
+  mustPass('发件读取：所有投递状态和三个时间列原样保留', () => {
+    for (const params of [owner, seed]) {
+      const actual = outbox.all(params)
+      const expected = fx.exchange.filter((e) => e.from_dog === params.dogId)
+      assert.equal(actual.length, expected.length)
+      for (const row of actual) {
+        const source = expected.find((e) => e.id === row.id)
+        for (const key of ['delivered_at', 'replied_at', 'read_at']) assert.equal(row[key], source[key])
+      }
+    }
+  })
+
+  // 边界数据仅放内存 savepoint，结束回滚，不改十份 fixtures 的业务含义。
+  db.exec('SAVEPOINT v2_read_cases')
+  try {
+    for (const id of ['dog_aaa', 'dog_zzz', 'dog_empty']) {
+      db.prepare(`insert into dog (id,session_id,personality_tags,assembly,created_at)
+        select ?,session_id,personality_tags,assembly,created_at from dog where id='dog_owner'`).run(id)
+    }
+    db.exec(`insert into relation (id,dog_a,dog_b,first_met_at,last_met_at,is_blocked,blocked_at) values
+      ('rel_aaa','dog_aaa','dog_owner','2026-11-16T09:00:00Z','2026-11-16T10:00:00Z',1,'2026-11-16T10:00:00Z'),
+      ('rel_zzz','dog_owner','dog_zzz','2026-11-16T09:00:00Z','2026-11-16T10:00:00Z',0,null),
+      ('rel_unrelated','dog_aaa','dog_zzz','2026-11-16T09:00:00Z','2026-11-16T11:00:00Z',0,null)`)
+    db.exec(`insert into snapshot (dog_id,version,personality_tags,interest_categories,recent_trips,waiting_for,created_at)
+      select dog_id,2,personality_tags,interest_categories,recent_trips,waiting_for,'2026-11-15T00:00:00Z'
+      from snapshot where dog_id='dog_seed_07' and version=1`)
+    db.exec(`insert into exchange (id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at)
+      select 'ex_tie',from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at
+      from exchange where id='ex_co_owner'`)
+
+    mustPass('关系集合：按最近相遇降序、同刻 ID 升序，包含拉黑且排除无关关系', () => {
+      const rows = relations.all(owner)
+      assert.deepEqual(ids(rows), ['rel_aaa', 'rel_zzz', 'rel_001'])
+      assert.equal(rows[0].is_blocked, 1)
+    })
+    mustPass('快照：按最大 version 选择，不按时间；不存在时返回 NULL 投影', () => {
+      const rows = relations.all(owner)
+      assert.equal(rows.find((r) => r.id === 'rel_001').snapshot_version, 2)
+      assert.equal(rows.find((r) => r.id === 'rel_zzz').snapshot_dog_id, null)
+      assert.equal(rows.find((r) => r.id === 'rel_zzz').other_name, null)
+    })
+    mustPass('公开狗 SQL 投影仅四字段，原始行不含 session 或屏蔽主题', () => {
+      for (const row of relations.all(owner)) {
+        assert.deepEqual(Object.keys(row).filter((key) => key.startsWith('other_')).sort(),
+          ['other_assembly', 'other_id', 'other_is_sample', 'other_name'])
+        assert.ok(!Object.keys(row).some((key) => /session|blocked_topics|blockedTopics/i.test(key)))
+      }
+    })
+    mustPass('发件排序：created_at 降序，同刻 ID 降序', () => {
+      assert.deepEqual(ids(outbox.all(owner)), ['ex_tie', 'ex_co_owner', 'ex_greeting'])
+    })
+    mustPass('属于当前 session 且无数据的狗：两个集合均为空', () => {
+      const empty = { ...owner, dogId: 'dog_empty' }
+      assert.equal(ownedDog.get(empty)?.id, empty.dogId)
+      assert.deepEqual(relations.all(empty), [])
+      assert.deepEqual(outbox.all(empty), [])
+    })
+    mustPass('两条集合查询与归属检查均不写数据库', () => {
+      const before = db.prepare('select total_changes() n').get().n
+      ownedDog.get(owner); relations.all(owner); outbox.all(owner)
+      assert.equal(db.prepare('select total_changes() n').get().n, before)
+    })
+  } finally {
+    db.exec('ROLLBACK TO v2_read_cases; RELEASE v2_read_cases')
+  }
+} catch (e) {
+  bad('v2 查询参考初始化或边界数据准备失败', e.message)
+}
+
 // ---------------------------------------------------------------- 收尾
 console.log(`\n${'─'.repeat(58)}`)
 if (failures === 0) {
-  console.log('✅ 全部通过。contracts/ 可以直接交给全队。')
+  console.log('✅ 本脚本覆盖的契约检查全部通过；HTTP、会话接入与未覆盖的产品规则仍需单独验收。')
 } else {
   console.log(`❌ ${failures} 处不通过。修完再交。`)
 }
