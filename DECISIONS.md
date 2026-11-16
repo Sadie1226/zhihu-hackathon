@@ -17,3 +17,4 @@
 2026-11-15 · a · 不收 Issue 的常态工作流：只在「卡住别人」或「等别人给东西」时开 · 五个人每天开五个 Issue 没人看，反而盖掉真正阻塞的那一条
 2026-11-15 · a · `contracts/` 与 `scripts/check-contracts.mjs` 尚未入库，等 c 自己提交 · 那是 c 的 c3 产出，还在写；a 不代提交别人的活
 2026-11-16 · c · c3 v2 关系读取使用 session 所属狗范围的 `GET /api/dogs/:id/relations`；发件使用 `GET /api/exchanges?from_dog=:id`，收件沿用 `GET /api/dogs/:id/inbox`；不新增全局关系或重复收件路由 · 补齐 E3/D 读取契约并隔离公开狗摘要与私有字段
+2026-11-16 · c · C2 使用 Next.js Node 运行时、原生 SQLite 与事务内 user_version 增量迁移，部署采用 systemd 和独立持久化目录 · 保持骨架最小、重启不重建数据库；暂无服务器时只交本地验收与部署包，公网验收记 BLOCKED

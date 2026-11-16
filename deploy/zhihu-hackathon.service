@@ -1,0 +1,33 @@
+[Unit]
+Description=Zhihu Hackathon C2 production server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=zhihu
+Group=zhihu
+WorkingDirectory=/opt/zhihu-hackathon/current
+Environment=NODE_ENV=production
+Environment=PORT=18080
+Environment=DATABASE_PATH=/var/lib/zhihu-hackathon/app.sqlite
+EnvironmentFile=/etc/zhihu-hackathon.env
+ExecStart=/usr/bin/node /opt/zhihu-hackathon/current/node_modules/next/dist/bin/next start --hostname 0.0.0.0
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+KillMode=control-group
+UMask=0027
+StateDirectory=zhihu-hackathon
+StateDirectoryMode=0750
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/zhihu-hackathon /opt/zhihu-hackathon/current/.next/cache
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
