@@ -63,7 +63,6 @@ else bad('外键没打开', '每个连接都要 PRAGMA foreign_keys = ON')
 console.log('\n2. 约束真的拦得住（故意塞错数据，必须报错）')
 
 const DOG_OK = JSON.stringify({
-  base: 'tpl-a', skin: { color: 'red', pattern: 'spot' },
   cloth: 'hoodie', hat: 'beanie', glasses: null, face: 'hopeful',
 })
 const insDog = () =>
@@ -88,6 +87,24 @@ mustFail('装配单多一个键 → 拦', () => {
   const a = JSON.parse(DOG_OK); a.extra = 1
   db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
               values ('d2','二','s', '["好奇","看物","直给"]', ?, '2026-11-16T00:00:00Z')`).run(JSON.stringify(a))
+})
+// 11-16 删掉的三层：写回去必须被拦，否则 d 按旧文档填 base 会静默通过。
+for (const gone of ['base', 'skin']) {
+  mustFail(`装配单写回已删除的 ${gone} → 拦`, () => {
+    const a = JSON.parse(DOG_OK)
+    a[gone] = gone === 'base' ? 'tpl-a' : { color: 'red', pattern: 'spot' }
+    db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
+                values (?,?, 's', '["好奇","看物","直给"]', ?, '2026-11-16T00:00:00Z')`)
+      .run(`d_gone_${gone}`, '旧', JSON.stringify(a))
+  })
+}
+// 「不戴」是 JSON null，不是缺键。这两条一起证明 json_type 那个写法没被改坏。
+mustPass('hat = null（不戴）能通过', () => {
+  const a = JSON.parse(DOG_OK); a.hat = null
+  db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
+              values ('d_null','空','s','["好奇","看物","直给"]',?,'2026-11-16T00:00:00Z')`)
+    .run(JSON.stringify(a))
+  db.exec("delete from dog where id = 'd_null'")
 })
 mustFail('装配单少一个键 → 拦', () => {
   const a = JSON.parse(DOG_OK); delete a.glasses

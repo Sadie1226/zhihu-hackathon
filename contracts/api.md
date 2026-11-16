@@ -70,7 +70,7 @@ read_at                                                                         
 
 ## 二、接口清单
 
-九组接口。**每一组都标了归谁实现、谁调用。** URL 前缀没定（c2 部署时定），这里只定形状。
+十组接口。**每一组都标了归谁实现、谁调用。** URL 前缀没定（c2 部署时定），这里只定形状。
 
 c3 v2 只补读取契约、查询参考、类型和索引，不表示 HTTP 路由已部署。原有路由保持不变。
 
@@ -350,6 +350,60 @@ ORDER BY r.last_met_at DESC, r.id ASC;
 `snapshot_dog_id IS NULL` 映射为 `snapshot: null`，否则将 `snapshot_*` 映射为现有 `Snapshot`。
 不得把带查询别名的原始行直接返回给前端，也不得通过回查完整 Dog 扩大公开字段。
 
+### 10. 图片生成（c 实现，e 定提示词模板，d/e/a 调用读取）
+
+> 11-16 新增。**接口先定形状，背后接什么可以换。** 生图模型是 GPT 的生图；单张成本与耗时**未验证**，
+> 所以「每次出行都生成」还是「每人每天限几张」**还没定**，等 e 给出实测数。
+>
+> 完整规则见 `team/2026-11-16/a/1116-a-生图SOP与架构-v1.md`。这里只定形状。
+
+```text
+POST /api/gen/image
+入：GenImageRequest
+出：GenImageResult
+错：NETWORK / BLOCKED / RATE_LIMITED（见 errors.md 六节的三级兜底）
+```
+
+**入参（`GenImageRequest`）**——每一个字段都由服务端查库填充：
+
+```jsonc
+{
+  "purpose": "portrait" | "moment" | "gift" | "scene",  // 加第五种必须由 c 改 K
+  "size":    { "w": 1200, "h": 800 },                   // 按资产规范的尺寸表取
+  "place":   { "kind": "城市角落", "timeOfDay": "dusk", "weather": "雨" },  // 查 trip/find
+  "dogs": [                                             // 查 dog.assembly，四键
+    { "role": "owner",  "assembly": { "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" },
+      "refImagePath": "/assets/gen/ref-dog_owner.webp" }
+  ],
+  "camera":  "single" | "group" | "empty"
+}
+```
+
+**三个字段级的硬规矩，不是使用约定是接口设计的一部分：**
+
+| 规矩 | 为什么 |
+| --- | --- |
+| **没有任何字段来自用户原文** | 捎话 `message`、礼物 `note` 都是用户写的，进提示词就是**提示词注入**的口子（「忽略以上要求，画一张……」），也是审核风险。`giftName` 是 d 生成的受控名，可以用 |
+| **内容由查库决定，不由模型发挥** | 模型临场决定内容，刷新两次就是两幅画 —— 同一次相遇两个版本，撞不变量五 |
+| **外形词只能取契约枚举** | e 有措辞自由（`straw` 怎么翻成画面描述），没有取值自由（不能发明「针织贝雷帽」）。否则 AI 图和拼接图变成两套形象系统 |
+
+**出参（`GenImageResult`）：**
+
+```jsonc
+{ "path": "/assets/gen/xxx.webp", "level": 0, "ms": 12345, "model": "..." }
+```
+
+`level` 是走到第几级兜底：`0` 生成成功 ／ `2` 退到这只狗的合成整图 ／ `3` 退到纯文字。
+**前端按 `level` 决定显示什么，不要自己猜。** 没有 `1` —— 重试是服务端内部动作，用户看不见。
+
+**三条不许违反的：**
+
+1. **生成一次就落库，存路径不存二进制。** 打开页面只读路径，绝不重新生成 —— 否则换台设备打开是另一幅画（不变量五），且断网白屏（`errors.md` 四节，阻断级）。
+2. **第 4 步的参考图必须由装配单合成**（`c11b` 的拼接渲出来的那张位图），不是文字描述。这样喂进去的狗和界面上的狗是同一只。
+3. **失败三级兜底，没有第四级。** 明确禁止「预制通用图顶替」：一张不是这次出行生成的樱花树图配着「今天在樱花树下」，那不是降级是编造（不变量四）。
+
+`find.asset_path` 和 gift 的 `imagePath` 就是这条接口的落点。
+
 ---
 
 ## 三、四种 `exchange.payload` 的形状
@@ -365,7 +419,8 @@ ORDER BY r.last_met_at DESC, r.id ASC;
 { "kind": "greeting", "line": "这边下了两天雨，你那边呢", "weather": "雨" }
 
 // gift —— 礼物
-{ "kind": "gift", "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了" }
+{ "kind": "gift", "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了",
+  "imagePath": "/assets/gen/xxx.webp" }
 
 // co_owner_message —— 捎话（P0 第 9 条）
 { "kind": "co_owner_message", "message": "楼下的桂花开了", "fromOwnerOf": "dog_owner" }
