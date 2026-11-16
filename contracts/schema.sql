@@ -318,6 +318,9 @@ CREATE TABLE exchange (
 CREATE INDEX idx_exchange_inbox ON exchange(to_dog, delivered_at);
 CREATE INDEX idx_exchange_pend  ON exchange(to_dog, deliver_after_trip_seq);
 
+-- c3 v2：按发送方读取全部投递状态；不改变任何列的写入方。
+CREATE INDEX idx_exchange_outbox ON exchange(from_dog, created_at DESC);
+
 -- ---------------------------------------------------------------------------
 -- message · 归来的一句话（2.3）
 -- 写入方：b。
@@ -477,3 +480,7 @@ CREATE TABLE relation (
 );
 
 CREATE UNIQUE INDEX uniq_relation_pair ON relation(dog_a, dog_b);
+
+-- c3 v2：关系两端都能按最近相遇读取，保留原有唯一索引与约束。
+CREATE INDEX idx_relation_dog_a_recent ON relation(dog_a, last_met_at DESC, id);
+CREATE INDEX idx_relation_dog_b_recent ON relation(dog_b, last_met_at DESC, id);
