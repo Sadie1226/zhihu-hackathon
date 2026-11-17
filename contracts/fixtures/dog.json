@@ -22,7 +22,7 @@
       "id": "dog_seed_07",
       "name": "青椒",
       "session_id": "seed",
-      "personality_tags": ["恋家", "看人", "婉转"],
+      "personality_tags": ["看人", "婉转", "当下"],
       "interest_categories": ["人与故事", "手作与食物", "动物与植物"],
       "assembly": {
         "cloth": "sweater",
