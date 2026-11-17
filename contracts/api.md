@@ -70,7 +70,9 @@ read_at                                                                         
 
 ## 二、接口清单
 
-八组接口。**每一组都标了归谁实现、谁调用。** URL 前缀没定（c2 部署时定），这里只定形状。
+十组接口。**每一组都标了归谁实现、谁调用。** URL 前缀没定（c2 部署时定），这里只定形状。
+
+c3 v2 只补读取契约、查询参考、类型和索引，不表示 HTTP 路由已部署。原有路由保持不变。
 
 ### 1. 领养（a 实现）
 
@@ -198,6 +200,45 @@ GET  /api/dogs/:id/inbox?filter=onTheWay|arrived|all
 PATCH /api/exchanges/:id/read  入：{}  出：{ exchange: Exchange }    ← 只有 e 调
 ```
 
+#### v2 发件集合（c 实现读取，d/e 调用）
+
+```text
+GET /api/exchanges?from_dog=:id
+入：query.from_dog，必填且只出现一次的非空字符串，不限定为 UUID
+出：ExchangesResponse = { exchanges: Exchange[] }
+错：CONFLICT（参数缺失、空白、重复或不是单个字符串）
+    NOT_FOUND（狗不存在、不属于当前匿名 session，或没有有效的服务端 session）
+```
+
+只返回 `exchange.from_dog = :id` 的记录，包括在路上、已到未读、已读、已回应的记录；
+按 `createdAt DESC, id DESC` 排序。`deliveredAt`、`repliedAt`、`readAt` 原样返回，不补时间、不更新状态。
+合法且属于当前 session 的狗没有发件时返回 `{ "exchanges": [] }`；不能用空数组代替越权错误。
+
+请求示例：`GET /api/exchanges?from_dog=dog_owner`。以下只是 fixture 响应形状示例：
+
+```json
+{
+  "exchanges": [{
+    "id": "ex_co_owner",
+    "fromDog": "dog_owner",
+    "toDog": "dog_seed_07",
+    "kind": "co_owner_message",
+    "payload": { "kind": "co_owner_message", "message": "楼下的桂花开了，你那边闻得到吗", "fromOwnerOf": "dog_owner" },
+    "deliverAfterTripSeq": 2,
+    "createdAt": "2026-11-16T09:35:00Z",
+    "deliveredAt": null,
+    "repliedAt": null,
+    "readAt": null
+  }]
+}
+```
+
+**发件与收件分开：** 发件使用本节新增接口；E 的收件继续使用
+`GET /api/dogs/:id/inbox?filter=onTheWay|arrived|all`。
+**不新增 `GET /api/exchanges?to_dog=`**，该参数不能作为发件接口的收件筛选；传入它返回 `CONFLICT`。
+手账合并同一只狗的 outbox 与 `GET /api/dogs/:id/inbox?filter=all`，按 exchange ID 去重。
+无 `from_dog` 的 `GET /api/exchanges` 不提供全局集合，返回 `CONFLICT`。
+
 **投递器幂等靠这一句**（`delivered_at` 已经是 null 才写）：
 
 ```sql
@@ -217,6 +258,152 @@ GET /api/dogs/:id/neighbor    出：{ dog: Dog, snapshot: Snapshot|null }
 
 **`is_sample = true` 必须原样返回。** e 靠它标「示例伙伴」，四处都要标。
 
+### 9. 朋友关系读取（c 定义读取契约，d 实现，e 调用）
+
+```text
+GET /api/dogs/:id/relations
+入：path.id，请求狗的 ID（沿用现有 dog ID，不限定为 UUID）
+出：RelationsResponse = { relations: RelationView[] }
+错：NOT_FOUND（狗不存在、不属于当前匿名 session，或没有有效的服务端 session）
+```
+
+返回 `dog_a = :id OR dog_b = :id` 的关系，保留 `relation.isBlocked`（包括拉黑记录），不修改关系。
+`otherDog` 是关系另一端的狗，不是请求狗；`snapshot` 取另一端狗的最大 `version`，不存在时为 `null`。
+按 `relation.lastMetAt DESC, relation.id ASC` 排序。没有关系时返回 `{ "relations": [] }`。
+**`GET /api/relations` 不是规范路由，本次不新增无狗范围的全局关系接口。**
+
+公开字段白名单：`otherDog` 仅允许 `id`、`name`、`assembly`、`isSample`。
+使用 `PublicDogSummary`，禁止展开完整 `Dog`，禁止返回 `sessionId` / `session_id`、
+`blockedTopics` / `blocked_topics` 或其他未列入白名单的狗字段。`snapshot` 仍只使用现有 `Snapshot` 字段，
+不加入聊天、主人心愿原文或私有狗字段；没有快照和快照内部类目为空是两件事，本次不改后者规则。
+
+请求示例：`GET /api/dogs/dog_owner/relations`。以下为假数据形状示例，演示对方尚无快照：
+
+```json
+{
+  "relations": [{
+    "relation": {
+      "id": "rel_001", "dogA": "dog_owner", "dogB": "dog_seed_07",
+      "firstMetAt": "2026-11-16T01:30:00Z", "lastMetAt": "2026-11-16T09:00:00Z",
+      "metCount": 2, "isBlocked": false, "blockedAt": null
+    },
+    "otherDog": {
+      "id": "dog_seed_07", "name": "青椒",
+      "assembly": {
+        "base": "tpl-b", "skin": { "color": "cream", "pattern": "stripe" },
+        "cloth": "sweater", "hat": null, "glasses": "round", "face": "waiting"
+      },
+      "isSample": true
+    },
+    "snapshot": null
+  }]
+}
+```
+
+#### v2 两个新增 GET 的 session 与映射约定
+
+当前匿名 session 由服务端已验证的会话上下文提供；客户端的 URL、query、body 不能提供或覆盖归属。
+下方 `:sessionId` 只允许从该服务端上下文绑定，`:dogId` 才来自 path.id 或 query.from_dog。
+先验证参数，再用同一只请求狗做归属检查；不属于当前 session 与不存在统一返回 `NOT_FOUND`。
+读取须在同一只读事务中完成归属检查与查询，避免空集合和越权混淆；查询也重复限定归属。
+两个 GET 均不写任何表，不更新已读、回应、相遇次数或快照版本。
+
+接口实现方负责 SQL snake_case → API camelCase 映射：JSON 文本解析为对象/数组，
+`is_sample` / `is_blocked` 的 0/1 转为 boolean，时间和 null 原样保留。
+D 的 `rules.ts` 保持 camelCase 入口；D 测试装载 SQL 形状 fixtures 时可在 `fromDbRow()` 边界转换，
+不能让页面各自猜字段。以下 SQL 是可执行的查询参考，由 `check-contracts.mjs` 直接读取验证；不是 HTTP handler。
+
+```sql
+-- c3-v2: owned-dog
+SELECT id FROM dog WHERE id = :dogId AND session_id = :sessionId;
+```
+
+```sql
+-- c3-v2: outbox
+SELECT e.*
+FROM exchange e
+JOIN dog owned ON owned.id = e.from_dog AND owned.session_id = :sessionId
+WHERE e.from_dog = :dogId
+ORDER BY e.created_at DESC, e.id DESC;
+```
+
+```sql
+-- c3-v2: relations
+SELECT r.*,
+       other.id AS other_id, other.name AS other_name,
+       other.assembly AS other_assembly, other.is_sample AS other_is_sample,
+       s.dog_id AS snapshot_dog_id, s.version AS snapshot_version,
+       s.personality_tags AS snapshot_personality_tags,
+       s.interest_categories AS snapshot_interest_categories,
+       s.recent_trips AS snapshot_recent_trips,
+       s.waiting_for AS snapshot_waiting_for, s.created_at AS snapshot_created_at
+FROM relation r
+JOIN dog owned ON owned.id = :dogId AND owned.session_id = :sessionId
+JOIN dog other ON other.id = CASE WHEN r.dog_a = owned.id THEN r.dog_b ELSE r.dog_a END
+LEFT JOIN snapshot s ON s.dog_id = other.id
+  AND s.version = (SELECT MAX(latest.version) FROM snapshot latest WHERE latest.dog_id = other.id)
+WHERE r.dog_a = owned.id OR r.dog_b = owned.id
+ORDER BY r.last_met_at DESC, r.id ASC;
+```
+
+关系结果映射：`r.*` 只映射为 `Relation`；`other_*` 只映射为上述四字段 `PublicDogSummary`；
+`snapshot_dog_id IS NULL` 映射为 `snapshot: null`，否则将 `snapshot_*` 映射为现有 `Snapshot`。
+不得把带查询别名的原始行直接返回给前端，也不得通过回查完整 Dog 扩大公开字段。
+
+### 10. 图片生成（c 实现，e 定提示词模板，d/e/a 调用读取）
+
+> 11-16 新增。**接口先定形状，背后接什么可以换。** 生图模型是 GPT 的生图；单张成本与耗时**未验证**，
+> 所以「每次出行都生成」还是「每人每天限几张」**还没定**，等 e 给出实测数。
+>
+> 完整规则见 `team/2026-11-16/a/1116-a-生图SOP与架构-v1.md`。这里只定形状。
+
+```text
+POST /api/gen/image
+入：GenImageRequest
+出：GenImageResult
+错：NETWORK / BLOCKED / RATE_LIMITED（见 errors.md 六节的三级兜底）
+```
+
+**入参（`GenImageRequest`）**——每一个字段都由服务端查库填充：
+
+```jsonc
+{
+  "purpose": "portrait" | "moment" | "gift" | "scene",  // 加第五种必须由 c 改 K
+  "size":    { "w": 1200, "h": 800 },                   // 按资产规范的尺寸表取
+  "place":   { "kind": "城市角落", "timeOfDay": "dusk", "weather": "雨" },  // 查 trip/find
+  "dogs": [                                             // 查 dog.assembly，四键
+    { "role": "owner",  "assembly": { "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" },
+      "refImagePath": "/assets/gen/ref-dog_owner.webp" }
+  ],
+  "camera":  "single" | "group" | "empty"
+}
+```
+
+**三个字段级的硬规矩，不是使用约定是接口设计的一部分：**
+
+| 规矩 | 为什么 |
+| --- | --- |
+| **没有任何字段来自用户原文** | 捎话 `message`、礼物 `note` 都是用户写的，进提示词就是**提示词注入**的口子（「忽略以上要求，画一张……」），也是审核风险。`giftName` 是 d 生成的受控名，可以用 |
+| **内容由查库决定，不由模型发挥** | 模型临场决定内容，刷新两次就是两幅画 —— 同一次相遇两个版本，撞不变量五 |
+| **外形词只能取契约枚举** | e 有措辞自由（`straw` 怎么翻成画面描述），没有取值自由（不能发明「针织贝雷帽」）。否则 AI 图和拼接图变成两套形象系统 |
+
+**出参（`GenImageResult`）：**
+
+```jsonc
+{ "path": "/assets/gen/xxx.webp", "level": 0, "ms": 12345, "model": "..." }
+```
+
+`level` 是走到第几级兜底：`0` 生成成功 ／ `2` 退到这只狗的合成整图 ／ `3` 退到纯文字。
+**前端按 `level` 决定显示什么，不要自己猜。** 没有 `1` —— 重试是服务端内部动作，用户看不见。
+
+**三条不许违反的：**
+
+1. **生成一次就落库，存路径不存二进制。** 打开页面只读路径，绝不重新生成 —— 否则换台设备打开是另一幅画（不变量五），且断网白屏（`errors.md` 四节，阻断级）。
+2. **第 4 步的参考图必须由装配单合成**（`c11b` 的拼接渲出来的那张位图），不是文字描述。这样喂进去的狗和界面上的狗是同一只。
+3. **失败三级兜底，没有第四级。** 明确禁止「预制通用图顶替」：一张不是这次出行生成的樱花树图配着「今天在樱花树下」，那不是降级是编造（不变量四）。
+
+`find.asset_path` 和 gift 的 `imagePath` 就是这条接口的落点。
+
 ---
 
 ## 三、四种 `exchange.payload` 的形状
@@ -232,7 +419,8 @@ GET /api/dogs/:id/neighbor    出：{ dog: Dog, snapshot: Snapshot|null }
 { "kind": "greeting", "line": "这边下了两天雨，你那边呢", "weather": "雨" }
 
 // gift —— 礼物
-{ "kind": "gift", "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了" }
+{ "kind": "gift", "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了",
+  "imagePath": "/assets/gen/xxx.webp" }
 
 // co_owner_message —— 捎话（P0 第 9 条）
 { "kind": "co_owner_message", "message": "楼下的桂花开了", "fromOwnerOf": "dog_owner" }

@@ -75,25 +75,35 @@ export type ReplyKind = 'text' | 'photo' | 'both'
 export type InvitationState = 'waiting' | 'replied' | 'gone_alone'
 
 // ===========================================================================
-// 二、装配单 —— 固定六个键，多一个都不许加
+// 二、装配单 —— 固定四个键，多一个都不许加
 // ===========================================================================
+//
+// 11-16 改了范围（a 裁定，DECISIONS 同日）：体型、配色、花纹三层删除。
+// 理由：刘看山 IP 只有一种体型与一套配色，那是边界不是工期 —— 边界不留位置，
+// 因为留了位置总有人想填。删键有 schema 层的强制力（键数不对直接拦），
+// 而收窄成单值枚举只能靠 TS，d 直接产 JSON 时保护不住。
+//
+// 删掉的键：base（体型 tpl-a/b/c）、skin.color（4 色）、skin.pattern（3 花纹）。
+// 剩下的键仍然共用同一块画布、同一套锚点 —— 那条约束没变。
 
-export type DogBase = 'tpl-a' | 'tpl-b' | 'tpl-c'
-export type SkinColor = 'red' | 'brown' | 'grey' | 'cream'
-export type SkinPattern = 'solid' | 'spot' | 'stripe'
 export type DogCloth = 'hoodie' | 'jacket' | 'sweater' | 'raincoat' | 'apron' | 'scarf-coat'
 export type DogHat = 'beanie' | 'cap' | 'straw' | 'none'
 export type DogGlasses = 'round' | 'square' | 'sun' | 'none'
-/** 4 种表情，对应 4.4 的情绪。**必须叠在服装之上**，否则戴墨镜看不见情绪。 */
+/**
+ * 4 种脸，**领养时定下就不再变** —— 是这只狗的身份，不是情绪状态。
+ * 11-16 之前这里写的是「对应 4.4 的情绪」，那句随表情不再随状态变而作废。
+ */
 export type DogFace = 'happy' | 'tired' | 'hopeful' | 'waiting'
 
 /**
  * 装配单。**这是渲染组件唯一接受的 props，也是存库、进快照、传给对方的唯一格式。**
  * 不是一个图片路径，也不是一段提示词 —— 同一组合永远渲染同一结果，一致性 100%。
+ *
+ * 四个键对应四层精灵部件：衣服 6 + 帽子 4 + 墨镜 4 + 表情 4 = 18 张，
+ * 含「不戴」的透明图（`hat`/`glasses` 取 `none` 时仍然叠一张全透明 PNG，不写特判），
+ * 组合 6×4×4×4 = 384 种。
  */
 export interface Assembly {
-  base: DogBase
-  skin: { color: SkinColor; pattern: SkinPattern }
   cloth: DogCloth
   hat: DogHat | null
   glasses: DogGlasses | null
@@ -185,6 +195,12 @@ export interface Find {
   /** 知乎 AuthorityLevel，1 低—4 超高。原样存，不让 AI 判断谁可信。 */
   authorityLevel: 1 | 2 | 3 | 4 | null
   voteUpCount: number | null
+  /**
+   * 11-16 新增。这条发现配的图，**存路径不存二进制**。
+   * 三种 kind 都可以有；可空，且**空不等于失败** —— 生成失败退回纯文字，界面不留空白框。
+   * 一条发现只许一个路径：生成一次就定稿，换设备打开读的是同一张图。
+   */
+  assetPath: string | null
   createdAt: IsoTime
 }
 
@@ -220,7 +236,13 @@ export interface Exchange {
 export type ExchangePayload =
   | { kind: 'find'; findTitle: string; findExcerpt: string | null; sourceUrl: string | null }
   | { kind: 'greeting'; line: string; weather: string | null }
-  | { kind: 'gift'; giftName: string; note: string | null }
+  /**
+   * gift —— 礼物（P0 第 8 条）。11-16 新增 `imagePath`：礼物图标走 AI 生成。
+   * 三样东西（名字、附言、图）必须在同一步定稿并一起落库 ——
+   * 分三条流水线各管一段，会出现名字写「一小卷灰蓝色的毛线」、图画出来是个茶杯。
+   * `imagePath` 可空；空时界面退成纯文字，不出现空白框。
+   */
+  | { kind: 'gift'; giftName: string; note: string | null; imagePath: string | null }
   | { kind: 'co_owner_message'; message: string; fromOwnerOf: string }
 
 /** 归来的一句话（2.3）。写入方：b。**必须和 trip 分表。** */
@@ -287,6 +309,31 @@ export interface Relation {
   /** 拉黑同时作用于狗和主人。拉黑后匹配函数必须双向排除这一对。 */
   isBlocked: boolean
   blockedAt: IsoTime | null
+}
+
+/** c3 v2：关系读取中的对方狗公开白名单，不返回完整 Dog。 */
+export interface PublicDogSummary {
+  id: Dog['id']
+  name: Dog['name']
+  assembly: Assembly
+  isSample: Dog['isSample']
+}
+
+/** 只读关系及对方最新快照；没有快照时为 null，不改变 Snapshot 内部空值规则。 */
+export interface RelationView {
+  relation: Relation
+  otherDog: PublicDogSummary
+  snapshot: Snapshot | null
+}
+
+/** GET /api/dogs/:id/relations；请求狗必须属于服务端当前匿名 session。 */
+export interface RelationsResponse {
+  relations: RelationView[]
+}
+
+/** GET /api/exchanges?from_dog=:id；只返回当前 session 所属发送狗的记录。 */
+export interface ExchangesResponse {
+  exchanges: Exchange[]
 }
 
 // ===========================================================================

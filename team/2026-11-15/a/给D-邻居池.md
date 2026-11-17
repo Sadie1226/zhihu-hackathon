@@ -92,8 +92,7 @@
   "session_id": "seed",
   "personality_tags": ["好奇", "看物", "当下"],
   "interest_categories": ["自然风景", "冷知识"],
-  "assembly": { "base": "tpl-a", "skin": {"color":"brown","pattern":"solid"},
-                "cloth": "jacket", "hat": null, "glasses": null, "face": "curious" },
+  "assembly": { "cloth": "jacket", "hat": null, "glasses": null, "face": "hopeful" },
   "is_sample": true
 }
 ```
@@ -111,15 +110,21 @@
 
 ## 五、装配单怎么排（这部分你只需要填，不需要画）
 
-| 层 | 键 | 你的选择范围（等 e2b 定数量，先按这个估） |
-| --- | --- | --- |
-| 0 底 | `base` | `tpl-a` / `tpl-b` / `tpl-c` 三种体型 |
-| 1 皮肤 | `skin.color` × `skin.pattern` | 4 色 × 3 花纹，共 12 种 |
-| 2 服装 | `cloth` | 6–8 件 |
-| 3 配饰 | `hat` / `glasses` | 各 4–6 件，**可以是 `null`** |
-| 4 表情 | `face` | `happy` / `tired` / `hopeful` / `waiting` |
+> **11-16 改（a 裁定，DECISIONS 同日）：装配单从六键改为四键。**
+> 删掉 `base`（体型）与 `skin`（配色 × 花纹）——刘看山 IP 只有一种体型与一套配色，那是边界不是工期。
+> 写回这两个键会被数据库直接拦（`必须恰好四个键`）。下面这张表已按四键更新。
 
-**「两两肉眼可区分」的实际要求：至少两个层不同。** 只换皮肤颜色不算（20 只都是同一件衣服一眼假）。
+| 层 | 键 | 你的选择范围（等 e2b 定数量） |
+| --- | --- | --- |
+| 2 服装 | `cloth` | 6 件 |
+| 3 配饰 | `hat` / `glasses` | 各 4 件，**含「不戴」；可以是 `null`** |
+| 4 脸 | `face` | `happy` / `tired` / `hopeful` / `waiting`，**领养时定下就不变** |
+
+组合 6 × 4 × 4 × 4 = **384 种**，20 只绰绰有余。
+
+**「两两肉眼可区分」怎么做**（原要求不变，但体型和颜色没了，难度上来了）：
+小头像尺寸下衣服细节会糊，能认的只剩「帽子轮廓 + 墨镜 + 脸」。所以——
+**同款衣服不超过 4 只，帽子尽量不重复。** 别 20 只都戴 beanie。
 
 ---
 

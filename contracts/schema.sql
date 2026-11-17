@@ -65,8 +65,9 @@ CREATE TABLE dog (
                                      OR (json_valid(interest_categories)
                                          AND json_array_length(interest_categories) BETWEEN 2 AND 3)),
 
-  -- a 写。装配单，**固定六个键，多一个都不许加**。渲染组件只吃这一个字段。
-  -- 形状：{"base","skin":{"color","pattern"},"cloth","hat","glasses","face"}
+  -- a 写。装配单，**固定四个键，多一个都不许加**。渲染组件只吃这一个字段。
+  -- 形状：{"cloth","hat","glasses","face"}
+  -- 11-16 删掉 base / skin.color / skin.pattern：刘看山 IP 只有一种体型与一套配色。
   -- 键数与键名校验在下面的触发器里（CHECK 写不了子查询）。
   assembly            TEXT    NOT NULL,
 
@@ -82,37 +83,33 @@ CREATE TABLE dog (
   created_at          TEXT    NOT NULL
 );
 
--- 装配单校验：恰好六个键，且这六个键都在。写在触发器里因为 CHECK 不许子查询。
+-- 装配单校验：恰好四个键，且这四个键都在。写在触发器里因为 CHECK 不许子查询。
+--
+-- json_type(...) IS NULL 这个写法必须保留：它区分「键不存在」和「值是 JSON null」。
+-- hat / glasses 允许 null（不戴），靠的就是 json_type 对 JSON null 返回字符串 'null'
+-- 而不是 SQL NULL。改成 json_extract 会把「不戴」误判成「缺键」。
 CREATE TRIGGER dog_assembly_ins BEFORE INSERT ON dog
 BEGIN
   SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好六个键：base / skin / cloth / hat / glasses / face')
+    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
   WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 6
-     OR json_type(NEW.assembly, '$.base')   IS NULL
-     OR json_type(NEW.assembly, '$.skin')   IS NULL
+     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
      OR json_type(NEW.assembly, '$.cloth')  IS NULL
      OR json_type(NEW.assembly, '$.hat')    IS NULL
      OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL
-     OR json_type(NEW.assembly, '$.skin.color')   IS NULL
-     OR json_type(NEW.assembly, '$.skin.pattern') IS NULL;
+     OR json_type(NEW.assembly, '$.face')   IS NULL;
 END;
 
 CREATE TRIGGER dog_assembly_upd BEFORE UPDATE OF assembly ON dog
 BEGIN
   SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好六个键：base / skin / cloth / hat / glasses / face')
+    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
   WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 6
-     OR json_type(NEW.assembly, '$.base')   IS NULL
-     OR json_type(NEW.assembly, '$.skin')   IS NULL
+     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
      OR json_type(NEW.assembly, '$.cloth')  IS NULL
      OR json_type(NEW.assembly, '$.hat')    IS NULL
      OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL
-     OR json_type(NEW.assembly, '$.skin.color')   IS NULL
-     OR json_type(NEW.assembly, '$.skin.pattern') IS NULL;
+     OR json_type(NEW.assembly, '$.face')   IS NULL;
 END;
 
 CREATE INDEX idx_dog_session ON dog(session_id);
@@ -253,6 +250,12 @@ CREATE TABLE find (
   authority_level INTEGER CHECK (authority_level IS NULL OR authority_level BETWEEN 1 AND 4),
   vote_up_count   INTEGER CHECK (vote_up_count IS NULL OR vote_up_count >= 0),
 
+  -- c 写。11-16 新增。这条发现配的图，存**路径**不存二进制。
+  -- 三种 kind 都可以有：scene 是生成或拼装的场景图，moment 是生活片段图，zhihu 一般没有。
+  -- 可空。**空不等于失败** —— 生成失败走纯文字兜底，界面不出现空白框（errors.md）。
+  -- 同一条发现只许有一个路径，生成一次就不再变：换设备打开读的是同一张。
+  asset_path      TEXT,
+
   created_at      TEXT    NOT NULL,
 
   CHECK (
@@ -317,6 +320,9 @@ CREATE TABLE exchange (
 
 CREATE INDEX idx_exchange_inbox ON exchange(to_dog, delivered_at);
 CREATE INDEX idx_exchange_pend  ON exchange(to_dog, deliver_after_trip_seq);
+
+-- c3 v2：按发送方读取全部投递状态；不改变任何列的写入方。
+CREATE INDEX idx_exchange_outbox ON exchange(from_dog, created_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- message · 归来的一句话（2.3）
@@ -477,3 +483,7 @@ CREATE TABLE relation (
 );
 
 CREATE UNIQUE INDEX uniq_relation_pair ON relation(dog_a, dog_b);
+
+-- c3 v2：关系两端都能按最近相遇读取，保留原有唯一索引与约束。
+CREATE INDEX idx_relation_dog_a_recent ON relation(dog_a, last_met_at DESC, id);
+CREATE INDEX idx_relation_dog_b_recent ON relation(dog_b, last_met_at DESC, id);

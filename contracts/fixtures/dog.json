@@ -9,8 +9,6 @@
       "personality_tags": ["好奇", "看物", "直给"],
       "interest_categories": ["自然风景", "城市角落"],
       "assembly": {
-        "base": "tpl-a",
-        "skin": { "color": "brown", "pattern": "spot" },
         "cloth": "hoodie",
         "hat": "beanie",
         "glasses": null,
@@ -27,8 +25,6 @@
       "personality_tags": ["恋家", "看人", "婉转"],
       "interest_categories": ["人与故事", "手作与食物", "动物与植物"],
       "assembly": {
-        "base": "tpl-b",
-        "skin": { "color": "cream", "pattern": "stripe" },
         "cloth": "sweater",
         "hat": null,
         "glasses": "round",

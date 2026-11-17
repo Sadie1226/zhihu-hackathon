@@ -3,22 +3,26 @@
 #
 #   bash scripts/check-all.sh
 #
-# 三件事：契约一致 + 投递器正确 + 禁词干净。
+# 四件事：契约一致 + 投递器正确 + 无密钥泄漏 + 禁词干净。
 # 在仓库根跑。需要 node 22+（node:sqlite 是 22 才有的）。
 
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 FAIL=0
 
-echo "══ 1/3 契约自检（schema + fixtures + 邀请三态）"
+echo "══ 1/4 契约自检（schema + fixtures + 邀请三态）"
 node scripts/check-contracts.mjs || FAIL=1
 
 echo
-echo "══ 2/3 投递器自检（时间语义 + 幂等）"
+echo "══ 2/4 投递器自检（时间语义 + 幂等）"
 node scripts/check-mailbox.mjs || FAIL=1
 
 echo
-echo "══ 3/3 禁词检查"
+echo "══ 3/4 密钥扫描"
+bash scripts/check-secrets.sh || FAIL=1
+
+echo
+echo "══ 4/4 禁词检查"
 # 12 个禁词，出现在用户可见的地方就算违规，包括按钮、空状态、toast、报错文案。
 # 「太棒了」也在里面 —— 表扬同样是评价，会让「不回应」显得像做错了事。
 PAT='连续|打卡|天数|坚持|别忘|快回来|还剩|已过期|差一点|加油|你还没|已经很久|太棒'
