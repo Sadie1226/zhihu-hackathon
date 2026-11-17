@@ -1,5 +1,5 @@
 /**
- * rules.ts 的用例。15 正例 + 13 反例，跑法：
+ * rules.ts 的用例。15 正例 + 16 反例，跑法：
  *
  *   node --experimental-strip-types lib/social/rules.test.ts
  *
@@ -305,6 +305,48 @@ expectCode(
     kind: 'greeting',
     payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' },
     deliveredAt: '2026-11-17T00:00:00Z',
+  },
+  'FORBIDDEN_KEY',
+)
+
+// 19b–19d：越权字段共五个，18/19 只覆盖了两个。
+// 缺的这三条不是补代码，是补证据 —— 代码里 OVERREACH_KEYS 早就有，但没测就等于没验。
+
+// 19b. repliedAt —— b 独占。d 写它 = 狗替主人回话
+expectCode(
+  '19b 传 repliedAt',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'greeting',
+    payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' },
+    repliedAt: '2026-11-17T00:00:00Z',
+  },
+  'FORBIDDEN_KEY',
+)
+
+// 19c. readAt —— e 独占
+expectCode(
+  '19c 传 readAt',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'greeting',
+    payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' },
+    readAt: '2026-11-17T00:00:00Z',
+  },
+  'FORBIDDEN_KEY',
+)
+
+// 19d. id —— 主键由库生成，草稿带 id 就是允许调用方指定身份
+expectCode(
+  '19d 传 id',
+  {
+    id: 'ex_made_up',
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'greeting',
+    payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' },
   },
   'FORBIDDEN_KEY',
 )
