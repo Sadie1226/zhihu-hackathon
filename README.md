@@ -109,7 +109,7 @@
 
 ## 五、`team/` · 当日交付存放区
 
-**往 `team/日期/你的字母/` 里放东西，放完不要再改。** 索引看 [`team/STATUS.md`](team/STATUS.md)，那个只有 a 改。
+**交付走你的分支，文件放 `team/日期/你的字母/`，放完不要再改。** 目录位置是推荐写法，不是验收门槛 —— 验收看「东西在不在、说没说清」，见 [`team/README.md`](team/README.md) 第三节第〇条。索引看 [`team/STATUS.md`](team/STATUS.md)，那个只有 a 改。
 
 ```
 team/
