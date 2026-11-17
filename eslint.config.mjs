@@ -7,7 +7,7 @@ export default defineConfig([
   ...tseslint.configs.recommended,
   { languageOptions: { globals: {
     console: 'readonly', process: 'readonly', Buffer: 'readonly',
-    URL: 'readonly', Response: 'readonly',
+    URL: 'readonly', Response: 'readonly', Request: 'readonly', AbortController: 'readonly',
   } } },
   globalIgnores(['.next/**', '.local/**', 'data/**', 'node_modules/**', 'next-env.d.ts']),
 ])
