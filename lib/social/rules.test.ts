@@ -8,10 +8,12 @@
  *
  * 两处对原规格的调整，写在前面：
  *
- *   1. **fixture 的 ex_gift 缺 imagePath。** types.ts 11-16 晚加了
- *      `imagePath: string | null`（必填键），c3 的 fixture 写在它之前，没跟上。
- *      测试里手动补 `imagePath: null` 让它能过 —— **这是数据缺口，不是代码问题**，
- *      已记进待报清单，要和昨天的「payload 缺 kind」一起提给 c。
+ *   1. **测试对象自带 imagePath，不是数据缺口。** types.ts 11-16 晚加了
+ *      `imagePath: string | null`（必填键）；本分支基于 `43d623f`，那版 fixture
+ *      还没有这个键。**main 上已补齐**（`ex_gift` 带真实图路径
+ *      `/assets/gen/fixture-yarn.webp`），所以不用找 c 补，只是基线旧。
+ *      测试里各对象自带 `imagePath: null`，跑在哪个基线都通。
+ *      —— 2026-11-17 更正：初版注释误报成「c 的数据缺口」，已撤回。
  *
  *   2. **反例 26 改了内容。** 原方案是「sourceMode: 'live' 但 sourceUrl: null」，
  *      但 sourceMode 还没批，传了会先被 UNKNOWN_KEY 拒，测不到那条规则。
@@ -70,8 +72,8 @@ function expectCode(
 
 console.log('\n【正例】fixtures/exchange.json 四条')
 
-// 1. ex_gift —— ⚠️ 原 fixture 缺 imagePath，补 null（数据缺口，见文件头）
-expectOk('1 ex_gift（补 imagePath: null）', {
+// 1. ex_gift —— 基线 43d623f 早于 imagePath 引入，测试对象自带该键
+expectOk('1 ex_gift（自带 imagePath: null）', {
   fromDog: 'dog_seed_07',
   toDog: 'dog_owner',
   kind: 'gift',
@@ -186,8 +188,8 @@ expectOk('10 d1-6 阿盐→灰灰 greeting 我这边晴', {
   payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' },
 })
 
-// 11. 例7 gift · 婉转 —— 年糕 → 麦子（补 imagePath）
-expectOk('11 d1-7 年糕→麦子 gift 毛线（补 imagePath: null）', {
+// 11. 例7 gift · 婉转 —— 年糕 → 麦子（测试对象自带 imagePath）
+expectOk('11 d1-7 年糕→麦子 gift 毛线', {
   fromDog: 'dog_niangao',
   toDog: 'dog_maizi',
   kind: 'gift',
