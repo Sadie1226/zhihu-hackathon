@@ -74,6 +74,30 @@ export type ReplyKind = 'text' | 'photo' | 'both'
 /** 邀请的三种状态。**没有存进库，全部从别的表推出来**（见 schema.sql 的 v_invitation_state）。 */
 export type InvitationState = 'waiting' | 'replied' | 'gone_alone'
 
+/** 事件候选条件；any 表示不限制。 */
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter' | 'any'
+export type EventWeather = 'any' | 'clear' | 'rain' | 'snow'
+export type TimeOfDay = 'any' | 'morning' | 'dusk' | 'night'
+export type PlaceTag = 'street' | 'stall' | 'riverside' | 'bookstore'
+
+/** D 维护的 12 字段事件候选；SQL JSON 文本在读取边界解析，enabled 0/1 转 boolean。 */
+export interface Event {
+  id: string
+  code: string
+  text: string
+  season: Season
+  weather: EventWeather
+  timeOfDay: TimeOfDay
+  /** [] 不限场景；非空时与 availablePlaces 至少有一个交集。 */
+  placeTags: PlaceTag[]
+  matchTags: InterestCategory[]
+  weight: number
+  cooldownDays: number
+  /** E2c 提供可用素材引用前为 {}，本次不收窄对象内部结构。 */
+  assetRefs: Record<string, unknown>
+  enabled: boolean
+}
+
 // ===========================================================================
 // 二、装配单 —— 固定四个键，多一个都不许加
 // ===========================================================================
