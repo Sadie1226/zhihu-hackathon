@@ -176,16 +176,21 @@ export interface Snapshot {
   createdAt: IsoTime
 }
 
-/** 心愿（2.2）。写入方：b。c 只读 category 做搜索入口。 */
+export type WishSource = 'owner' | 'collection'
+
+/** 心愿（2.2）。写入方：b；来源由可信服务端确定。c 只读有效心愿做搜索入口。 */
 export interface Wish {
   id: string
   dogId: string
-  /** 主人原话，1–200 字。**只存在这里，不进 snapshot。** */
+  /** owner 是主人原话，collection 是授权收藏提取的主题；1–200 字，不进 snapshot。 */
   text: string
   category: InterestCategory
   createdAt: IsoTime
   /** 撤销填这一刻，不物理删除（手账要能翻回去）。 */
   revokedAt: IsoTime | null
+  source: WishSource
+  /** owner 为 null；collection 为服务端校验并规范化的知乎内容 URL。 */
+  sourceUrl: string | null
 }
 
 /** 一次出行（3.1）。写入方：c。 */
@@ -200,6 +205,8 @@ export interface Trip {
   /** 真正出发那一刻。**投递判断只认它。** */
   startedAt: IsoTime | null
   endedAt: IsoTime | null
+  /** 出发时选定的心愿；旧记录/没有心愿为 null。撤销不清除历史关联。 */
+  wishId: string | null
 }
 
 /** 一条发现（3.2 / 3.4）。写入方：c。 */

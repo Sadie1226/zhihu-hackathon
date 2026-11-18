@@ -23,7 +23,8 @@ export function initializeDatabase(
   migrations: readonly Migration[] = defaultMigrations,
 ): void {
   for (const [index, migration] of migrations.entries()) {
-    if (migration.version !== index + 2 || !migration.name || !migration.sql.trim()) {
+    if (migration.version !== index + 2 || !migration.name ||
+        (typeof migration.sql !== 'function' && !migration.sql.trim())) {
       throw new Error('Migrations must be consecutive versions starting at 2')
     }
   }
@@ -49,7 +50,9 @@ export function initializeDatabase(
     }
     for (const migration of migrations) {
       if (migration.version <= version) continue
-      db.exec(migration.sql)
+      // Resolve additive column DDL under the same write lock. Fresh schemas may
+      // already contain these columns; historical databases still need ALTER.
+      db.exec(typeof migration.sql === 'function' ? migration.sql(db) : migration.sql)
       db.exec(`PRAGMA user_version = ${migration.version}`)
       version = migration.version
     }
