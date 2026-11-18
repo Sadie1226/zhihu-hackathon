@@ -33,7 +33,7 @@ window.HomeScene=(()=>{
   const close=()=>{HomeAdapters.ui({phase:'close',target:panel,reducedMotion:motionOff()});panel.hidden=true;backdrop.hidden=true;trigger?.focus()};
   const field=(label,id,placeholder)=>`<label for="${id}">${label}</label><textarea id="${id}" rows="3" placeholder="${placeholder}"></textarea>`;
   function open(id,button){
-   trigger=button;HomeAdapters.ui({phase:'open',id,target:panel,reducedMotion:motionOff()});let title='',body='';
+   trigger=button;HomeAdapters.ui({phase:'open',id,target:panel,reducedMotion:motionOff()});let title,body;
    const custom=HomeAdapters.feature(id);
    if(custom){title=custom.label;body=custom.render({draft,esc,save});}
    else

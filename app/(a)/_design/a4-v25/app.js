@@ -6,9 +6,9 @@
   const state=Object.hasOwn(C.pages[page].states,params.get('state'))?params.get('state'):Object.keys(C.pages[page].states)[0];
   const emptyDraft=()=>({name:'',interests:[],traits:Object.fromEntries(C.traits.map(t=>[t.key,50]))});
   let draft=emptyDraft();
-  try {const saved=JSON.parse(sessionStorage.getItem('kanshan-a4-v25'));if(saved)draft={...draft,...saved,traits:{...draft.traits,...saved.traits}};}catch{}
+  try {const saved=JSON.parse(sessionStorage.getItem('kanshan-a4-v25'));if(saved)draft={...draft,...saved,traits:{...draft.traits,...saved.traits}};}catch{/* 存储不可用时忽略：草稿只在本次会话有效，不阻断流程 */}
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const save=()=>{try{sessionStorage.setItem('kanshan-a4-v25',JSON.stringify(draft));}catch{}};
+  const save=()=>{try{sessionStorage.setItem('kanshan-a4-v25',JSON.stringify(draft));}catch{/* 同上：写不进去也不阻断 */}};
   const href=(p,s='')=>`?page=${p}${s?'&state='+s:''}`;
   const go=(p,s='')=>{save();location.href=href(p,s)};
   const btn=(text,action,primary=false)=>`<button type="button" data-action="${action}" class="${primary?'primary':''}">${text}</button>`;
@@ -34,7 +34,7 @@
       empty:['留白，也可以是开始。','授权成功。这次读取成功，但基础资料部分字段为空，收藏、关注和创作暂无可用内容。'],
       partial:['有些资料，暂时没读到。','账号身份已确认；收藏和创作读取失败。这与“没有内容”不同。']
     }[state];
-    let detail='',actions='';
+    let detail,actions;
     if(state==='entry'){
       detail=notice('带着一点你的兴趣，开始认识彼此。',`<div class="scope"><div><strong>基础资料</strong><span>确认账号身份与基本信息</span></div><div><strong>收藏</strong><span>参考你愿意收好的内容</span></div><div><strong>关注</strong><span>参考你持续留意的方向</span></div><div><strong>创作</strong><span>参考你公开表达的主题</span></div></div><p class="fine">用于注册和初始性格生成。你手动调节的倾向优先于知乎资料；穿搭由你自己选。</p>`);
       actions=btn('用知乎账号开始 →','authorize',true);

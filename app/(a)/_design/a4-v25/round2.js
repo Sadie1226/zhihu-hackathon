@@ -50,8 +50,12 @@ window.RoundTwo=(()=>{
     $('#wardrobe-options').dataset.count=c.items.length;
     $('#wardrobe-options').innerHTML=c.items.map(([value,label])=>`<button type="button" class="outfit-option" data-outfit="${value}" aria-pressed="${draft.assembly[tab]===value}" ${rain?'disabled':''}><img src="${W().icon(tab,value)}" width="96" height="96" alt=""><span>${label}</span>${draft.assembly[tab]===value?'<small>已选</small>':''}</button>`).join('');
     $('#wardrobe-rule').textContent='当前使用参考看山，选项只保留草稿，暂停叠加服装素材。';
-    /* Original rules retained in catalogue/adapter; no misleading outfit preview. */
-    const futureRule=rain?'雨衣自带帽兜，独立帽子暂停显示；换回其他衣服会恢复原选择。':tab==='face'?'选择它的初始表情；创建后固定，不代表实时心情。':tab==='glasses'?'太阳镜遮住眼睛，圆框和方框保留眼神。':'点选后，左侧看山会换上你的选择。';
+    /* Original rules retained in catalogue/adapter; no misleading outfit preview.
+       以下文案是 E2b 已确认的视觉决定（V1 墨镜遮眼 / V3 雨衣自带帽兜），换装恢复时直接启用：
+       raincoat → 雨衣自带帽兜，独立帽子暂停显示；换回其他衣服会恢复原选择。
+       face     → 选择它的初始表情；创建后固定，不代表实时心情。
+       glasses  → 太阳镜遮住眼睛，圆框和方框保留眼神。
+       其他      → 点选后，左侧看山会换上你的选择。 */
     $('#wardrobe-options').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{draft.assembly[tab]=b.dataset.outfit;save();updateWardrobe()}));
     $('#outfit-preview').innerHTML=W().render(draft.assembly);
     $('#mobile-outfit-preview').innerHTML=W().render(draft.assembly)+'<span>参考看山<br>服装暂不叠加。</span>';
