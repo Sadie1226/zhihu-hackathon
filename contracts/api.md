@@ -28,7 +28,7 @@
 判断到达：   收件狗存在一次 trip，started_at 不为 null 且 seq >= deliver_after_trip_seq
 ```
 
-打比方：**不是「明天到」，是「它下次出门就带回来」。** 时间拨盘拨的是出行次数，不碰时钟。
+打比方：**不是「明天到」，是「它下次出门就带回来」。** 投递仍只看出行序号。11-17 A 裁定：演示时钟可向前推进，用于后续新出行的时间戳，不改写历史时间；C11 实现拨盘，C4 不开放客户端时间参数。
 
 ---
 
@@ -108,7 +108,7 @@ GET    /api/dogs/:id/wishes?includeRevoked=false                                
 ```
 POST /api/dogs/:id/trips
 入： { trigger: TripTrigger }       出：{ trip: Trip }         ← status=pending, seq 自动 +1
-错： RATE_LIMITED（一天已两次）、CONFLICT（上次还没结束）
+错： CONFLICT（上海当日已出发两次、上次还没结束或入参不合法）、NOT_FOUND（狗不存在或不属于当前 session）
 ```
 
 ```
@@ -131,6 +131,19 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 ```
 
 **轮询 700ms，不用 SSE**（D-005）。`GET /api/trips/:id` 返回 `status`，前端据此换四态。
+
+#### C4 实现细则（11-17，沿用现有 Trip 字段）
+
+- `GET /api/trips/:id` 出参为 `{ trip: Trip }`，列表默认 `limit=10`，允许 1–100 整数，按 `seq DESC` 返回；空集合 `{ trips: [] }`。
+- 五个路由全部验证匿名 cookie 所属狗；缺少 cookie、跨 session、记录不存在均 HTTP 404 / `NOT_FOUND`。所有响应 `Cache-Control: no-store`，读取不触发状态更新或投递。
+- POST 接受 JSON 对象：创建只有 `trigger`，开始为 `{}`，结束只有 `status`。不接收 `session_id`、seq 或时间戳；不允许跨来源 POST。参数/状态/额度冲突均 HTTP 409 / `CONFLICT`；数据库不可用返回脱敏 HTTP 503 / `NETWORK`。成功 HTTP 200。
+- A 裁定：UTC 存储；自然日按上海固定 +8 小时切分，仅统计 `started_at IS NOT NULL`，`date(started_at, '+8 hours')` 为归属日。pending 不扣次数，failed/timeout 已出发则计数，跨午夜结束仍归出发日。每日上限 2；沿用 `TRIP_MIN_GAP_HOURS=6`，出发时检查间隔。
+- 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务、当日额度、分配 `MAX(seq)+1` 并插入；出发在同类事务内重新检查额度及间隔，再写 running/started_at 并调用现有投递器。投递失败整笔回滚。
+- 重复 start：running 返回原 trip 和 `delivered: []`，不改 started_at、不再投递；终态不能重新开始。只有 running 可进入终态；重复相同终态返回既有数据且不改 ended_at，其他终态切换返回 CONFLICT。
+- finish 只读已有 finds（包含 assetPath），B 未接入前 `message: null`，不伪造发现；不写 replied_at 或 read_at。
+- `timeout` 可显式结束；自动超时毫秒数未获裁定，不设置默认值。服务端执行器可传 `timeoutIfDue(id, sessionId, timeoutMs)`，未传即禁用；C4 不启动调度器，不在 GET 中隐式结束任务。
+- 共用会话：`lib/auth/session.ts` 的 `ensureAnonymousSession` 给 A 领养使用，`readSessionId` 给服务端鉴权使用。cookie 为随机 32 字节，HttpOnly、SameSite=Lax、Path=/，生产 Secure；数据库只存 SHA-256 派生 sessionId，不向客户端暴露 sessionId。
+- 前端调用 `lib/trips/poll.ts` 的 `pollTrip(id, { onTrip, onError, signal? })`；立即读一次，之后每次响应后 700ms 再读，无重叠请求；三个终态停止，HTTP/网络错误回调后停止，返回停止函数供卸载清理。
 
 ### 4. 发现（c 实现）
 

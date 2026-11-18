@@ -180,7 +180,7 @@ CREATE TABLE trip (
 
   -- c 写。**这只狗的第几次出行，从 1 开始，只增不减。**
   -- 这是投递机制的计量单位：exchange.deliver_after_trip_seq 就是拿它比的。
-  -- 时间拨盘拨一次 = seq 加一，不碰时钟。
+  -- 每次创建新 trip，seq 加一。演示可推进服务端时钟供新出行使用，不改历史时间。
   seq        INTEGER NOT NULL CHECK (seq >= 1),
 
   -- c 写。pending 建立未出发；running 已经在路上；done 正常回来；
