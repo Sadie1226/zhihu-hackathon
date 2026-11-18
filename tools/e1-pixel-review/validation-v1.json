@@ -1,0 +1,120 @@
+{
+  "browser": "Chrome/149.0.7827.115",
+  "desktop": [
+    {
+      "page": "home",
+      "file": "1116-e1-小屋关键稿-v1.png",
+      "bytes": 878540,
+      "width": 1600,
+      "height": 1200,
+      "scrollWidth": 1600,
+      "scrollHeight": 1200,
+      "title": "豆子的小屋",
+      "images": [
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "page": "trip",
+      "file": "1116-e1-旅途关键稿-v1.png",
+      "bytes": 1011152,
+      "width": 1600,
+      "height": 1200,
+      "scrollWidth": 1600,
+      "scrollHeight": 1200,
+      "title": "沿着小巷，带回一点见闻",
+      "images": [
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "page": "mail",
+      "file": "1116-e1-朋友来信关键稿-v1.png",
+      "bytes": 258957,
+      "width": 1600,
+      "height": 1200,
+      "scrollWidth": 1600,
+      "scrollHeight": 1200,
+      "title": "朋友捎来的东西",
+      "images": [
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        },
+        {
+          "loaded": true,
+          "width": 1536,
+          "height": 1024
+        }
+      ]
+    }
+  ],
+  "mobile": [
+    {
+      "page": "home",
+      "file": "1116-e1-小屋手机稿-v1.png",
+      "bytes": 185074,
+      "width": 390,
+      "scrollWidth": 390,
+      "contentHeight": 1515
+    },
+    {
+      "page": "trip",
+      "file": "1116-e1-旅途手机稿-v1.png",
+      "bytes": 217705,
+      "width": 390,
+      "scrollWidth": 390,
+      "contentHeight": 1634
+    },
+    {
+      "page": "mail",
+      "file": "1116-e1-朋友来信手机稿-v1.png",
+      "bytes": 55939,
+      "width": 390,
+      "scrollWidth": 390,
+      "contentHeight": 1260
+    }
+  ],
+  "checks": [
+    "Visible local controls inspected",
+    "Relay sample notice, in-preview draft retention, no-send result and close focus return",
+    "Missing-photo placeholder; sent/in-transit is not an arrived incoming message and does not expose payload",
+    "Three pages: empty/failed/degraded visible and loading resolves into explicit degradation within the configured 1.9s feedback window",
+    "Fixture Zhihu content marked as example; no fake original links"
+  ],
+  "exceptions": []
+}
