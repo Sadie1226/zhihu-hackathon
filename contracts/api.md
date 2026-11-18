@@ -48,6 +48,7 @@
 | 邀请 `invitation` | **b** | d、e |
 | 邻里关系、熟悉度、邻居池、`is_sample` | **d** | e、a |
 | 事件池 | **d** | c |
+| 出行遇到事件的历史 `trip_event` | **c** | d |
 | 交换 / 礼物的业务内容与 `deliver_after_trip_seq` | **d** | e、b |
 | **`delivered_at`** | **c（投递器）** | d、e |
 | **`replied_at`** + 回应动作 | **b** | d、e |
@@ -474,3 +475,45 @@ POST /api/gen/image
 | 降级 | 用的是 cache 或 fixture，**界面上显形** |
 
 **断网时朋友圈和手账必须还能打开**（都是本地数据）。这条按阻断缺陷处理。
+
+---
+
+## 七、事件数据库契约（2026-11-18，内部数据访问，不新增 HTTP 路由）
+
+`event` 是 D 维护的候选池，尚未发生，不得当作 `find` 或真实出行经历。
+`trip_event` 是 C 独占写入的历史事实，D 只读。本轮只交数据库基础，未实现 pickEvent、抽签、冷却判断或渲染。
+
+### event：固定 12 列
+
+| SQL 列 | TypeScript Event 字段 | 约束 / 默认值 |
+| --- | --- | --- |
+| id | id | 非空主键 |
+| code | code | 非空且唯一，D 的稳定标识 |
+| text | text | 1–40 个 Unicode 字符，不接受空字符串或纯空格 |
+| season | season | spring / summer / autumn / winter / any |
+| weather | weather | any / clear / rain / snow |
+| time_of_day | timeOfDay | any / morning / dusk / night |
+| place_tags | placeTags | JSON 数组，元素限 street / stall / riverside / bookstore；默认 [] |
+| match_tags | matchTags | JSON 数组，元素限现有六个 INTEREST_CATEGORIES；默认 [] |
+| weight | weight | 数值 > 0，默认 30 |
+| cooldown_days | cooldownDays | 数值 >= 0，默认 7 |
+| asset_refs | assetRefs | JSON 对象，默认 {}；E2c 交可用引用前保留 {} |
+| enabled | enabled | SQL 0/1，默认 1；TypeScript 为 boolean |
+
+**没有 created_at。** 所有列非 NULL。JSON 在数据库中为 TEXT，读取边界解析为数组/对象，snake_case 映射为 camelCase。JSON 元素在插入和更新时均由触发器检查；不能只校验 JSON 语法。
+
+`place_tags=[]` 表示无地点限制，不能用来表示「素材尚未填」。非空数组与 `availablePlaces` 有非空交集时才匹配；当 `availablePlaces=[]` 时只有不限地点的候选适用。找不到匹配事件返回 `null`，属于正常结果，不是错误，也不制造替代事件。这里只确定后续选择器的语义，本轮没有运行筛选或加权随机。
+
+`match_tags` 复用「自然风景、城市角落、手作与食物、人与故事、动物与植物、冷知识」，不引入新的兴趣字典。`asset_refs` 的对象内部结构待 E2c 的素材引用对齐；不得为凑素材清空 place_tags。
+
+### trip_event：固定 4 列
+
+`trip_id` → trip.id；`event_id` → event.id；`dog_id` → dog.id；`happened_at` 为 UTC ISO-8601 TEXT。四列非空，主键 `(trip_id,event_id)`，索引 `idx_trip_event_dog(dog_id,happened_at)`。不新增独立 id 或其他时间列，不设置级联删除。C 后续写入时必须使用该 trip 所属 dog；外键校验三条引用存在，业务归属由 C 的写入方检查。
+
+### 初始化与 D 导入
+
+使用现有 `lib/db/bootstrap.ts` 的 `openDatabase()`，版本从 `PRAGMA user_version=1` 增量到 **2**。迁移仅新增两表、JSON 触发器和历史查询索引；新库与旧库使用相同约束，所有 DDL 和版本号在同一事务内提交，失败回滚。已有库不能重复执行整份 schema.sql。
+
+迁移不自动导入事件。`contracts/fixtures/event.json` 只有显式 `sourceMode:"fixture"` 元数据和空 `events` 数组，不代表 D 的生产事件池。
+
+D 使用明确的 12 列 INSERT/UPSERT，在服务端连接上启用 foreign_keys 后导入。当前 `d2c-events` 的 `1117-d2c-事件池三十条-v0.sql` 仍写 13 列：需由 D 从列清单及对应 VALUES 中去掉 created_at；其余 12 列业务数据不需要改写。C 不修改或覆盖该历史 SQL。

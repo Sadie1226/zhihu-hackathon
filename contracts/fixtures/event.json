@@ -1,0 +1,5 @@
+{
+  "sourceMode": "fixture",
+  "note": "空事件候选夹具，不代表真实出行经历。D 的 30 条事件由 D 单独导入；asset_refs 在 E2c 提供可用引用前使用空对象。",
+  "events": []
+}

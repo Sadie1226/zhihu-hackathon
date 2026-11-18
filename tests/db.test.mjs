@@ -5,6 +5,7 @@ import { resolve, join, sep } from 'node:path'
 import { spawn } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { APPLICATION_ID, BUSY_TIMEOUT_MS, initializeDatabase, openDatabase } from '../lib/db/bootstrap.ts'
+import { migrations } from '../lib/db/migrations.ts'
 
 const root = resolve('.local/c2-tests')
 mkdirSync(root, { recursive: true })
@@ -26,11 +27,11 @@ function insertMarker(db) {
 test('new file: contract tables, foreign keys, WAL, timeout and version are initialized', (t) => {
   const db = openDatabase(temporary(t))
   try {
-    assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 10)
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 12)
     assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1)
     assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal')
     assert.equal(db.prepare('PRAGMA busy_timeout').get().timeout, BUSY_TIMEOUT_MS)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2)
     assert.equal(db.prepare('PRAGMA application_id').get().application_id, APPLICATION_ID)
     assert.throws(() => db.exec("INSERT INTO snapshot(dog_id,version,personality_tags,interest_categories,created_at) VALUES('missing',1,'[1,2,3]','[1,2]','test')"), /FOREIGN KEY/)
   } finally { db.close() }
@@ -86,10 +87,11 @@ test('additive migration runs once, preserves data and rejects application downg
   let db = openDatabase(path)
   insertMarker(db)
   db.close()
-  const changes = [{ version: 2, name: 'test index', sql: 'CREATE INDEX idx_c2_test_name ON dog(name)' }]
+  const changes = [...migrations, { version: 3, name: 'test index', sql: 'CREATE INDEX idx_c2_test_name ON dog(name)' }]
   db = openDatabase(path, changes)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3)
+    assert.ok(db.prepare("SELECT 1 FROM sqlite_schema WHERE name='idx_c2_test_name'").get())
     assert.equal(db.prepare('SELECT COUNT(*) n FROM dog').get().n, 1)
   } finally { db.close() }
   db = openDatabase(path, changes)
@@ -102,10 +104,10 @@ test('failed additive migration preserves old version, schema and data', (t) => 
   const db = openDatabase(path)
   insertMarker(db)
   try {
-    assert.throws(() => initializeDatabase(db, () => '', [{
-      version: 2, name: 'broken test migration', sql: 'CREATE INDEX idx_partial ON dog(name); INVALID SQL;',
+    assert.throws(() => initializeDatabase(db, () => '', [...migrations, {
+      version: 3, name: 'broken test migration', sql: 'CREATE INDEX idx_partial ON dog(name); INVALID SQL;',
     }]))
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2)
     assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE name='idx_partial'").get().n, 0)
     assert.equal(db.prepare('SELECT COUNT(*) n FROM dog').get().n, 1)
   } finally { db.close() }
@@ -135,6 +137,6 @@ test('parallel processes can initialize the same new database safely', async (t)
     child.on('exit', (code) => code === 0 ? resolveChild() : reject(new Error(stderr)))
   })))
   const db = openDatabase(path)
-  try { assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1) }
+  try { assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2) }
   finally { db.close() }
 })

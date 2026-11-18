@@ -7,7 +7,7 @@
  * 它检查以下项目，**不通过就退出码 1**（不等于 HTTP 或全部产品规则验收）：
  *   1. schema.sql 能建库，且外键真的开着
  *   2. 每一条约束真的拦得住（故意塞错数据，必须报错）
- *   3. 十份 fixtures 能逐条插进去，一条都不许失败
+ *   3. 十一份 fixtures 能逐条插进去（含空 event 夹具），一条都不许失败
  *   4. personality_tags 的三条规矩：3 个、都在 12 个标签里、来自 3 个不同维度、不含互斥对
  *   5. fixtures 里每只狗都满足上面第 4 条（这条 SQL 的 CHECK 写不了，只能在这里查）
  *   6. 邀请三态视图推得对（它在等 / 已回应 / 它自己去了）
@@ -49,7 +49,7 @@ const tables = db
   .prepare("select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name")
   .all()
   .map((r) => r.name)
-const EXPECTED_TABLES = ['dog', 'exchange', 'find', 'invitation', 'message', 'relation', 'reply', 'snapshot', 'trip', 'wish']
+const EXPECTED_TABLES = ['dog', 'event', 'exchange', 'find', 'invitation', 'message', 'relation', 'reply', 'snapshot', 'trip', 'trip_event', 'wish']
 if (JSON.stringify(tables) === JSON.stringify(EXPECTED_TABLES)) {
   ok(`${tables.length} 张表：${tables.join(' ')}`)
 } else {
@@ -228,13 +228,13 @@ mustPass('关系按字典序排列能插', () =>
               values ('rel_1','dog_b','dog_t','2026-11-16T03:00:00Z','2026-11-16T03:00:00Z')`).run())
 
 // ---------------------------------------------------------------- 3. fixtures
-console.log('\n3. 十份 fixtures 逐条插进去')
+console.log('\n3. 十一份 fixtures 逐条插进去（event 为显式空夹具）')
 
 // 每份 fixtures 的顶层数组键名（表名 → 键名）
 const FX_KEYS = {
   dog: 'dogs', snapshot: 'snapshots', wish: 'wishes', trip: 'trips', find: 'finds',
   exchange: 'exchanges', message: 'messages', reply: 'replies', invitation: 'invitations',
-  relation: 'relations',
+  relation: 'relations', event: 'events',
 }
 
 const fx = {}
@@ -257,7 +257,7 @@ for (const e of fx.exchange ?? []) {
 }
 
 // 清空，用 fixtures 重建一遍，证明 fixtures 和 schema 是一套
-for (const t of ['reply', 'invitation', 'relation', 'message', 'exchange', 'find', 'trip', 'wish', 'snapshot', 'dog']) {
+for (const t of ['trip_event', 'event', 'reply', 'invitation', 'relation', 'message', 'exchange', 'find', 'trip', 'wish', 'snapshot', 'dog']) {
   db.exec(`delete from ${t}`)
 }
 
@@ -307,6 +307,14 @@ for (const r of (fx.relation ?? [])) {
     .run(r.id, a, b, r.first_met_at, r.last_met_at, r.met_count ?? 1, r.is_blocked ? 1 : 0, r.blocked_at ?? null)
 }
 ok(`relation: ${(fx.relation ?? []).length} 条插进去`)
+
+mustPass('event 空夹具不伪造事件内容或历史事实', () => {
+  assert.deepEqual(fx.event, [])
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM event').get().n, 0)
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM trip_event').get().n, 0)
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM pragma_table_info('event')").get().n, 12)
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM pragma_table_info('trip_event')").get().n, 4)
+})
 
 // ---------------------------------------------------------------- 4/5. 标签规矩
 console.log('\n4. 性格标签的三条规矩（SQL 的 CHECK 写不了，只能在这里查）')
