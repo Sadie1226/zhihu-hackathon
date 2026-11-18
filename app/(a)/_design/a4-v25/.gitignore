@@ -1,0 +1,5 @@
+node_modules/
+*-checks.json
+排版核对.json
+home-*.png
+/*.png

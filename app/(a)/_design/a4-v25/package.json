@@ -1,0 +1,10 @@
+{
+  "name": "a4-static-preview-v25",
+  "private": true,
+  "scripts": {
+    "test": "node verify.cjs && node verify-home.cjs && node verify-v25.cjs && node verify-shadow-v25.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-18",
+  "design": "v25",
+  "baseCommit": "edd85926f1ffb7b07a5176d303029eb9f148630c",
+  "preview": {
+    "viewportCombinations": 99,
+    "interactionChecks": 20,
+    "homeChecks": 111,
+    "v25Checks": 20,
+    "poseShadowChecks": 30,
+    "passed": true
+  },
+  "repository": {
+    "command": "bash scripts/check-all.sh",
+    "exitCode": 0
+  },
+  "screenshots": 7,
+  "notVerified": [
+    "real OAuth and profile reads",
+    "server personality generation and dog creation",
+    "account isolation and cross-device persistence",
+    "formal outfit renderer",
+    "animations"
+  ]
+}
