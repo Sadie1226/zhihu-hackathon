@@ -1,0 +1,54 @@
+/* Round-two surfaces reuse first-round tokens, stationery and typography. */
+.demo-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;color:var(--blue)}
+.demo-controls button{font-size:13px;border-style:dashed}
+#steps{gap:14px;font-size:13px}
+.tag-list{display:grid;gap:12px;margin:28px 0}
+.personality-card{border:1px solid var(--line);padding:18px 20px;background:#fffaef;box-shadow:4px 4px 0 #e7d6bc}
+.tag-top{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted)}
+.personality-card h2{font-size:25px;color:var(--caramel);margin:10px 0 6px}
+.personality-card p{font-size:14px;color:var(--muted);margin:0}
+.waiting-steps{display:grid;gap:16px;padding:20px 0;color:var(--muted);font-size:14px}
+.waiting-steps span:before{content:'◇';color:var(--caramel);margin-right:14px}
+.wardrobe-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:24px 0 16px}
+.wardrobe-tabs button{padding:10px 4px}
+.wardrobe-tabs button[aria-pressed=true]{background:var(--soft);border-color:var(--caramel);color:var(--caramel)}
+.wardrobe-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mobile-outfit-preview{display:none}
+.outfit-option{position:relative;display:flex;flex-direction:column;gap:12px;min-height:176px;padding:12px 4px;font-size:14px}
+.outfit-option img{display:block;width:96px;height:96px;image-rendering:pixelated;object-fit:contain}
+.outfit-option span{line-height:1.5}
+.outfit-option[aria-pressed=true]{background:#f5ead7;border:2px solid var(--caramel);padding:11px 3px}
+.outfit-option small{position:absolute;right:4px;top:2px;font-size:12px;color:var(--caramel)}
+.outfit-option:disabled{opacity:.5;cursor:not-allowed}
+.dog-assembly{position:relative;width:288px;height:288px;isolation:isolate;flex:none}
+.dog-assembly img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.dressing-stage{position:relative;min-height:540px;width:100%;display:grid;place-items:center;padding-top:100px}
+.dressing-stage .stage-window{position:absolute;width:176px;height:176px;top:8px;right:10%;background:url('assets/stage-window.png') center/contain no-repeat;image-rendering:pixelated;opacity:.9}
+.stage-kicker{position:absolute;left:10%;top:125px;max-width:220px;font-size:14px;color:var(--muted)}
+#outfit-preview{position:relative;z-index:2;align-self:end;padding-bottom:22px}
+.stage-rug{position:absolute;width:330px;height:110px;bottom:0;background:url('assets/stage-rug.png') center/contain no-repeat;image-rendering:pixelated}
+.dressing-world{padding-top:36px;align-self:start;margin-top:50px}
+.dressing-world>p:first-child{top:0;left:12%;right:8%}
+.dressing-world .caption{margin-top:24px}
+.adoption-recap{display:grid;grid-template-columns:50px minmax(0,1fr);gap:14px 18px;margin:26px 0;font-size:15px}
+.adoption-recap span{color:var(--muted)}
+.adoption-recap strong{font-weight:400;overflow-wrap:anywhere}
+.home-card{border:1px solid var(--line);padding:24px;margin:28px 0;background:#fffaef}
+.home-card p{color:var(--muted);font-size:15px}
+@media(max-width:850px){
+ #steps{gap:12px;font-size:12px}
+ .dressing-world{margin-top:16px;max-width:390px}
+ .dressing-stage{min-height:410px;padding-top:90px}
+ .dressing-stage .stage-window{width:128px;height:128px;right:8%;top:0}
+ .stage-kicker{top:100px;left:8%;font-size:13px;max-width:180px}
+ .dog-assembly{width:240px;height:240px}
+ .stage-rug{width:290px;height:90px}
+ .wardrobe-options{gap:8px}
+ .mobile-outfit-preview{display:flex;align-items:center;justify-content:center;gap:24px;background:#f5ead7;border:1px solid var(--line);padding:12px;margin-bottom:16px}
+ .mobile-outfit-preview .dog-assembly{width:144px;height:144px}
+ .mobile-outfit-preview>span{font-size:14px;color:var(--muted);line-height:2}
+ .outfit-option{min-height:152px;font-size:13px;gap:12px}
+ .outfit-option img{width:80px;height:80px}
+ .wardrobe-tabs{gap:6px}
+ .personality-card{padding:16px}
+}
