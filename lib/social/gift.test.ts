@@ -122,22 +122,37 @@ check('A2 正常捎话 → payload 只有三个键，fromOwnerOf 恒等于 fromD
   assert.equal(r.exchange.payload.fromOwnerOf, A)
 })
 
-check('A3 同一个 idempotencyKey 写两次 → 库里仍 1 条，第二次 inserted:false', () => {
+check('A3 同一个 idempotencyKey 写两次 → 库里仍 1 条，且第二次返回的是库里的那条（不是本次入参）', () => {
   const store = mockStore()
-  const args = {
+  const first = sendGift({
     store,
     fromDog: A,
     toDog: B,
     giftName: '毛线',
+    note: '天气要冷了',
     idempotencyKey: 'gift-dup',
     now: T0,
-  }
-  const first = sendGift(args)
-  const second = sendGift(args)
+  })
+  // 第二次**故意改内容**：如果实现回显本次 draft，就会返回改了的那版 —— 那是库里不存在的消息。
+  const second = sendGift({
+    store,
+    fromDog: A,
+    toDog: B,
+    giftName: '茶杯',
+    note: '换一句',
+    idempotencyKey: 'gift-dup',
+    now: '2026-11-19T10:00:00Z',
+  })
   assert.equal(store.exchanges.length, 1)
   assert.equal(first.inserted, true)
   assert.equal(second.inserted, false)
   assert.equal(first.id, second.id)
+  // 持久化事实：名字、附言、趟次都必须是第一次那版
+  assert.equal(second.exchange.payload.giftName, '毛线')
+  assert.equal(second.exchange.payload.note, '天气要冷了')
+  assert.equal(second.deliverAfterTripSeq, first.deliverAfterTripSeq)
+  // 库里也只有一条，且是第一次的
+  assert.equal(store.exchanges[0].payload.giftName, '毛线')
 })
 
 check('A4 收件狗是种子狗 → 正常落库，payload 里没有任何「主人话」', () => {
@@ -485,6 +500,40 @@ check('B9 sourceFindId 传了但没落库 —— 真库里也查不到这个键'
   })
   const raw = String(exchangeRows(db)[0].payload)
   assert.equal(raw.includes('sourceFindId'), false)
+})
+
+check('B10 真库重放 → 返回库里那一行（value 取 DB 的 JSON），趟次也是第一次的', () => {
+  const db = seedDb()
+  const store = createSqliteStore(db)
+  const first = sendGift({
+    store,
+    fromDog: A,
+    toDog: B,
+    giftName: '毛线',
+    note: '天气要冷了',
+    idempotencyKey: 'gift-real-replay',
+    now: T0,
+  })
+  // 重放前让收件狗多出两趟 —— 若实现重新算趟次，会变成 3；正确的应该是第一次那个 1。
+  insertTrip(db, 'trip_b1', B, 1)
+  insertTrip(db, 'trip_b2', B, 2)
+
+  const second = sendGift({
+    store,
+    fromDog: A,
+    toDog: B,
+    giftName: '茶杯',
+    note: '换一句',
+    idempotencyKey: 'gift-real-replay',
+    now: '2026-11-19T10:00:00Z',
+  })
+
+  assert.equal(exchangeRows(db).length, 1)
+  assert.equal(second.inserted, false)
+  assert.equal(second.exchange.payload.giftName, '毛线')
+  assert.equal(second.exchange.payload.note, '天气要冷了')
+  assert.equal(second.deliverAfterTripSeq, first.deliverAfterTripSeq)
+  assert.equal(second.deliverAfterTripSeq, 1)
 })
 
 // ===========================================================================

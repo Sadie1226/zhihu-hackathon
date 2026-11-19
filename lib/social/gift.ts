@@ -37,6 +37,7 @@ export type GiftErrorCode =
   | 'OWNER_MISMATCH'          // fromOwnerOf 不等于 fromDog
   | 'SEED_OWNER_SPEAKS'       // 让种子狗替主人说话
   | 'STORE_REJECTED'          // 存储层拒了（最常见：狗不存在，FK 报错）
+  | 'STORE_INCONSISTENT'      // store 说已存在、却读不回来 —— 自相矛盾，不猜
 
 export class GiftError extends Error {
   readonly code: GiftErrorCode | RuleCode
@@ -279,18 +280,50 @@ function send(kind: SendKind, base: SendBase, payload: Record<string, unknown>):
 
   let inserted: boolean
   try {
-    inserted = store.insertExchange({
-      id,
-      fromDog: value.fromDog,
-      toDog: value.toDog,
-      kind: value.kind as ExchangeKind,
-      payload: value.payload,
-      deliverAfterTripSeq,
-      createdAt,
-    }) === 'inserted'
+    inserted =
+      store.insertExchange({
+        id,
+        fromDog: value.fromDog,
+        toDog: value.toDog,
+        kind: value.kind as ExchangeKind,
+        payload: value.payload,
+        deliverAfterTripSeq,
+        createdAt,
+      }) === 'inserted'
   } catch (err) {
     // 真库最常见的是外键失败（狗不存在）。包一层，调用方不必认识 sqlite 的错误串。
     throw new GiftError('STORE_REJECTED', (err as Error).message, 'store')
+  }
+
+  /**
+   * 命中幂等时，**返回库里那一行，不是这次的入参**。
+   *
+   * a 11-19 复核 `meet.ts` 时点的就是这个：同一个幂等键重放，如果回显本次 draft，
+   * 调用方拿到的是一句「这次刚编的、库里并没有的」话；界面照它渲染，
+   * 用户会看到一条不存在的消息 —— 而且只在重试时出现，最难复现。
+   *
+   * 所以 `gift` 这边同一件事必须同样处理：`deliverAfterTripSeq` 也取库里的值，
+   * 因为「哪一趟到」是第一次调用那一刻定下的，重放不许改写。
+   */
+  if (!inserted) {
+    const stored = store.readExchange(id)
+    if (!stored) {
+      // 说重复却读不到 —— 存储层自相矛盾。宁可报错，也不回显 draft 造出一条假消息。
+      throw new GiftError('STORE_INCONSISTENT', `store 报告 ${id} 已存在，但读不回来`, 'id')
+    }
+    return {
+      id,
+      inserted: false,
+      deliverAfterTripSeq: stored.deliverAfterTripSeq,
+      exchange: {
+        fromDog: stored.fromDog,
+        toDog: stored.toDog,
+        kind: stored.kind,
+        payload: stored.payload,
+      },
+      // 这一次什么都没写，待批字段自然也没落库。
+      heldBack: [],
+    }
   }
 
   return { id, inserted, deliverAfterTripSeq, exchange: value, heldBack }

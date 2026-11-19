@@ -83,6 +83,16 @@ export interface SocialStore {
    * 如果 c 反对，替代方案是让上游调用方先自查 —— 但那等于把红线交给每个调用点。
    */
   isSample(dogId: string): boolean
+
+  /**
+   * 读：按 id 取一条已落库的 exchange。没有则 null。
+   *
+   * 为什么非要有（a 11-19 复核 `meet.ts` 时点的同一件事）：
+   * `insertExchange` 返回 `'duplicate'` 时，**这次调用传进来的 draft 并不是库里的那条**。
+   * 若把 draft 当「已送达的那句话」返回给渲染层，用户会看到一条不存在的消息。
+   * 所以重放必须回查持久化事实，而不是回显本次入参。
+   */
+  readExchange(id: string): ExchangeRow | null
 }
 
 // ===========================================================================
@@ -174,6 +184,12 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
 
     isSample(dogId) {
       return samples.has(dogId)
+    },
+
+    readExchange(id) {
+      const hit = exchanges.find((e) => e.id === id)
+      // 同样复制一份：调用方改返回值不能污染「已落库」的数据。
+      return hit ? { ...hit, payload: { ...hit.payload } } : null
     },
   }
 }

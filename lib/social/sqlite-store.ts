@@ -89,5 +89,21 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
         | undefined
       return row !== undefined && Number(row.is_sample) === 1
     },
+
+    readExchange(id) {
+      const row = db.prepare('SELECT * FROM exchange WHERE id = ?').get(id) as
+        | Record<string, unknown>
+        | undefined
+      if (!row) return null
+      return {
+        id: String(row.id),
+        fromDog: String(row.from_dog),
+        toDog: String(row.to_dog),
+        kind: String(row.kind) as ExchangeRow['kind'],
+        payload: JSON.parse(String(row.payload)) as Record<string, unknown>,
+        deliverAfterTripSeq: Number(row.deliver_after_trip_seq),
+        createdAt: String(row.created_at),
+      }
+    },
   }
 }
