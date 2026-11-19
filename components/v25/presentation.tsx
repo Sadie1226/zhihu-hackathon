@@ -27,7 +27,7 @@ export function Frame({
   children: ReactNode
 }) {
   return (
-    <div data-v25="" className={step === 'home' ? 'home-page' : undefined}>
+    <div data-v25="" data-step={step} className={step === 'home' ? 'home-page' : undefined}>
       <a className="skip" href="#content">
         跳到主要内容
       </a>

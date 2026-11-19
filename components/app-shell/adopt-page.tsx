@@ -113,13 +113,13 @@ export default function AdoptPage() {
     if (!loggingIn.current) {
       operation.current++
       setBusy(false)
+      setAuth('entry')
+      setStep('auth')
     }
     version.current++
     setCreated(null)
     setProfile(null)
     setGeneration(null)
-    setAuth('entry')
-    setStep('auth')
     setDraft(emptyDraft)
     setAssembly(defaultAssembly)
     requestId.current = null
@@ -215,6 +215,8 @@ export default function AdoptPage() {
         await api('/api/auth/development', {})
         await refresh()
       }
+      if (!mounted.current || stamp !== operation.current) return
+      setAuth('reading')
       const result = await api<ProfileView>('/api/adoption/profile', {})
       if (!mounted.current || stamp !== operation.current) return
       setProfile(result)
@@ -358,7 +360,9 @@ export default function AdoptPage() {
         '先认识你，再认识它。',
         '用知乎账号开始领养，让它带着一点你的兴趣，走进自己的日常。',
       ],
-      waiting: ['去知乎，打个招呼。', '请在知乎授权页确认，完成后回到这里。'],
+      waiting: session?.provider === 'development'
+        ? ['正在确认测试身份。', '确认后会继续读取模拟资料。']
+        : ['去知乎，打个招呼。', '请在知乎授权页确认，完成后回到这里。'],
       success: [
         '已经认识你啦。',
         '账号身份确认成功，接下来给看山一个属于你的称呼。',
@@ -367,7 +371,9 @@ export default function AdoptPage() {
         '没关系，慢慢来。',
         '你取消了这次授权。还没有创建账号或看山，想好了可以重新开始。',
       ],
-      failure: ['这次没能连上知乎。', '账号身份尚未确认，请重新授权后继续。'],
+      failure: session?.provider === 'development'
+        ? ['这次没能完成读取。', '身份或资料尚未确认，可以重试后继续。']
+        : ['这次没能连上知乎。', '账号身份尚未确认，请重新授权后继续。'],
       reading: [
         '正在了解你的兴趣。',
         '正在读取已授权的资料，不会在这里创建看山。',
@@ -449,7 +455,13 @@ export default function AdoptPage() {
             }
             error={auth === 'failure' || auth === 'partial'}
           >
-            {notice || results || '这次还没有创建看山，想好了可以重新开始。'}
+            {notice || results || (
+              auth === 'reading'
+                ? '正在获取基础资料、收藏、关注与创作，请稍候。'
+                : auth === 'waiting'
+                  ? '正在确认身份，请稍候。'
+                  : '这次还没有创建看山，想好了可以重新开始。'
+            )}
           </Stationery>
         )}
         {auth === 'entry'

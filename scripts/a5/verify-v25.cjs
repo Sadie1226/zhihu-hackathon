@@ -89,12 +89,25 @@ async function capture(page, selector, file) {
       await Promise.all([ready(reference),ready(flow)])
       assert.equal(await flow.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${step}/${viewport.width} overflow`)
       const row={step,...viewport,regions:{}}
+      const revisedWardrobe=step==='wardrobe' && viewport.width>850
       for(const selector of ['#paper','.world','#character-stage','h1']) {
         row.regions[selector]=await Promise.all([reference,flow].map(p=>rect(p,selector,'#content')))
         const pair=row.regions[selector]
-        for(const key of ['x','y','width','font','size','color'])assert.equal(pair[0][key],pair[1][key],`${step}/${viewport.width}/${selector}/${key}`)
+        for(const key of ['x','y','width','font','size','color']) {
+          if(revisedWardrobe && key==='y' && ['.world','#character-stage'].includes(selector))continue
+          assert.equal(pair[0][key],pair[1][key],`${step}/${viewport.width}/${selector}/${key}`)
+        }
       }
       const stem=`.local/v25-stage-${step}-${viewport.width}`
+      if(revisedWardrobe){
+        const actor=await rect(flow,'.character-only .reference-actor','#content'), paper=row.regions['#paper'][1]
+        assert.equal(actor.width,345); assert.equal(actor.height,400)
+        assert.ok(Math.abs(actor.x+actor.width/2-row.regions['.world'][1].width/2)<0.05)
+        assert.ok(Math.abs(actor.y+actor.height/2-paper.y-paper.height/2)<0.05)
+        row.revision='User revision: desktop wardrobe dog centered in left column, 345x400 (25% larger); excluded from original-stage pixel equality.'
+        row.actor=actor
+        await capture(flow,'#character-stage',stem+'-react.png')
+      }else{
       const a=await capture(reference,'#character-stage',stem+'-reference.png'),b=await capture(flow,'#character-stage',stem+'-react.png')
       const i=PNG.sync.read(a.buffer),j=PNG.sync.read(b.buffer)
       assert.equal(i.width,j.width);assert.equal(i.height,j.height)
@@ -103,6 +116,7 @@ async function capture(page, selector, file) {
       row.stageTotal=i.width*i.height
       assert.ok(row.stagePixels/row.stageTotal<0.001,`stage visual regression: ${step}/${viewport.width}`)
       fs.writeFileSync(stem+'-diff.png',PNG.sync.write(diff))
+      }
       const component={profile:'.chips',traits:'.sliders',wardrobe:'.wardrobe-options'}[step]
       if(component){
         const a=await capture(reference,component,stem+'-controls-reference.png'),b=await capture(flow,component,stem+'-controls-react.png')

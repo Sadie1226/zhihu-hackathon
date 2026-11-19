@@ -67,6 +67,18 @@
   filter: drop-shadow(1px 0 var(--rail-cream)) drop-shadow(-1px 0 var(--rail-cream)) drop-shadow(0 1px var(--rail-cream)) drop-shadow(0 -1px var(--rail-cream));
 }
 [data-v25] .trait-error { color: var(--error); }
+/* User's wardrobe revision: center the static dog in the left column, 25% larger. */
+@media (min-width: 851px) {
+  [data-v25][data-step='wardrobe'] .dressing-world {
+    align-self: center;
+    margin-top: 0;
+  }
+  [data-v25][data-step='wardrobe'] .character-only { min-height: 470px; }
+  [data-v25][data-step='wardrobe'] .character-only .reference-actor {
+    width: 345px;
+    height: 400px;
+  }
+}
 @media (max-width: 1000px) and (min-width: 601px) {
   [data-v25] .home-dock .dock-route { width: 56px; min-height: 50px; padding: 1px; }
   [data-v25] .home-dock .dock-route span { font-size: 12px; }
