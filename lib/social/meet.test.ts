@@ -60,11 +60,18 @@ function insertDog(db: DatabaseSync, id: string, opts: { isSample?: boolean } = 
   )
 }
 
-function insertTrip(db: DatabaseSync, id: string, dogId: string, seq: number): void {
+function insertTrip(
+  db: DatabaseSync,
+  id: string,
+  dogId: string,
+  seq: number,
+  opts: { status?: string; endedAt?: string } = {},
+): void {
+  // 触发器要求：running 必须有 started_at，done/failed/timeout 必须有 ended_at。
   db.prepare(
     `INSERT INTO trip (id, dog_id, seq, status, trigger, created_at, started_at, ended_at)
-     VALUES (?, ?, ?, 'running', 'auto', ?, ?, NULL)`,
-  ).run(id, dogId, seq, T0, T0)
+     VALUES (?, ?, ?, ?, 'auto', ?, ?, ?)`,
+  ).run(id, dogId, seq, opts.status ?? 'running', T0, T0, opts.endedAt ?? null)
 }
 
 function one(db: DatabaseSync, sql: string, ...params: unknown[]): number {
@@ -280,6 +287,50 @@ check('同一幂等键写两次 → 库里仍 1 条，第二次 inserted=false',
   db.close()
 })
 
+check('重放返回库里的事实，不返回本次 draft —— 同一个键传不同内容，回来的是第一次那句', () => {
+  const db = freshDb()
+  insertDog(db, 'dog_a')
+  insertDog(db, 'dog_b')
+
+  const first = recordExchange(
+    db,
+    {
+      fromDog: 'dog_a',
+      toDog: 'dog_b',
+      kind: 'greeting',
+      payload: { kind: 'greeting', line: '第一次写的', weather: '雨' },
+    },
+    { idempotencyKey: 'greet-1', createdAt: T0, deliverAfterTripSeq: 2 },
+  )
+  // 第二次拿着同一个幂等键，但内容换了、时间换了、趟次也换了
+  const second = recordExchange(
+    db,
+    {
+      fromDog: 'dog_a',
+      toDog: 'dog_b',
+      kind: 'greeting',
+      payload: { kind: 'greeting', line: '第二次不一样的内容', weather: '雪' },
+    },
+    { idempotencyKey: 'greet-1', createdAt: T1, deliverAfterTripSeq: 9 },
+  )
+
+  assert.equal(first.inserted, true)
+  assert.equal(second.inserted, false)
+  // 关键：返回值必须是库里那一条，不是调用方这次传的
+  assert.equal(second.exchange.payload.line, '第一次写的', '重放不该返回本次 draft 的 line')
+  assert.equal(second.exchange.payload.weather, '雨')
+  assert.equal(second.deliverAfterTripSeq, 2, '趟次也该是库里那个')
+
+  const row = db.prepare('SELECT payload, deliver_after_trip_seq FROM exchange WHERE id = ?').get(second.id) as {
+    payload: string
+    deliver_after_trip_seq: number
+  }
+  assert.equal(JSON.parse(row.payload).line, '第一次写的')
+  assert.equal(Number(row.deliver_after_trip_seq), 2)
+  assert.equal(countRows(db, 'exchange'), 1)
+  db.close()
+})
+
 check('payload 带未批字段 sourceFindId → UNKNOWN_KEY，写不进去', () => {
   const db = freshDb()
   insertDog(db, 'dog_a')
@@ -406,6 +457,9 @@ check('同一 tripId 再调一次 → 重放，met_count 仍 1、exchange 仍 1 
 
 check('换一次出行再遇 → met_count 2，first_met_at 不变', () => {
   const db = seedTwoDogs()
+  // 第二次相遇走的是第 2 趟出行。11-19 晚之前 tripId 只当字符串拼进幂等键，
+  // 不插这行也能过；现在它要过「存在 / 归属 / running」三关，夹具得给真的。
+  insertTrip(db, 'trip_owner_2', 'dog_owner', 2)
   meet({
     db,
     dogId: 'dog_owner',
@@ -585,6 +639,122 @@ check('种子狗：写出的 payload 键集合严格 = {kind,line,weather}，没
 // ===========================================================================
 // 五、两个纯函数
 // ===========================================================================
+
+// ---------------------------------------------------------------------------
+// 11-19 晚补：a 复核 d4-meet@c520d6c 提的两条可复现问题
+// `team/2026-11-19/a/1119-a-给D-请求-相遇幂等与旅途校验-v1.md`
+//
+// 下面每个场景在改之前都是能跑通的（也就是 bug），现在全部应被拒且不留痕。
+// a 要求的另外两条验收「同次相遇重放不增加熟悉次数」「真正下一次出行才增加」
+// 已由上面「同一 tripId 再调一次」和「换一次出行再遇」两条原有用例覆盖，未改动。
+// ---------------------------------------------------------------------------
+
+console.log('\n【11-19 晚补】纯关系不可幂等 / tripId 必须验证')
+
+check('既没 outgoing 也没 incoming → NO_EXCHANGE_IN_MEET，关系与交换都不写', () => {
+  const db = seedTwoDogs()
+  expectCode(
+    '',
+    () =>
+      meet({
+        db,
+        dogId: 'dog_owner',
+        otherDogId: 'dog_seed_07',
+        tripId: 'trip_owner_1',
+        now: T0,
+      }),
+    'NO_EXCHANGE_IN_MEET',
+  )
+  assert.equal(countRows(db, 'relation'), 0, '被拒时不该留下关系')
+  assert.equal(countRows(db, 'exchange'), 0)
+  db.close()
+})
+
+check('tripId 不存在 → TRIP_NOT_FOUND，什么都不写', () => {
+  const db = seedTwoDogs()
+  expectCode(
+    '',
+    () =>
+      meet({
+        db,
+        dogId: 'dog_owner',
+        otherDogId: 'dog_seed_07',
+        tripId: 'does_not_exist',
+        now: T0,
+        outgoing: { kind: 'greeting', payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' } },
+      }),
+    'TRIP_NOT_FOUND',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
+  assert.equal(countRows(db, 'exchange'), 0)
+  db.close()
+})
+
+check('tripId 属于另一只狗 → TRIP_NOT_OWNED，什么都不写', () => {
+  const db = seedTwoDogs()
+  // trip_seed_1 是 dog_seed_07 的出行，却拿 dog_owner 的名义发起
+  expectCode(
+    '',
+    () =>
+      meet({
+        db,
+        dogId: 'dog_owner',
+        otherDogId: 'dog_seed_07',
+        tripId: 'trip_seed_1',
+        now: T0,
+        outgoing: { kind: 'greeting', payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' } },
+      }),
+    'TRIP_NOT_OWNED',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
+  assert.equal(countRows(db, 'exchange'), 0)
+  db.close()
+})
+
+check('出行已结束（status=done）→ TRIP_NOT_OPEN，什么都不写', () => {
+  const db = freshDb()
+  insertDog(db, 'dog_a')
+  insertDog(db, 'dog_b')
+  insertTrip(db, 'trip_done', 'dog_a', 1, { status: 'done', endedAt: T1 })
+  expectCode(
+    '',
+    () =>
+      meet({
+        db,
+        dogId: 'dog_a',
+        otherDogId: 'dog_b',
+        tripId: 'trip_done',
+        now: T0,
+        outgoing: { kind: 'greeting', payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' } },
+      }),
+    'TRIP_NOT_OPEN',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
+  assert.equal(countRows(db, 'exchange'), 0)
+  db.close()
+})
+
+check('出行还未出门（status=pending）也不许相遇 → TRIP_NOT_OPEN', () => {
+  const db = freshDb()
+  insertDog(db, 'dog_a')
+  insertDog(db, 'dog_b')
+  insertTrip(db, 'trip_pending', 'dog_a', 1, { status: 'pending' })
+  expectCode(
+    '',
+    () =>
+      meet({
+        db,
+        dogId: 'dog_a',
+        otherDogId: 'dog_b',
+        tripId: 'trip_pending',
+        now: T0,
+        outgoing: { kind: 'greeting', payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' } },
+      }),
+    'TRIP_NOT_OPEN',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
+  db.close()
+})
 
 console.log('\n【纯函数】orderPair / nowIso')
 
