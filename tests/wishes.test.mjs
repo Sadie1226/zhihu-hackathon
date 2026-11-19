@@ -52,7 +52,7 @@ const url = 'https://www.zhihu.com/question/123/answer/456'
 
 test('fresh schema and migration share v3 views, indexes and triggers; default legacy source is owner', t => {
   const { db } = setup(t)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4)
   const block = read('contracts/schema.sql').split('-- c3-wish-v3: begin')[1].split('-- c3-wish-v3: end')[0]
   assert.equal(block.replaceAll('\r\n', '\n').trim(), WISH_SCHEMA_V3_SQL.trim())
   db.prepare('INSERT INTO wish(id,dog_id,text,category,created_at) VALUES(?,?,?,?,?)')
@@ -224,14 +224,14 @@ function preserved(db, before) {
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
 }
 for (const version of [1, 2]) {
-  test(`version ${version} upgrades to 3 transactionally, preserves every legacy field, then reruns/reopens safely`, t => {
+  test(`version ${version} upgrades to current transactionally, preserves every legacy field, then reruns/reopens safely`, t => {
     const path = temporary(t)
     let db = legacy(path, version)
     assert.equal(db.prepare('PRAGMA user_version').get().user_version, version)
     const before = existing(db)
     db.close(); db = openDatabase(path)
     try {
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3)
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4)
       preserved(db, before)
       const objects = db.prepare('SELECT * FROM sqlite_schema ORDER BY name').all()
       initializeDatabase(db, () => { throw new Error('No schema replay') })

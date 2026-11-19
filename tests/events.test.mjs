@@ -228,7 +228,7 @@ test('fresh initialization and version-1 migration produce identical event table
       WHERE tbl_name IN ('event','trip_event') ORDER BY type,name`).all()
       .map(row => ({ ...row, sql: row.sql?.replace(/\r\n/g, '\n') ?? null }))
     assert.deepEqual(objects(upgraded), objects(fresh))
-    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 3)
+    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 4)
     assert.equal(upgraded.prepare("SELECT COUNT(*) n FROM pragma_table_info('event')").get().n, 12)
     assert.throws(() => insertEvent(upgraded, { place_tags: '["unknown"]' }), /invalid place tag/)
     assert.throws(() => insertEvent(upgraded, { match_tags: '[null]' }), /invalid interest category/)

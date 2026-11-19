@@ -68,5 +68,45 @@
       "replied_at": null,
       "read_at": null
     }
+  ],
+  "provenanceCases": [
+    {
+      "id": "ex_gift_k4_fixture",
+      "from_dog": "dog_seed_07",
+      "to_dog": "dog_owner",
+      "kind": "gift",
+      "payload": {
+        "kind": "gift",
+        "giftName": "一小卷灰蓝色的毛线",
+        "note": "天气要冷了",
+        "imagePath": "/assets/gen/fixture-yarn.webp",
+        "sourceFindId": "find_seed1",
+        "sourceMode": null
+      },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T01:30:00Z",
+      "delivered_at": "2026-11-16T09:00:00Z",
+      "replied_at": "2026-11-16T09:20:00Z",
+      "read_at": "2026-11-16T09:10:00Z"
+    },
+    {
+      "id": "ex_find_k4_fixture",
+      "from_dog": "dog_seed_07",
+      "to_dog": "dog_owner",
+      "kind": "find",
+      "payload": {
+        "kind": "find",
+        "findTitle": "修鞋摊旁边的搪瓷缸",
+        "findExcerpt": "缸沿上磕了两个口，茶还是满的。",
+        "sourceUrl": null,
+        "sourceFindId": "find_seed1",
+        "sourceMode": null
+      },
+      "deliver_after_trip_seq": 2,
+      "created_at": "2026-11-16T02:10:00Z",
+      "delivered_at": "2026-11-16T09:00:00Z",
+      "replied_at": null,
+      "read_at": null
+    }
   ]
 }
