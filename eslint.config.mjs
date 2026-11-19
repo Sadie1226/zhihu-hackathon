@@ -30,7 +30,7 @@ export default defineConfig([
     languageOptions: { globals: browserGlobals },
   },
   {
-    files: ['app/(a)/_design/**/*.cjs'],
+    files: ['app/(a)/_design/**/*.cjs', 'scripts/a5/**/*.cjs'],
     languageOptions: { globals: { ...commonjsGlobals, ...browserGlobals } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },

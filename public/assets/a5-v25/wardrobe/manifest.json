@@ -1,0 +1,38 @@
+{
+  "status": "A4 trial only, not formal E2b delivery",
+  "canvas": [
+    96,
+    96
+  ],
+  "anchor": "All PNG canvases share origin (0,0); static A4 trial",
+  "body": "body.png",
+  "layers": [
+    "cloth-hoodie",
+    "cloth-jacket",
+    "cloth-sweater",
+    "cloth-raincoat",
+    "cloth-apron",
+    "cloth-scarf-coat",
+    "hat-beanie",
+    "hat-cap",
+    "hat-straw",
+    "glasses-round",
+    "glasses-square",
+    "glasses-sun",
+    "face-happy",
+    "face-tired",
+    "face-hopeful",
+    "face-waiting",
+    "hat-none",
+    "glasses-none"
+  ],
+  "sourceCommit": "79c1bb9e0e48471c9ea8b088a8edaa82a3b06203",
+  "source": "yiwan-image edit; processed runtime assets supplied in this package",
+  "unresolved": [
+    "64/96",
+    "formal anchors",
+    "body ownership",
+    "layer order",
+    "null/none adapter"
+  ]
+}
