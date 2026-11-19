@@ -103,6 +103,88 @@ GET    /api/dogs/:id/wishes?includeRevoked=false                                
 **撤销是填 `revoked_at`，不是删除。** 手账还要能翻回去。
 **`text` 上限 200 字**，超了返回 `CONFLICT`，前端就地提示。
 
+#### Wish Contract v3（2026-11-18）
+
+字段增加：`Wish.source: 'owner'|'collection'`、`Wish.sourceUrl: string|null`；
+SQL 对应 `source`、`source_url`。旧记录迁移为 `owner / NULL`。
+owner 的 text 是主人原话；collection 的 text 是 B 从已授权收藏材料提取的主题，仍使用六个兴趣类目。
+不引入地点表、地理路线或新 TripTrigger。E 根据持久化 source 显示来源，不根据当前触发方式猜来源。
+
+**写入边界仍属于 B。** 本次提供 `lib/wishes/contract.ts` 共用校验、撤销存储和读取边界，
+不新增 HTTP 路由，不实现 OAuth、收藏拉取或自动提取。公共 POST 的 body 仍只有 text/category；
+B 可用 `ownerWishFields(body)`，多余键一律 CONFLICT，包括 source、sourceUrl、source_url、session_id。
+该函数强制返回 owner/null。收藏导入由服务端在验证 OAuth 授权、收藏归属及 A 的资格规则后，
+在 `BEGIN IMMEDIATE` 插入事务内调用 `collectionWishFields(db, dogId, sessionId, verifiedSourceUrl)`，
+再由 B 写入其产生的来源字段。不得将客户端表单或模型输出的来源字段直接绑定 SQL。
+sessionId 只取 `lib/auth/session.ts` 的可信服务端上下文；归属不符/不存在返回 NOT_FOUND。
+URL 校验只能证明地址形状受信任，不证明内容存在、用户收藏了它或 OAuth 已授权。
+
+**有效读取和撤销：** `includeRevoked=false`（默认）、后续出行选心愿必须读 `v_wish_active`，
+并通过 dog.session_id 限定当前会话。`includeRevoked=true` 的私有历史读取基础表 wish。
+不存在或不属于当前会话返回 NOT_FOUND；合法空集合 `{ wishes: [] }`。
+撤销先在同一写事务中核对归属，再执行下面的条件更新；重复撤销成功返回原 Wish，保留第一次时间：
+
+```sql
+UPDATE wish SET revoked_at = :at WHERE id = :wishId AND revoked_at IS NULL;
+```
+
+共用 `revokeWish(db, wishId, sessionId, serverUtcTime)` 已包含事务、归属和首次写入守卫，
+B 调用时不要再包嵌套事务。数据库同时禁止覆盖已有 revoked_at、恢复为 NULL 或物理 DELETE。
+撤销不触发自动补位，不清除历史 trip 关联；不冻结 text 编辑，本轮只固定来源身份和关联。
+
+**收藏去重：** `uniq_wish_active_collection(dog_id)` 只覆盖 source=collection 且 revoked_at IS NULL，
+同一只狗最多一条有效收藏心愿。`uniq_wish_collection_content(dog_id,source_url)` 覆盖所有收藏记录，
+不排除已撤销项。同一规范 URL 撤销后仍不能再次插入；不同狗独立去重。
+竞争插入由 SQLite 唯一索引裁定，失败返回 CONFLICT；不能用 INSERT OR REPLACE 绕过历史保留。
+id、dog_id、source、source_url 创建后不可改写。B 必须使用列清单 INSERT，不能把旧记录重建成另一来源。
+
+**URL 白名单与规范化：** 使用 `canonicalZhihuContentUrl`，只接受以下 HTTPS 内容路径：
+
+| 输入主机 / 路径 | 规范形式 |
+| --- | --- |
+| zhihu.com 或 www.zhihu.com，/question/Q | https://www.zhihu.com/question/Q |
+| zhihu.com 或 www.zhihu.com，/question/Q/answer/A | https://www.zhihu.com/question/Q/answer/A |
+| zhuanlan.zhihu.com，/p/P | https://zhuanlan.zhihu.com/p/P |
+
+Q/A/P 必须为无前导零的正十进制字符串，不转换成 JavaScript number（避免大 ID 精度损失）。
+协议和主机大小写归一，保留路径大小写约束；移除一个末尾 `/`，移除全部 query 与 fragment，
+这些受支持路径的内容 ID 全在路径中。不同回答的 answer ID、不同文章的 p ID 完整保留；回答不能截成问题 URL。
+拒绝 HTTP、相对 URL、凭据、显式端口（含 :443）、尾点主机、伪装/任意子域、短链/跳转链接、
+个人页/收藏夹列表、`/answer/A` 等未纳入白名单路径、编码路径或主机、点路径、反斜杠、空白及控制字符。
+不跟随重定向，不为未知链接猜测内容 ID。SQLite INSERT/UPDATE 触发器再次校验规范形式。
+
+fixture 响应示例（仅形状，不是 live 收藏）：
+
+```json
+{
+  "wish": {
+    "id": "wish_collection_fixture", "dogId": "dog_seed_07",
+    "text": "收藏主题测试样例", "category": "冷知识",
+    "createdAt": "2026-11-16T00:25:00Z", "revokedAt": null,
+    "source": "collection", "sourceUrl": "https://www.zhihu.com/question/123/answer/456"
+  }
+}
+```
+
+**C 的选择与历史边界：** `selectActiveWish(db, dogId, sessionId)` 仅从有效视图读取，
+owner 优先 collection；同来源按 created_at 的实际时间倒序、id 升序稳定取一条。无候选返回 null。
+这只是心愿候选选择，不替代已有 `blocked_topics` 最高优先级过滤，也不触发收藏抽取。
+当前 `trigger='wish'` 的 start 在原 `BEGIN IMMEDIATE` 内重新选择并写 `trip.wish_id`，
+不在 pending 创建时锁定候选；选择、running/started_at、信箱投递一起提交/回滚。
+撤销若先提交，该心愿不会被这次出发选中；出发若先提交，之后撤销只影响未来出行。
+没有有效候选时 wishId=null，保留原有 C4 状态行为；auto/friend 路径不在本次增加选题或调度逻辑。
+未来自动选到心愿的执行器复用既有 wish trigger，不新增 collection trigger；来源看 Wish.source。
+
+`Trip.wishId: string|null` 是唯一历史关联字段，旧行保持 null，不反推/补写历史关联。
+外键和同狗触发器保护归属；出发后关联不可修改。重复 start/finish 只返回既有关联。
+`readTripWish(db, tripId, sessionId)` 从基础表按历史关联读取（允许已撤销），不得拿当前有效心愿替换历史。
+这里的 Wish 是私有信息，不能放进公开 Snapshot，也不在查询中展开 sessionId。
+
+迁移版本 **3**：v1 → v2 → v3，v2 → v3；保留已部署的 002-events.ts。
+新增列、视图、索引、触发器和 user_version 在一个事务内完成，失败完整回滚；
+新库使用当前完整 schema，v3 在同一事务里检查已存在列，避免重复 ALTER。
+所有旧 wish/trip/exchange 原字段保留，重复初始化不重跑迁移。
+
 ### 3. 出行（c 实现）
 
 ```
