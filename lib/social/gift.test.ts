@@ -404,8 +404,9 @@ check('B3 收件狗已有 3 趟 → 4，且与 meet.nextDeliverSeq 算出来的�
   const r = sendGift({ store, fromDog: A, toDog: B, giftName: '毛线', idempotencyKey: 'gift-real-4', now: T0 })
 
   assert.equal(r.deliverAfterTripSeq, 4)
-  // 交叉验证：gift 用 store 算、meet 用 db 算，两条路必须落到同一个数。
-  assert.equal(deliverAfterTripSeqFor(store, B), nextDeliverSeq(db, B))
+  // 交叉验证：gift 的 deliverAfterTripSeqFor 与 meet 的 nextDeliverSeq 必须落到同一个数。
+  // 11-20 适配器化后两条路都只认 store，所以传的是同一个 store 实例。
+  assert.equal(deliverAfterTripSeqFor(store, B), nextDeliverSeq(store, B))
   assert.equal(exchangeRows(db)[0].deliver_after_trip_seq, 4)
 })
 

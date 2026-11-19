@@ -105,5 +105,64 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
         createdAt: String(row.created_at),
       }
     },
+
+    readRelation(a, b) {
+      const [lo, hi] = pairKey(a, b)
+      const row = db
+        .prepare(
+          `SELECT id, dog_a, dog_b, first_met_at, last_met_at, met_count, is_blocked, blocked_at
+             FROM relation WHERE dog_a = ? AND dog_b = ?`,
+        )
+        .get(lo, hi) as Record<string, unknown> | undefined
+      if (!row) return null
+      return {
+        id: String(row.id),
+        dogA: String(row.dog_a),
+        dogB: String(row.dog_b),
+        firstMetAt: String(row.first_met_at),
+        lastMetAt: String(row.last_met_at),
+        metCount: Number(row.met_count),
+        isBlocked: Number(row.is_blocked) === 1 ? 1 : 0,
+        blockedAt: row.blocked_at === null ? null : String(row.blocked_at),
+      }
+    },
+
+    hasDog(dogId) {
+      const row = db.prepare('SELECT 1 AS ok FROM dog WHERE id = ?').get(dogId) as
+        | { ok: number }
+        | undefined
+      return row !== undefined
+    },
+
+    getTrip(tripId) {
+      const row = db.prepare('SELECT id, dog_id, status, seq FROM trip WHERE id = ?').get(tripId) as
+        | { id: string; dog_id: string; status: string; seq: number }
+        | undefined
+      if (!row) return null
+      return {
+        id: String(row.id),
+        dogId: String(row.dog_id),
+        status: String(row.status),
+        seq: Number(row.seq),
+      }
+    },
+
+    /**
+     * 事务。用 `BEGIN IMMEDIATE`：一开始就拿写锁，避免「读到没有、写的时候已经有了」。
+     *
+     * **不暴露 commit/rollback 句柄** —— 只给一个回调，成不成由抛不抛错决定。
+     * 这是 c 的要求：Mock 与适配器都不能自己决定「什么时候算落地」。
+     */
+    transaction<T>(fn: () => T): T {
+      db.exec('BEGIN IMMEDIATE')
+      try {
+        const value = fn()
+        db.exec('COMMIT')
+        return value
+      } catch (err) {
+        db.exec('ROLLBACK')
+        throw err
+      }
+    },
   }
 }

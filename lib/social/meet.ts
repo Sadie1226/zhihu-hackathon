@@ -19,13 +19,19 @@
  *   4. **tripId 必须验证**。存在 / 属于发起狗 / 状态 `running`，三条都在事务之前拒。
  *   5. **重放返回库里的事实**。`recordExchange` 命中幂等时回查那一行，不再返回本次 draft。
  *
+ * **11-20 适配器化**（c 的「11/21 只替换存储适配器，不重写逻辑」）：
+ * 本文件已不 import `node:sqlite`，全部存储访问走 `SocialStore`（`store.ts`）：
+ *   currentSeq / insertExchange / readExchange / upsertRelation / readRelation
+ *   hasDog / getTrip / isBlocked / transaction
+ * 换存储 = 换 `createSqliteStore` 那一行，本文件一行不改。
+ *
  * 跑测试：node --experimental-strip-types lib/social/meet.test.ts
  */
 
 import { createHash } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
 import { validate } from './rules.ts'
 import type { ExchangeDraft, ExchangeKind, NormalizedExchange, RuleCode } from './rules.ts'
+import type { RelationRow, SocialStore } from './store.ts'
 
 // ===========================================================================
 // 一、错误
@@ -106,12 +112,12 @@ export function orderPair(a: string, b: string): [string, string] {
  * 没有任何出行记录时为 0，所以结果是 1 —— 它的第一次出行就能收到。
  *
  * **不许写成 `now > 某个时间戳`。** 契约写死：这是个整数趟次，不是时间。
+ *
+ * 11-20：`+1` 留在业务层算，store 只给 `currentSeq` 读数。
+ * 这样 Mock 和真库算出来的趟次必然一致 —— 反过来让 store 自增，两边就会各算一套。
  */
-export function nextDeliverSeq(db: DatabaseSync, dogId: string): number {
-  const row = db
-    .prepare('SELECT COALESCE(MAX(seq), 0) AS s FROM trip WHERE dog_id = ?')
-    .get(dogId) as { s: number } | undefined
-  return Number(row?.s ?? 0) + 1
+export function nextDeliverSeq(store: SocialStore, dogId: string): number {
+  return store.currentSeq(dogId) + 1
 }
 
 // ===========================================================================
@@ -167,7 +173,7 @@ export function deriveExchangeId(
  * 写一条 exchange。合法性由 `rules.ts` 全权判断，本函数不重复实现白名单。
  */
 export function recordExchange(
-  db: DatabaseSync,
+  store: SocialStore,
   draft: ExchangeDraft,
   opts: RecordOptions = {},
 ): RecordResult {
@@ -189,50 +195,29 @@ export function recordExchange(
     opts.id ??
     deriveExchangeId(value.fromDog, value.toDog, value.kind, opts.idempotencyKey!)
   const createdAt = nowIso(opts.createdAt)
-  const deliverAfterTripSeq = opts.deliverAfterTripSeq ?? nextDeliverSeq(db, value.toDog)
+  const deliverAfterTripSeq = opts.deliverAfterTripSeq ?? nextDeliverSeq(store, value.toDog)
 
-  // ON CONFLICT DO NOTHING：第二次写同一条 = 静默跳过，不报错、不产生第二条。
-  const res = db
-    .prepare(
-      `INSERT INTO exchange
-         (id, from_dog, to_dog, kind, payload,
-          deliver_after_trip_seq, created_at, delivered_at, replied_at, read_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
-       ON CONFLICT(id) DO NOTHING`,
-    )
-    .run(
-      id,
-      value.fromDog,
-      value.toDog,
-      value.kind,
-      JSON.stringify(value.payload),
-      deliverAfterTripSeq,
-      createdAt,
-    )
+  // 幂等靠主键：第二次写同一条 = 静默跳过，不报错、不产生第二条。
+  const outcome = store.insertExchange({
+    id,
+    fromDog: value.fromDog,
+    toDog: value.toDog,
+    kind: value.kind,
+    payload: value.payload,
+    deliverAfterTripSeq,
+    createdAt,
+  })
 
-  if (Number(res.changes) === 1) {
+  if (outcome === 'inserted') {
     return { id, inserted: true, deliverAfterTripSeq, exchange: value }
   }
 
   // 命中幂等：库里已经有一条同 id 的记录。**返回它，不返回本次的 draft。**
-  // 走到这里一定读得到（DO NOTHING 只在主键冲突时发生），读不到才是真异常。
-  const existing = db
-    .prepare(
-      `SELECT from_dog, to_dog, kind, payload, deliver_after_trip_seq
-         FROM exchange WHERE id = ?`,
-    )
-    .get(id) as
-    | {
-        from_dog: string
-        to_dog: string
-        kind: ExchangeKind
-        payload: string
-        deliver_after_trip_seq: number
-      }
-    | undefined
+  // 走到这里一定读得到（主键冲突才返回 duplicate），读不到才是真异常。
+  const existing = store.readExchange(id)
 
   if (!existing) {
-    // 理论上不可达：DO NOTHING 只在主键冲突时返回 changes=0，冲突就意味着有行。
+    // 理论上不可达：duplicate 只在主键冲突时返回，冲突就意味着有行。
     // 真走到这里说明存储层状态不对，宁可炸掉也不返回一个编出来的 payload。
     throw new Error(`幂等命中但读不回记录 ${id} —— 存储层状态异常`)
   }
@@ -240,12 +225,12 @@ export function recordExchange(
   return {
     id,
     inserted: false,
-    deliverAfterTripSeq: Number(existing.deliver_after_trip_seq),
+    deliverAfterTripSeq: existing.deliverAfterTripSeq,
     exchange: {
-      fromDog: existing.from_dog,
-      toDog: existing.to_dog,
+      fromDog: existing.fromDog,
+      toDog: existing.toDog,
       kind: existing.kind,
-      payload: JSON.parse(existing.payload) as Record<string, unknown>,
+      payload: existing.payload,
     },
   }
 }
@@ -274,87 +259,53 @@ export interface RelationResult {
  *   3. `met_count` 每次 +1
  *
  * `is_blocked` / `blocked_at` 一个字都不碰 —— 那是「选择不见」，不该被一次相遇解除。
+ *
+ * 11-20：SQL 搬进 `store.upsertRelation`，本函数只留「字典序、禁自遇、形状转换」。
+ * `relation.id` 的形状随之统一成 `store.ts` 的 `rel_a__b`（旧的是 `rel_<hash>`）；
+ * id 没有外部引用，换形状不影响任何调用方。
  */
 export function upsertRelation(
-  db: DatabaseSync,
+  store: SocialStore,
   dogIdA: string,
   dogIdB: string,
   at: string,
-  opts: { id?: string } = {},
 ): RelationResult {
   if (dogIdA === dogIdB) {
     throw new SocialWriteError('SELF_MEET', '一只狗不能和自己建立关系', 'dogB')
   }
-
   const [dogA, dogB] = orderPair(dogIdA, dogIdB)
-  const id = opts.id ?? `rel_${shortHash(dogA, dogB)}`
-  const when = nowIso(at)
+  const { relation, firstTime } = store.upsertRelation({ dogA, dogB, at: nowIso(at) })
+  return toRelationResult(relation, firstTime)
+}
 
-  const row = db
-    .prepare(
-      `INSERT INTO relation (id, dog_a, dog_b, first_met_at, last_met_at, met_count, is_blocked, blocked_at)
-       VALUES (?, ?, ?, ?, ?, 1, 0, NULL)
-       ON CONFLICT(dog_a, dog_b) DO UPDATE
-         SET met_count   = relation.met_count + 1,
-             last_met_at = excluded.last_met_at
-       RETURNING id, dog_a, dog_b, first_met_at, last_met_at, met_count`,
-    )
-    .get(id, dogA, dogB, when, when) as {
-    id: string
-    dog_a: string
-    dog_b: string
-    first_met_at: string
-    last_met_at: string
-    met_count: number
-  }
-
+/** 存储行的 camelCase 形状 → 本文件对外的 `RelationResult`。 */
+function toRelationResult(row: RelationRow, created: boolean): RelationResult {
   return {
     id: row.id,
-    dogA: row.dog_a,
-    dogB: row.dog_b,
-    metCount: Number(row.met_count),
-    firstMetAt: row.first_met_at,
-    lastMetAt: row.last_met_at,
-    created: Number(row.met_count) === 1,
+    dogA: row.dogA,
+    dogB: row.dogB,
+    metCount: row.metCount,
+    firstMetAt: row.firstMetAt,
+    lastMetAt: row.lastMetAt,
+    created,
   }
 }
 
 /** 读一对关系（顺序无关）。没有则返回 null。 */
-export function readRelation(db: DatabaseSync, dogIdA: string, dogIdB: string): RelationResult | null {
-  const [dogA, dogB] = orderPair(dogIdA, dogIdB)
-  const row = db
-    .prepare(
-      `SELECT id, dog_a, dog_b, first_met_at, last_met_at, met_count
-         FROM relation WHERE dog_a = ? AND dog_b = ?`,
-    )
-    .get(dogA, dogB) as
-    | {
-        id: string
-        dog_a: string
-        dog_b: string
-        first_met_at: string
-        last_met_at: string
-        met_count: number
-      }
-    | undefined
-
-  if (!row) return null
-  return {
-    id: row.id,
-    dogA: row.dog_a,
-    dogB: row.dog_b,
-    metCount: Number(row.met_count),
-    firstMetAt: row.first_met_at,
-    lastMetAt: row.last_met_at,
-    created: false,
-  }
+export function readRelation(
+  store: SocialStore,
+  dogIdA: string,
+  dogIdB: string,
+): RelationResult | null {
+  const row = store.readRelation(dogIdA, dogIdB)
+  return row ? toRelationResult(row, false) : null
 }
 
 // ===========================================================================
 // 六、能不能换 —— 留给 c 的空位
 // ===========================================================================
 export interface GateContext {
-  db: DatabaseSync
+  store: SocialStore
   selfDogId: string
   otherDogId: string
 }
@@ -384,7 +335,7 @@ export interface MeetPayloadInput {
 }
 
 export interface MeetInput {
-  db: DatabaseSync
+  store: SocialStore
   /** 我的狗（这次相遇的发起方） */
   dogId: string
   /** 对面那只 */
@@ -424,11 +375,11 @@ export interface MeetResult {
  * 这条不是洁癖：种子狗不伪造主人回话，而 `co_owner_message` 正是捎话的入口。
  *
  * 顺序是：**先拒，后写**。自己遇自己、没带 exchange、tripId 不存在/不归属/状态不对、
- * 狗不存在、被拉黑、gate 不放行 —— 全部在 `BEGIN IMMEDIATE` 之前抛，库一个字节都没动。
+ * 狗不存在、被拉黑、gate 不放行 —— 全部在 `store.transaction()` **之前**抛，库一个字节都没动。
  * 只有真需要原子性的「关系 + 交换」才进事务。
  */
 export function meet(input: MeetInput): MeetResult {
-  const { db, dogId, otherDogId, tripId } = input
+  const { store, dogId, otherDogId, tripId } = input
   const when = nowIso(input.now)
 
   if (dogId === otherDogId) {
@@ -452,11 +403,7 @@ export function meet(input: MeetInput): MeetResult {
   // 顺序说明：先确认「东西存不存在」，再判断「这次调用说了什么」。
   // 狗 id 写错时，报 DOG_NOT_FOUND 比报 NO_EXCHANGE_IN_MEET 有用得多 ——
   // 调用方拿着后一条会去翻 payload，其实问题是 id 拼错了。
-  const known = db
-    .prepare('SELECT id FROM dog WHERE id IN (?, ?)')
-    .all(dogId, otherDogId) as Array<{ id: string }>
-  const knownIds = new Set(known.map((r) => r.id))
-  const missing = [dogId, otherDogId].filter((id) => !knownIds.has(id))
+  const missing = [dogId, otherDogId].filter((id) => !store.hasDog(id))
   if (missing.length > 0) {
     throw new SocialWriteError('DOG_NOT_FOUND', `狗不存在：${missing.join(', ')}`, 'dogId')
   }
@@ -466,16 +413,14 @@ export function meet(input: MeetInput): MeetResult {
   // 之前只把 tripId 当字符串拼进幂等键，随便传 `does_not_exist` 也能写进关系，
   // 还能凭空把 tripId 属于别的狗的情况当成有效相遇。三种都拒，且都在事务之前拒 ——
   // 拒绝时不留下任何关系或交换。
-  const trip = db
-    .prepare('SELECT id, dog_id, status FROM trip WHERE id = ?')
-    .get(tripId) as { id: string; dog_id: string; status: string } | undefined
+  const trip = store.getTrip(tripId)
   if (!trip) {
     throw new SocialWriteError('TRIP_NOT_FOUND', `出行不存在：${tripId}`, 'tripId')
   }
-  if (trip.dog_id !== dogId) {
+  if (trip.dogId !== dogId) {
     throw new SocialWriteError(
       'TRIP_NOT_OWNED',
-      `出行 ${tripId} 属于 ${trip.dog_id}，不是 ${dogId}`,
+      `出行 ${tripId} 属于 ${trip.dogId}，不是 ${dogId}`,
       'tripId',
     )
   }
@@ -505,22 +450,17 @@ export function meet(input: MeetInput): MeetResult {
     )
   }
 
-  // 拉黑双向排除：关系表一对只存一条（dog_a < dog_b），查一次等于查两个方向。
-  const [lo, hi] = orderPair(dogId, otherDogId)
-  const blocked = db
-    .prepare('SELECT is_blocked FROM relation WHERE dog_a = ? AND dog_b = ?')
-    .get(lo, hi) as { is_blocked: number } | undefined
-  if (blocked && Number(blocked.is_blocked) === 1) {
+  // 拉黑双向排除：关系表一对只存一条（dog_a < dog_b），store 内部查一次等于查两个方向。
+  if (store.isBlocked(dogId, otherDogId)) {
     throw new SocialWriteError('BLOCKED_RELATION', '这一对已被拉黑，不再相遇', 'relation')
   }
 
   if (input.gate) {
-    const g = input.gate({ db, selfDogId: dogId, otherDogId })
+    const g = input.gate({ store, selfDogId: dogId, otherDogId })
     if (!g.ok) throw new SocialWriteError(g.code as MeetErrorCode, g.reason, 'gate')
   }
 
-  db.exec('BEGIN IMMEDIATE')
-  try {
+  return store.transaction(() => {
     // ---- 重放判定：同一次出行已经写过交换，就只读不写 ----
     const probeId = input.outgoing
       ? deriveExchangeId(dogId, otherDogId, input.outgoing.kind, `${tripId}:out`)
@@ -528,29 +468,25 @@ export function meet(input: MeetInput): MeetResult {
         ? deriveExchangeId(otherDogId, dogId, input.incoming.kind, `${tripId}:in`)
         : null
 
-    if (probeId) {
-      const seen = db.prepare('SELECT id FROM exchange WHERE id = ?').get(probeId)
-      if (seen) {
-        const existing = readRelation(db, dogId, otherDogId)
-        // 交换在、关系读不回来 —— 同一个事务写的，正常不可能。
-        // 以前这里会编一个 metCount:0 的关系返回，等于把假事实交给调用方；宁可炸。
-        if (!existing) {
-          throw new Error(`重放探测命中 ${probeId}，但读不回关系 ${dogId} × ${otherDogId}`)
-        }
-        db.exec('COMMIT')
-        // 重放：`exchanges` 留空，不返回本次调用传的 payload。
-        // 需要内容就按 deriveExchangeId 自己查，库里的才是事实（见 recordExchange 的注释）。
-        return { relation: existing, exchanges: [], replayed: true }
+    if (probeId !== null && store.readExchange(probeId) !== null) {
+      const existing = readRelation(store, dogId, otherDogId)
+      // 交换在、关系读不回来 —— 同一个事务写的，正常不可能。
+      // 以前这里会编一个 metCount:0 的关系返回，等于把假事实交给调用方；宁可炸。
+      if (!existing) {
+        throw new Error(`重放探测命中 ${probeId}，但读不回关系 ${dogId} × ${otherDogId}`)
       }
+      // 重放：`exchanges` 留空，不返回本次调用传的 payload。
+      // 需要内容就按 deriveExchangeId 自己查，库里的才是事实（见 recordExchange 的注释）。
+      return { relation: existing, exchanges: [], replayed: true }
     }
 
-    const relation = upsertRelation(db, dogId, otherDogId, when)
+    const relation = upsertRelation(store, dogId, otherDogId, when)
     const exchanges: RecordResult[] = []
 
     if (input.outgoing) {
       exchanges.push(
         recordExchange(
-          db,
+          store,
           { fromDog: dogId, toDog: otherDogId, kind: input.outgoing.kind, payload: input.outgoing.payload },
           { idempotencyKey: `${tripId}:out`, createdAt: when },
         ),
@@ -559,19 +495,15 @@ export function meet(input: MeetInput): MeetResult {
     if (input.incoming) {
       exchanges.push(
         recordExchange(
-          db,
+          store,
           { fromDog: otherDogId, toDog: dogId, kind: input.incoming.kind, payload: input.incoming.payload },
           { idempotencyKey: `${tripId}:in`, createdAt: when },
         ),
       )
     }
 
-    db.exec('COMMIT')
     return { relation, exchanges, replayed: false }
-  } catch (err) {
-    db.exec('ROLLBACK')
-    throw err
-  }
+  })
 }
 
 // ===========================================================================

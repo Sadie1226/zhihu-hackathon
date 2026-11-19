@@ -69,8 +69,10 @@ const step = (s: string) => console.log(`\n── ${s}`)
 
 // ===========================================================================
 step('1｜第一次相遇：greeting 送出 + 关系建立')
+const store = createSqliteStore(db)
+
 const m1 = meet({
-  db,
+  store,
   dogId: 'dog_a',
   otherDogId: 'dog_b',
   tripId: 'trip_a1',
@@ -83,7 +85,7 @@ console.log('库里   exchange =', n('exchange'), ' relation =', n('relation'), 
 // ===========================================================================
 step('2｜同一趟重试一次（网络重发）')
 const m2 = meet({
-  db,
+  store,
   dogId: 'dog_a',
   otherDogId: 'dog_b',
   tripId: 'trip_a1',
@@ -98,7 +100,7 @@ step('3｜换一趟出行再遇（trip_a2）：met_count 必须 +1，first_met_a
 trip('trip_a2', 'dog_a', 2)
 const before = rel()
 const m3 = meet({
-  db,
+  store,
   dogId: 'dog_a',
   otherDogId: 'dog_b',
   tripId: 'trip_a2',
@@ -120,7 +122,7 @@ console.log('last_met_at 变了吗：', before.last_met_at !== after.last_met_at
 // ===========================================================================
 step('4｜字典序：反过来传（dog_b 发起）也不报 CHECK')
 const m4 = meet({
-  db,
+  store,
   dogId: 'dog_b',
   otherDogId: 'dog_a',
   tripId: 'trip_b1',
@@ -131,7 +133,6 @@ console.log('返回值  replayed =', m4.replayed, ' met_count =', rel().met_coun
 
 // ===========================================================================
 step('5｜礼物：dog_b 3 趟，deliver_after_trip_seq 应为 4')
-const store = createSqliteStore(db)
 const g1 = sendGift({
   store,
   fromDog: 'dog_a',
@@ -159,7 +160,7 @@ console.log('返回值  inserted =', g2.inserted, ' 趟次 =', g2.deliverAfterTr
 console.log('库里   exchange =', n('exchange'), '← 必须仍是 4 条（3 条相遇 + 1 条礼物）')
 
 // ===========================================================================
-step('7｜捎话：给种子狗发「主人原话」必须被拒')
+step('7｜捎话：给种子狗发「主人原话」→ 能写进去（种子狗可以收话）')
 try {
   sendCoOwnerMessage({
     store,
@@ -169,9 +170,24 @@ try {
     message: '楼下的桂花开了',
     now: T1,
   })
-  console.log('居然写进去了（错）')
+  console.log('写进去了 —— 对。种子狗可以「收」话，只是不能以自己主人的名义「发」话。')
 } catch (e: unknown) {
-  console.log('被拒：', (e as { code?: string }).code)
+  console.log('被拒：', (e as { code?: string }).code, '← 不该拒，见 1119-d4-给种子狗捎话 文档')
+}
+
+step('7b｜反向：种子狗以自己主人名义发话 → 必须拒（伪造真实用户内容）')
+try {
+  sendCoOwnerMessage({
+    store,
+    fromDog: 'dog_seed',
+    toDog: 'dog_a',
+    idempotencyKey: 'msg-1119-002',
+    message: '主人说他也想你',
+    now: T1,
+  })
+  console.log('居然写进去了（错）—— 这条是阻断缺陷')
+} catch (e: unknown) {
+  console.log('被拒：', (e as { code?: string }).code, '← 对')
 }
 
 // ===========================================================================

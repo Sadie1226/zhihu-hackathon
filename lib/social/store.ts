@@ -52,6 +52,15 @@ export interface RelationUpsertResult {
   firstTime: boolean
 }
 
+/** 一趟出行的最小读视图。相遇校验只需要这三样。 */
+export interface TripRow {
+  id: string
+  dogId: string
+  /** `pending` / `running` / `done` / `failed` / `timeout`，原样返回，由业务层判断。 */
+  status: string
+  seq: number
+}
+
 export interface SocialStore {
   /** 写一条 exchange。同 id 再来返回 'duplicate'，不覆盖、不报错 —— 幂等。 */
   insertExchange(row: ExchangeRow): 'inserted' | 'duplicate'
@@ -93,6 +102,37 @@ export interface SocialStore {
    * 所以重放必须回查持久化事实，而不是回显本次入参。
    */
   readExchange(id: string): ExchangeRow | null
+
+  // =========================================================================
+  // 下面四个是 11-20 适配器化时补的，`meet.ts` 要用
+  // =========================================================================
+  //
+  // 为什么这几个躲不掉：`meet()` 要在写之前挡三种情况（狗不存在、出行不存在/不归属/
+  // 状态不对、这一对被拉黑），还要在重放时读回关系。这些全是**读**，而且读的粒度
+  // 没法用上面六个方法表达 —— 不补，meet.ts 就只能继续 import `node:sqlite`，
+  // 那 c 的「11/21 只替换存储适配器」就是一句空话。
+  //
+  // 补的前提是它们**都不写状态**，所以 Mock 不会因此获得「自己决定投递时间」的能力。
+
+  /** 读一对关系（顺序无关）。没有则 null。 */
+  readRelation(dogA: string, dogB: string): RelationRow | null
+
+  /** 这只狗存不存在。相遇前的前置校验用。 */
+  hasDog(dogId: string): boolean
+
+  /** 按 id 读一趟出行。不存在返回 null。 */
+  getTrip(tripId: string): TripRow | null
+
+  /**
+   * 把一段写操作包进一个事务。抛错则整体回滚。
+   *
+   * 为什么这条必须由 store 提供：`meet()` 的语义是「关系 + 交换要么都成、要么都不成」。
+   * 如果事务由调用方在业务层开，那业务层就得拿到 db 句柄 —— 又回到直连数据库。
+   *
+   * 内存实现的回滚方式是快照恢复，语义等价；**Mock 仍然不能自己决定「什么时候提交」**，
+   * 因为 `transaction` 只接受一个回调，不暴露 commit/rollback 句柄。
+   */
+  transaction<T>(fn: () => T): T
 }
 
 // ===========================================================================
@@ -126,6 +166,13 @@ export interface MemoryStoreOptions {
   seqs?: Record<string, number>
   /** 预置的种子狗 id（`is_sample = 1`）。 */
   samples?: string[]
+  /**
+   * 预置「库里有哪些狗」。不传则 `hasDog` 一律返回 true ——
+   * Mock 关注的是业务逻辑，不是「狗有没有被领养」。
+   */
+  dogs?: string[]
+  /** 预置的出行。相遇校验要用（存在 / 归属 / 状态）。 */
+  trips?: Array<{ id: string; dogId: string; seq: number; status: string }>
 }
 
 export interface MemoryStore extends SocialStore {
@@ -139,6 +186,20 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
   const blocked = new Set((opts.blocked ?? []).map(([a, b]) => relationId(a, b)))
   const seqs = { ...(opts.seqs ?? {}) }
   const samples = new Set(opts.samples ?? [])
+  const dogs = opts.dogs ? new Set(opts.dogs) : null
+  const trips = new Map((opts.trips ?? []).map((t) => [t.id, { ...t }]))
+
+  /** 事务回滚用的快照。只存会被写坏的两张「表」。 */
+  const snapshot = () => ({
+    exchanges: exchanges.map((e) => ({ ...e, payload: { ...e.payload } })),
+    relations: new Map([...relations].map(([k, v]) => [k, { ...v }] as const)),
+  })
+  const restore = (s: ReturnType<typeof snapshot>) => {
+    exchanges.length = 0
+    exchanges.push(...s.exchanges)
+    relations.clear()
+    for (const [k, v] of s.relations) relations.set(k, v)
+  }
 
   return {
     exchanges,
@@ -190,6 +251,31 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
       const hit = exchanges.find((e) => e.id === id)
       // 同样复制一份：调用方改返回值不能污染「已落库」的数据。
       return hit ? { ...hit, payload: { ...hit.payload } } : null
+    },
+
+    readRelation(a, b) {
+      const hit = relations.get(relationId(a, b))
+      return hit ? { ...hit } : null
+    },
+
+    hasDog(dogId) {
+      // 没配 dogs 时一律放行：这个 Mock 验的是写入逻辑，不是领养流程。
+      return dogs === null || dogs.has(dogId)
+    },
+
+    getTrip(tripId) {
+      const hit = trips.get(tripId)
+      return hit ? { ...hit } : null
+    },
+
+    transaction(fn) {
+      const snap = snapshot()
+      try {
+        return fn()
+      } catch (err) {
+        restore(snap)
+        throw err
+      }
     },
   }
 }
