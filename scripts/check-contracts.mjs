@@ -289,7 +289,23 @@ for (const s of fx.snapshot) {
 }
 insertAll('snapshot', fx.snapshot, ['dog_id', 'version', 'personality_tags', 'interest_categories', 'recent_trips', 'waiting_for', 'created_at'])
 
-insertAll('wish', fx.wish, ['id', 'dog_id', 'text', 'category', 'created_at', 'revoked_at'])
+insertAll('wish', fx.wish, ['id', 'dog_id', 'text', 'category', 'created_at', 'revoked_at', 'source', 'source_url'])
+mustPass('wish fixtures 的新增来源字段逐字段往返一致', () => {
+  for (const wish of fx.wish) {
+    assert.deepEqual({ ...db.prepare('SELECT * FROM wish WHERE id=?').get(wish.id) }, wish)
+  }
+})
+mustPass('v_wish_active 排除 wish_003，保留 wish_001 / wish_002；撤销记录仍在基础表', () => {
+  assert.deepEqual(db.prepare("SELECT id FROM v_wish_active WHERE dog_id='dog_owner' ORDER BY id").all()
+    .map(row => row.id), ['wish_001', 'wish_002'])
+  assert.ok(db.prepare("SELECT revoked_at FROM wish WHERE id='wish_003'").get().revoked_at)
+})
+mustPass('重复撤销使用 IS NULL 守卫，不覆盖首次时间', () => {
+  const before = db.prepare("SELECT revoked_at FROM wish WHERE id='wish_003'").get().revoked_at
+  db.prepare('UPDATE wish SET revoked_at=? WHERE id=? AND revoked_at IS NULL')
+    .run('2099-01-01T00:00:00Z', 'wish_003')
+  assert.equal(db.prepare("SELECT revoked_at FROM wish WHERE id='wish_003'").get().revoked_at, before)
+})
 insertAll('trip', fx.trip, ['id', 'dog_id', 'seq', 'status', 'trigger', 'created_at', 'started_at', 'ended_at'])
 insertAll('find', fx.find, ['id', 'trip_id', 'kind', 'title', 'excerpt', 'source_url', 'source_mode', 'authority_level', 'vote_up_count', 'created_at'])
 for (const e of fx.exchange) e.payload = J(e.payload)

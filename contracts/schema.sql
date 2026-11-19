@@ -155,7 +155,7 @@ CREATE TABLE wish (
   id         TEXT PRIMARY KEY,
   dog_id     TEXT NOT NULL REFERENCES dog(id),
 
-  -- b 写。主人原话，1–200 字。**只存在这里，不进 snapshot。**
+  -- b 写。owner 是主人原话；collection 是授权收藏提取的主题。1–200 字，不进 snapshot。
   text       TEXT NOT NULL CHECK (length(trim(text)) BETWEEN 1 AND 200),
 
   -- b 写。六类目之一。c 用 CATEGORY_KEYWORDS[category] 做 zhihu_search 的 Query。
@@ -165,7 +165,14 @@ CREATE TABLE wish (
   created_at TEXT NOT NULL,
 
   -- b 写。撤销就填这一刻，**不物理删除**（手账还要能翻回去）。撤销后 c 不再读它。
-  revoked_at TEXT
+  revoked_at TEXT,
+
+  -- b 的可信服务端写；不能来自客户端表单。旧心愿默认 owner。
+  source TEXT NOT NULL DEFAULT 'owner' CHECK (source IN ('owner','collection')),
+  source_url TEXT CHECK (
+    (source = 'owner' AND source_url IS NULL) OR
+    (source = 'collection' AND source_url IS NOT NULL AND length(source_url) > 0)
+  )
 );
 
 CREATE INDEX idx_wish_dog ON wish(dog_id, revoked_at);
@@ -197,6 +204,9 @@ CREATE TABLE trip (
   -- c 写。这三个时刻都必须有值才允许进入对应状态（约束在下面）。
   started_at TEXT,
   ended_at   TEXT,
+
+  -- c 写，出发时绑定；旧记录为 NULL。撤销不解除历史关联。
+  wish_id TEXT REFERENCES wish(id),
 
   UNIQUE (dog_id, seq)
 );
@@ -552,3 +562,71 @@ CREATE TABLE IF NOT EXISTS trip_event (
 
 CREATE INDEX IF NOT EXISTS idx_trip_event_dog ON trip_event(dog_id, happened_at);
 -- c3-event-v2: end
+
+-- c3-wish-v3: begin
+
+CREATE VIEW IF NOT EXISTS v_wish_active AS
+SELECT id,dog_id,text,category,created_at,revoked_at,source,source_url
+FROM wish WHERE revoked_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_wish_active_collection ON wish(dog_id)
+WHERE source = 'collection' AND revoked_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_wish_collection_content ON wish(dog_id,source_url)
+WHERE source = 'collection';
+CREATE INDEX IF NOT EXISTS idx_trip_wish ON trip(wish_id);
+
+CREATE TRIGGER IF NOT EXISTS wish_url_insert BEFORE INSERT ON wish
+BEGIN
+  SELECT RAISE(ABORT, 'wish: canonical HTTPS Zhihu content URL required')
+  WHERE NEW.source = 'collection' AND NOT (
+  (substr(NEW.source_url,1,31) = 'https://www.zhihu.com/question/' || '' AND (
+    (length(substr(NEW.source_url,32)) > 0 AND substr(NEW.source_url,32) NOT GLOB '*[^0-9]*' AND substr(substr(NEW.source_url,32),1,1) <> '0') OR (instr(substr(NEW.source_url,32),'/answer/') > 1 AND (length(substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1)) > 0 AND substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1) NOT GLOB '*[^0-9]*' AND substr(substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1),1,1) <> '0') AND (length(substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8)) > 0 AND substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8) NOT GLOB '*[^0-9]*' AND substr(substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8),1,1) <> '0'))
+  )) OR
+  (substr(NEW.source_url,1,29) = 'https://zhuanlan.zhihu.com/p/' || '' AND (length(substr(NEW.source_url,30)) > 0 AND substr(NEW.source_url,30) NOT GLOB '*[^0-9]*' AND substr(substr(NEW.source_url,30),1,1) <> '0'))
+);
+END;
+CREATE TRIGGER IF NOT EXISTS wish_url_update BEFORE UPDATE ON wish
+BEGIN
+  SELECT RAISE(ABORT, 'wish: canonical HTTPS Zhihu content URL required')
+  WHERE NEW.source = 'collection' AND NOT (
+  (substr(NEW.source_url,1,31) = 'https://www.zhihu.com/question/' || '' AND (
+    (length(substr(NEW.source_url,32)) > 0 AND substr(NEW.source_url,32) NOT GLOB '*[^0-9]*' AND substr(substr(NEW.source_url,32),1,1) <> '0') OR (instr(substr(NEW.source_url,32),'/answer/') > 1 AND (length(substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1)) > 0 AND substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1) NOT GLOB '*[^0-9]*' AND substr(substr(substr(NEW.source_url,32),1,instr(substr(NEW.source_url,32),'/answer/')-1),1,1) <> '0') AND (length(substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8)) > 0 AND substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8) NOT GLOB '*[^0-9]*' AND substr(substr(substr(NEW.source_url,32),instr(substr(NEW.source_url,32),'/answer/')+8),1,1) <> '0'))
+  )) OR
+  (substr(NEW.source_url,1,29) = 'https://zhuanlan.zhihu.com/p/' || '' AND (length(substr(NEW.source_url,30)) > 0 AND substr(NEW.source_url,30) NOT GLOB '*[^0-9]*' AND substr(substr(NEW.source_url,30),1,1) <> '0'))
+);
+END;
+
+CREATE TRIGGER IF NOT EXISTS wish_identity_immutable BEFORE UPDATE ON wish
+WHEN NEW.id IS NOT OLD.id OR NEW.dog_id IS NOT OLD.dog_id
+  OR NEW.source IS NOT OLD.source OR NEW.source_url IS NOT OLD.source_url
+BEGIN
+  SELECT RAISE(ABORT, 'wish: provenance is immutable');
+END;
+CREATE TRIGGER IF NOT EXISTS wish_revoke_once BEFORE UPDATE OF revoked_at ON wish
+WHEN OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS NOT OLD.revoked_at
+BEGIN
+  SELECT RAISE(ABORT, 'wish: first revocation timestamp is immutable');
+END;
+CREATE TRIGGER IF NOT EXISTS wish_keep_history BEFORE DELETE ON wish
+BEGIN
+  SELECT RAISE(ABORT, 'wish: revoke instead of delete');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trip_wish_insert BEFORE INSERT ON trip
+WHEN NEW.wish_id IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'trip: wish must belong to the same dog')
+  WHERE NOT EXISTS (SELECT 1 FROM wish WHERE id = NEW.wish_id AND dog_id = NEW.dog_id);
+END;
+CREATE TRIGGER IF NOT EXISTS trip_wish_update BEFORE UPDATE ON trip
+WHEN NEW.wish_id IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'trip: wish must belong to the same dog')
+  WHERE NOT EXISTS (SELECT 1 FROM wish WHERE id = NEW.wish_id AND dog_id = NEW.dog_id);
+END;
+CREATE TRIGGER IF NOT EXISTS trip_wish_history BEFORE UPDATE OF wish_id ON trip
+WHEN OLD.started_at IS NOT NULL AND NEW.wish_id IS NOT OLD.wish_id
+BEGIN
+  SELECT RAISE(ABORT, 'trip: started trip wish association is immutable');
+END;
+-- c3-wish-v3: end

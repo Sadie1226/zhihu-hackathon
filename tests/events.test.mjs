@@ -65,7 +65,7 @@ test('event has exactly 12 columns, trip_event exactly 4, defaults and indexes a
     ['trip_id', 'event_id', 'dog_id', 'happened_at'])
   assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 12)
   assert.deepEqual(db.prepare("SELECT name FROM sqlite_schema WHERE type='view' ORDER BY name").all().map(row => row.name),
-    ['v_invitation_state'])
+    ['v_invitation_state', 'v_wish_active'])
   assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1)
   assert.deepEqual(db.prepare("PRAGMA index_info('idx_trip_event_dog')").all().map(c => c.name), ['dog_id', 'happened_at'])
   assert.deepEqual(db.prepare("PRAGMA table_info('trip_event')").all().filter(c => c.pk).map(c => [c.name, c.pk]),
@@ -191,7 +191,7 @@ test('real version-1 database upgrades to 2, preserves every dog/trip/exchange c
   const before = existingData(db)
   const originalObjects = db.prepare("SELECT name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all()
   db.close()
-  db = openDatabase(path)
+  db = openDatabase(path, migrations.slice(0, 1))
   try {
     assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2)
     assert.equal(db.prepare('PRAGMA application_id').get().application_id, APPLICATION_ID)
@@ -208,9 +208,9 @@ test('real version-1 database upgrades to 2, preserves every dog/trip/exchange c
     const content = db.prepare('SELECT * FROM event').all()
     const history = db.prepare('SELECT * FROM trip_event').all()
     const changes = db.prepare('SELECT total_changes() n').get().n
-    initializeDatabase(db, () => { throw new Error('existing DB must not read schema.sql') })
+    initializeDatabase(db, () => { throw new Error('existing DB must not read schema.sql') }, migrations.slice(0, 1))
     assert.equal(db.prepare('SELECT total_changes() n').get().n, changes)
-    db.close(); db = openDatabase(path)
+    db.close(); db = openDatabase(path, migrations.slice(0, 1))
     assert.deepEqual(existingData(db), before)
     assert.deepEqual(db.prepare('SELECT * FROM event').all(), content)
     assert.deepEqual(db.prepare('SELECT * FROM trip_event').all(), history)
@@ -228,7 +228,7 @@ test('fresh initialization and version-1 migration produce identical event table
       WHERE tbl_name IN ('event','trip_event') ORDER BY type,name`).all()
       .map(row => ({ ...row, sql: row.sql?.replace(/\r\n/g, '\n') ?? null }))
     assert.deepEqual(objects(upgraded), objects(fresh))
-    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 2)
+    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 3)
     assert.equal(upgraded.prepare("SELECT COUNT(*) n FROM pragma_table_info('event')").get().n, 12)
     assert.throws(() => insertEvent(upgraded, { place_tags: '["unknown"]' }), /invalid place tag/)
     assert.throws(() => insertEvent(upgraded, { match_tags: '[null]' }), /invalid interest category/)
@@ -246,7 +246,7 @@ test('failed event migration rolls back both new tables, triggers, indexes and v
     assert.deepEqual(db.prepare('SELECT * FROM sqlite_schema ORDER BY name').all(), objects)
     assert.deepEqual(existingData(db), before)
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
-    initializeDatabase(db, () => { throw new Error('must not rebuild') })
+    initializeDatabase(db, () => { throw new Error('must not rebuild') }, migrations.slice(0, 1))
     assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2)
     assert.deepEqual(existingData(db), before)
   } finally { db.close() }
