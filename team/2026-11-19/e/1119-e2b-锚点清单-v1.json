@@ -1,0 +1,177 @@
+{
+  "schema": "e2b.base-anchors/v1",
+  "status": "CANDIDATE — 待 E 岗位确认，不得直接写入正式 manifest",
+  "measuredFrom": "app/(a)/_design/a4-v25/assets/wardrobe/",
+  "measuredOn": "2026-11-19",
+  "baseline": {
+    "body": "body.png  sha256 待记录  bbox 13,3–82,92",
+    "parts": "18 张换装素材实测外框"
+  },
+  "canvas": {
+    "width": 96,
+    "height": 96,
+    "origin": [0, 0],
+    "colorType": "RGBA (PNG color type 6, depth 8)",
+    "note": "所有图层共用同一 (0,0) 原点，不做单层平移/缩放"
+  },
+  "anchors": {
+    "centerX": {
+      "value": 47.5,
+      "unit": "px",
+      "definition": "画布几何中心；左右成对元素以 x 与 95-x 配对",
+      "method": "body.png bbox 13–82 → (13+82)/2 = 47.5；hat-beanie / hat-straw bbox 34–61 → 47.5",
+      "tolerance": 1.0,
+      "violations": [
+        {"asset": "hat-cap.png", "actual": 43.0, "delta": -4.5, "kind": "bbox-only", "resolved": false, "note": "非错位：帽冠 x39-55（中心 47.0）与 hat-beanie / hat-straw 逐行一致，落位正确；43.0 是左侧帽檐 x30-37 把 bbox 拉偏的结果。真实问题是帽檐单侧、自身不对称 31.1%，属返工项而非锚点项，已从本清单的待调整列表中移除"},
+        {"asset": "cloth-hoodie / jacket / sweater / apron / scarf-coat", "actual": 46.0, "delta": -1.5, "kind": "systematic"},
+        {"asset": "body.png 鼻子", "actual": 45.0, "delta": -2.5},
+        {"asset": "body.png 耳尖中点", "actual": 46.0, "delta": -1.5},
+        {"asset": "body.png 双腿", "actual": 44.5, "delta": -3.0, "note": "脚部 y88-92 中心 44.5；小腿 y84-87 中心 45.75"},
+        {"asset": "face ×4 / glasses-round", "actual": 47.0, "delta": -0.5, "note": "在容差内"}
+      ]
+    },
+    "footBaseline": {
+      "value": 92,
+      "unit": "px",
+      "definition": "双脚最低点所在行；所有站立姿态的对齐基准",
+      "method": "body.png 最后一行不透明像素 y=92（左 x28–39，右 x49–61）",
+      "tolerance": 0
+    },
+    "headTop": {
+      "value": 3,
+      "unit": "px",
+      "definition": "耳尖最高点所在行",
+      "method": "body.png 首行不透明像素 y=3（左耳 x31–37，右耳 x55–61）",
+      "tolerance": 0
+    },
+    "earTip": {
+      "left": [34, 3],
+      "right": [58, 3],
+      "unit": "px",
+      "definition": "左右耳尖中心；决定耳朵的辨识度与帽子两侧留白",
+      "method": "body.png y=3 两段游程 (31,37) 与 (55,61) 的中点",
+      "tolerance": 1.0
+    },
+    "earRoot": {
+      "value": 14,
+      "unit": "px",
+      "definition": "左右耳在轮廓上合并成一条线的行（耳缝底）",
+      "method": "body.png 逐行游程：y13 为 (22,44)(48,68) 两段，y14 起合并为 (22,68) 单段",
+      "tolerance": 1.0
+    },
+    "earOuter": {
+      "left": 22,
+      "right": 68,
+      "unit": "px",
+      "definition": "耳根行左右耳的最外缘 x",
+      "method": "body.png y=13 左耳起点 22、右耳终点 68",
+      "tolerance": 1.0
+    },
+    "headWidth": {
+      "atY20": {"left": 20, "right": 71, "width": 52},
+      "max": {"left": 18, "right": 72, "width": 55, "yRange": [24, 42]},
+      "unit": "px",
+      "definition": "头部宽度；y20 处的宽度决定帽子两侧露出多少头顶",
+      "method": "body.png 逐行游程",
+      "tolerance": 1.0
+    },
+    "eyeLine": {
+      "value": 29.5,
+      "unit": "px",
+      "definition": "眼睛垂直中心；四张 face 的眼睛外框并集为 y28–32",
+      "method": "face-happy / tired / hopeful / waiting 眼睛连通块 y 范围并集 = 28–32，中心 30；face-happy 为 28–31，中心 29.5",
+      "eyeCentersX": [33, 61],
+      "eyeBox": {"left": [31, 28, 35, 31], "right": [59, 28, 63, 31]},
+      "clearance": "x30–36 与 x58–64、y27–33 必须是空白（不画鼻子/描边/阴影），供任意表情落位",
+      "tolerance": 1.0
+    },
+    "noseCenter": {
+      "value": [45.0, 29.5],
+      "recommended": [47.5, 29.5],
+      "bbox": [37, 22, 53, 37],
+      "size": [17, 16],
+      "unit": "px",
+      "definition": "鼻子（body 图层自带的深色块）的中心与外框",
+      "method": "body.png 上半部最大暗块连通块 x37–53 y22–37（220 px）",
+      "note": "实测偏轴 −2.5px；建议重设计时居中到 47.5",
+      "tolerance": 1.0
+    },
+    "mouthLine": {
+      "value": 43.5,
+      "unit": "px",
+      "definition": "嘴巴垂直中心；四张 face 的嘴外框并集为 y41–46",
+      "method": "四张 face 嘴部连通块 y 范围并集 41–46",
+      "tolerance": 1.0
+    },
+    "glassesBand": {
+      "value": [25, 35],
+      "center": 30,
+      "unit": "px",
+      "definition": "镜片开口的垂直范围；决定眼镜落在脸上哪一段",
+      "method": "glasses-round.png 洪水填充求封闭孔：左孔 x28–38 y25–35、右孔 x56–66 y25–35（各 94 px），中心 (33,30) 与 (61,30)",
+      "openingCenters": {"left": [33, 30], "right": [61, 30]},
+      "note": "glasses-square 的孔中心为 (37,33.5)/(56,33.5)，偏内 4px，与 round 返工前同源；glasses-sun 无孔（镜片不透明）",
+      "tolerance": 1.0
+    },
+    "hatAnchor": {
+      "bottomY": 23,
+      "innerWidth": 28,
+      "innerX": [34, 61],
+      "unit": "px",
+      "definition": "帽子下沿与内径；帽子坐在两耳之间，不压住耳尖",
+      "method": "hat-beanie bbox 34,6–61,23；hat-straw 34,6–61,21。三顶帽子帽冠逐行均为 x39–55（中心 47.0）",
+      "note": "帽底 y23 与眼睛 y28 之间只有 5px，重设计时额头不能加高光/阴影带",
+      "tolerance": 1.0
+    },
+    "clothAnchor": {
+      "collarY": 53,
+      "hemY": 84,
+      "width": 57,
+      "xRange": [18, 74],
+      "unit": "px",
+      "definition": "衣服领口行、下摆行与外框；下摆必须停在腿根，不能压住腿",
+      "method": "cloth-hoodie / jacket / sweater / apron / scarf-coat 五件 bbox 完全一致 18,53–74,84",
+      "note": "cloth-raincoat 例外：13,3–82,83，覆盖整身含头部",
+      "tolerance": 1.0
+    },
+    "torso": {
+      "topY": 53,
+      "bottomY": 82,
+      "maxWidth": 66,
+      "maxWidthY": [61, 66],
+      "unit": "px",
+      "definition": "躯干区带；下沿必须 ≥82 且 ≤83，否则衣服下摆会悬空或压腿",
+      "method": "body.png 逐行游程：y82 宽 47、y83 宽 46、y84 起只剩两条腿",
+      "tolerance": 1.0
+    },
+    "legs": {
+      "topY": 84,
+      "bottomY": 92,
+      "left": [28, 40],
+      "right": [49, 61],
+      "gap": [41, 48],
+      "gapWidth": 8,
+      "unit": "px",
+      "definition": "双腿与脚；腿缝 8px 是站立辨识的关键",
+      "method": "body.png y84–92 游程：左 (32,40)、右 (51,60)；脚底 y90–92 扩到 (28,39)/(49,61)",
+      "tolerance": 1.0
+    }
+  },
+  "derivedZones": {
+    "earZone": [3, 14],
+    "headZone": [14, 42],
+    "faceZone": [22, 46],
+    "neckZone": [43, 52],
+    "torsoZone": [53, 82],
+    "legZone": [84, 92]
+  },
+  "openQuestions": [
+    "centerX 取 47.5（画布几何中心）还是 47（face/glasses/hats 的内容轴）：选 47.5 需 body+cloth 各右移 1px，选 47 需 face 与 round 各左移 0.5px（不可取整）",
+    "鼻子是否居中到 47.5：会与 glasses-round 的鼻梁（x40–53）错开 2px",
+    "腿是否居中对齐：现脚部中心 44.5、小腿 45.75，与画布中心差 3.0 / 1.75px",
+    "glasses-square 的左孔偏右 4px、右孔偏左 5px、两孔均偏下 4px，整体平移无解：返工重画开口，还是先下架只留 round / sun",
+    "hat-cap 帽檐只朝左（不对称 31.1%）：保留侧戴风格并在 manifest 注明，还是改对称",
+    "cloth-raincoat 主下摆停 y80（其余五件 y84）、y81–83 挂 3px 碎屑、x37–41 y33–37 压住鼻子、帽兜与 hat-beanie 重叠 165px：拆成「雨衣 + 帽兜」两件，还是单件补齐",
+    "cloth ×5 整套 −1.5px 偏移：随 body 重绘一并右移 1px，还是保持原样"
+  ]
+}
