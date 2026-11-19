@@ -1,0 +1,417 @@
+{
+  "checks": {
+    "canvas_all_96": true,
+    "rgba": true,
+    "alpha_binary": true,
+    "corners_transparent": true,
+    "no_edge_clipping": true,
+    "foot_all_92": true,
+    "centre_within_1px": true,
+    "height_in_range": true,
+    "aspect_err_under_3pct": true,
+    "single_component": true
+  },
+  "all_pass": true,
+  "items": [
+    {
+      "index": 1,
+      "name": "青蛙雨衣",
+      "file": "1119-e-穿搭-01-青蛙雨衣-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        19,
+        3,
+        76,
+        92,
+        58,
+        90
+      ],
+      "centre_x": 47.5,
+      "centre_dev": 0.0,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.643,
+      "aspect_out": 0.6444,
+      "aspect_err_pct": 0.22,
+      "opaque_px": 4046,
+      "colours": 2706,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 4046
+    },
+    {
+      "index": 2,
+      "name": "蓝卫衣橙帽",
+      "file": "1119-e-穿搭-02-蓝卫衣橙帽-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        3,
+        76,
+        92,
+        59,
+        90
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.6566,
+      "aspect_out": 0.6556,
+      "aspect_err_pct": 0.16,
+      "opaque_px": 3752,
+      "colours": 2258,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3752
+    },
+    {
+      "index": 3,
+      "name": "条纹毛衣圆镜",
+      "file": "1119-e-穿搭-03-条纹毛衣圆镜-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        3,
+        76,
+        92,
+        59,
+        90
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.6552,
+      "aspect_out": 0.6556,
+      "aspect_err_pct": 0.06,
+      "opaque_px": 3770,
+      "colours": 2324,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3770
+    },
+    {
+      "index": 4,
+      "name": "红帽围裙",
+      "file": "1119-e-穿搭-04-红帽围裙-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        19,
+        3,
+        76,
+        92,
+        58,
+        90
+      ],
+      "centre_x": 47.5,
+      "centre_dev": 0.0,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.6409,
+      "aspect_out": 0.6444,
+      "aspect_err_pct": 0.56,
+      "opaque_px": 3612,
+      "colours": 2309,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3612
+    },
+    {
+      "index": 5,
+      "name": "灰帽棕围裙",
+      "file": "1119-e-穿搭-05-灰帽棕围裙-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        3,
+        76,
+        92,
+        59,
+        90
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.6609,
+      "aspect_out": 0.6556,
+      "aspect_err_pct": 0.81,
+      "opaque_px": 3650,
+      "colours": 1864,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3650
+    },
+    {
+      "index": 6,
+      "name": "黄围巾风衣",
+      "file": "1119-e-穿搭-06-黄围巾风衣-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        3,
+        77,
+        92,
+        60,
+        90
+      ],
+      "centre_x": 47.5,
+      "centre_dev": 0.0,
+      "foot_row": 92,
+      "top_row": 3,
+      "touches_edge": false,
+      "aspect_src": 0.6703,
+      "aspect_out": 0.6667,
+      "aspect_err_pct": 0.54,
+      "opaque_px": 3785,
+      "colours": 1868,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3785
+    },
+    {
+      "index": 7,
+      "name": "牛仔帽格衫",
+      "file": "1119-e-穿搭-07-牛仔帽格衫-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        16,
+        2,
+        79,
+        92,
+        64,
+        91
+      ],
+      "centre_x": 47.5,
+      "centre_dev": 0.0,
+      "foot_row": 92,
+      "top_row": 2,
+      "touches_edge": false,
+      "aspect_src": 0.7013,
+      "aspect_out": 0.7033,
+      "aspect_err_pct": 0.29,
+      "opaque_px": 4037,
+      "colours": 2633,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 4037
+    },
+    {
+      "index": 8,
+      "name": "蓝格睡衣",
+      "file": "1119-e-穿搭-08-蓝格睡衣-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        15,
+        2,
+        79,
+        92,
+        65,
+        91
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 2,
+      "touches_edge": false,
+      "aspect_src": 0.714,
+      "aspect_out": 0.7143,
+      "aspect_err_pct": 0.04,
+      "opaque_px": 3997,
+      "colours": 2647,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3997
+    },
+    {
+      "index": 9,
+      "name": "黄帽墨镜",
+      "file": "1119-e-穿搭-09-黄帽墨镜-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        2,
+        76,
+        92,
+        59,
+        91
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 2,
+      "touches_edge": false,
+      "aspect_src": 0.6525,
+      "aspect_out": 0.6484,
+      "aspect_err_pct": 0.63,
+      "opaque_px": 3725,
+      "colours": 1445,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3725
+    },
+    {
+      "index": 10,
+      "name": "粉衫背带裤",
+      "file": "1119-e-穿搭-10-粉衫背带裤-96-v1.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_values": [
+        0,
+        255
+      ],
+      "content": [
+        18,
+        2,
+        76,
+        92,
+        59,
+        91
+      ],
+      "centre_x": 47.0,
+      "centre_dev": -0.5,
+      "foot_row": 92,
+      "top_row": 2,
+      "touches_edge": false,
+      "aspect_src": 0.6489,
+      "aspect_out": 0.6484,
+      "aspect_err_pct": 0.09,
+      "opaque_px": 3770,
+      "colours": 1631,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "component_count": 1,
+      "largest_component": 3770
+    }
+  ]
+}

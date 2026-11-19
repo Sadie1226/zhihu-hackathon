@@ -1,0 +1,361 @@
+{
+  "source": "original/1119-穿搭原图-01.jpg",
+  "source_size": [
+    1920,
+    1080
+  ],
+  "canvas": [
+    96,
+    96
+  ],
+  "scale": 0.193548,
+  "scale_reference_height_px": 465,
+  "target_content_height": 90,
+  "anchor": {
+    "centerX": 47.5,
+    "footBaseline": 92
+  },
+  "resample": "PIL Image.BOX（面积平均降采样）＋ alpha 128 阈值二值化",
+  "items": [
+    {
+      "index": 1,
+      "name": "青蛙雨衣",
+      "slug": "frog-raincoat",
+      "file": "1119-e-穿搭-01-青蛙雨衣-96-v1.png",
+      "source": {
+        "x0": 88,
+        "y0": 41,
+        "x1": 386,
+        "y1": 505,
+        "w": 299,
+        "h": 465
+      },
+      "scaled": {
+        "w": 58,
+        "h": 90,
+        "left": 19,
+        "top": 3
+      },
+      "content": {
+        "x0": 19,
+        "x1": 76,
+        "y0": 3,
+        "y1": 92,
+        "w": 58,
+        "h": 90
+      },
+      "opaque_px": 4046,
+      "colours": 2706,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 2,
+      "name": "蓝卫衣橙帽",
+      "slug": "blue-hoodie-orange-cap",
+      "file": "1119-e-穿搭-02-蓝卫衣橙帽-96-v1.png",
+      "source": {
+        "x0": 458,
+        "y0": 43,
+        "x1": 761,
+        "y1": 505,
+        "w": 304,
+        "h": 463
+      },
+      "scaled": {
+        "w": 59,
+        "h": 90,
+        "left": 18,
+        "top": 3
+      },
+      "content": {
+        "x0": 18,
+        "x1": 76,
+        "y0": 3,
+        "y1": 92,
+        "w": 59,
+        "h": 90
+      },
+      "opaque_px": 3752,
+      "colours": 2258,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 3,
+      "name": "条纹毛衣圆镜",
+      "slug": "stripe-sweater-round-glasses",
+      "file": "1119-e-穿搭-03-条纹毛衣圆镜-96-v1.png",
+      "source": {
+        "x0": 808,
+        "y0": 41,
+        "x1": 1111,
+        "y1": 504,
+        "w": 304,
+        "h": 464
+      },
+      "scaled": {
+        "w": 59,
+        "h": 90,
+        "left": 18,
+        "top": 3
+      },
+      "content": {
+        "x0": 18,
+        "x1": 76,
+        "y0": 3,
+        "y1": 92,
+        "w": 59,
+        "h": 90
+      },
+      "opaque_px": 3770,
+      "colours": 2324,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 4,
+      "name": "红帽围裙",
+      "slug": "red-cap-apron",
+      "file": "1119-e-穿搭-04-红帽围裙-96-v1.png",
+      "source": {
+        "x0": 1163,
+        "y0": 41,
+        "x1": 1460,
+        "y1": 505,
+        "w": 298,
+        "h": 465
+      },
+      "scaled": {
+        "w": 58,
+        "h": 90,
+        "left": 19,
+        "top": 3
+      },
+      "content": {
+        "x0": 19,
+        "x1": 76,
+        "y0": 3,
+        "y1": 92,
+        "w": 58,
+        "h": 90
+      },
+      "opaque_px": 3612,
+      "colours": 2309,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 5,
+      "name": "灰帽棕围裙",
+      "slug": "grey-beanie-brown-apron",
+      "file": "1119-e-穿搭-05-灰帽棕围裙-96-v1.png",
+      "source": {
+        "x0": 1531,
+        "y0": 43,
+        "x1": 1836,
+        "y1": 505,
+        "w": 306,
+        "h": 463
+      },
+      "scaled": {
+        "w": 59,
+        "h": 90,
+        "left": 18,
+        "top": 3
+      },
+      "content": {
+        "x0": 18,
+        "x1": 76,
+        "y0": 3,
+        "y1": 92,
+        "w": 59,
+        "h": 90
+      },
+      "opaque_px": 3650,
+      "colours": 1864,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 6,
+      "name": "黄围巾风衣",
+      "slug": "yellow-scarf-trench",
+      "file": "1119-e-穿搭-06-黄围巾风衣-96-v1.png",
+      "source": {
+        "x0": 82,
+        "y0": 572,
+        "x1": 392,
+        "y1": 1035,
+        "w": 311,
+        "h": 464
+      },
+      "scaled": {
+        "w": 60,
+        "h": 90,
+        "left": 18,
+        "top": 3
+      },
+      "content": {
+        "x0": 18,
+        "x1": 77,
+        "y0": 3,
+        "y1": 92,
+        "w": 60,
+        "h": 90
+      },
+      "opaque_px": 3785,
+      "colours": 1868,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 7,
+      "name": "牛仔帽格衫",
+      "slug": "cowboy-hat-plaid",
+      "file": "1119-e-穿搭-07-牛仔帽格衫-96-v1.png",
+      "source": {
+        "x0": 442,
+        "y0": 564,
+        "x1": 772,
+        "y1": 1035,
+        "w": 331,
+        "h": 472
+      },
+      "scaled": {
+        "w": 64,
+        "h": 91,
+        "left": 16,
+        "top": 2
+      },
+      "content": {
+        "x0": 16,
+        "x1": 79,
+        "y0": 2,
+        "y1": 92,
+        "w": 64,
+        "h": 91
+      },
+      "opaque_px": 4037,
+      "colours": 2633,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 8,
+      "name": "蓝格睡衣",
+      "slug": "blue-plaid-pajamas",
+      "file": "1119-e-穿搭-08-蓝格睡衣-96-v1.png",
+      "source": {
+        "x0": 803,
+        "y0": 564,
+        "x1": 1139,
+        "y1": 1035,
+        "w": 337,
+        "h": 472
+      },
+      "scaled": {
+        "w": 65,
+        "h": 91,
+        "left": 15,
+        "top": 2
+      },
+      "content": {
+        "x0": 15,
+        "x1": 79,
+        "y0": 2,
+        "y1": 92,
+        "w": 65,
+        "h": 91
+      },
+      "opaque_px": 3997,
+      "colours": 2647,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 9,
+      "name": "黄帽墨镜",
+      "slug": "yellow-hat-sunglasses",
+      "file": "1119-e-穿搭-09-黄帽墨镜-96-v1.png",
+      "source": {
+        "x0": 1170,
+        "y0": 567,
+        "x1": 1475,
+        "y1": 1035,
+        "w": 306,
+        "h": 469
+      },
+      "scaled": {
+        "w": 59,
+        "h": 91,
+        "left": 18,
+        "top": 2
+      },
+      "content": {
+        "x0": 18,
+        "x1": 76,
+        "y0": 2,
+        "y1": 92,
+        "w": 59,
+        "h": 91
+      },
+      "opaque_px": 3725,
+      "colours": 1445,
+      "alpha_values": [
+        0,
+        255
+      ]
+    },
+    {
+      "index": 10,
+      "name": "粉衫背带裤",
+      "slug": "pink-shirt-overalls",
+      "file": "1119-e-穿搭-10-粉衫背带裤-96-v1.png",
+      "source": {
+        "x0": 1533,
+        "y0": 567,
+        "x1": 1837,
+        "y1": 1036,
+        "w": 305,
+        "h": 470
+      },
+      "scaled": {
+        "w": 59,
+        "h": 91,
+        "left": 18,
+        "top": 2
+      },
+      "content": {
+        "x0": 18,
+        "x1": 76,
+        "y0": 2,
+        "y1": 92,
+        "w": 59,
+        "h": 91
+      },
+      "opaque_px": 3770,
+      "colours": 1631,
+      "alpha_values": [
+        0,
+        255
+      ]
+    }
+  ]
+}
