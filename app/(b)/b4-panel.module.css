@@ -141,6 +141,30 @@
   cursor: pointer;
 }
 .primaryButton:disabled { opacity: 0.6; cursor: default; }
+.inviteCard {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #DED6C8;
+  border-radius: 3px;
+  background: #FFFDF8;
+}
+.fileInput { max-width: 100%; color: #626B73; font: inherit; font-size: 13px; }
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #DED6C8;
+  border-radius: 3px;
+  background: #FFFDF8;
+  color: #526447;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+}
+.linkButton:hover { background: #EEF1E8; }
 .skeleton {
   height: 44px;
   margin: 8px 0;
@@ -173,8 +197,10 @@
 .railButton:focus-visible,
 .ghostButton:focus-visible,
 .primaryButton:focus-visible,
+.linkButton:focus-visible,
 .textarea:focus-visible,
-.select:focus-visible {
+.select:focus-visible,
+.fileInput:focus-visible {
   outline: 2px solid #98483E;
   outline-offset: 2px;
 }
@@ -189,3 +215,5 @@
   .skeleton { animation: none; }
   .railButton, .ghostButton, .primaryButton { transition: none; }
 }
+
+[data-reduced-motion='true'] .skeleton { animation: none; }

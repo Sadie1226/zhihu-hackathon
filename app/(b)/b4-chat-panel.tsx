@@ -1,10 +1,11 @@
 // 目标位置：app/(b)/b4-chat-panel.tsx
-// 日常交流（2.1）：闲聊说完就完，不落成长期任务。
+// 日常交流正文。POST /api/chat 未定契约，这里是显式示例通道，不是失败后的假成功降级。
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import styles from './b4-panel.module.css'
 import { sendChatFixture } from './b4-chat-fixture'
+import type { PanelContext } from './b4-ports'
+import styles from './b4-panel.module.css'
 
 type Turn = {
   id: string
@@ -13,7 +14,7 @@ type Turn = {
   pending?: boolean
 }
 
-export function ChatPanel() {
+export function ChatPanel({ reducedMotion }: PanelContext) {
   const [turns, setTurns] = useState<Turn[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -29,33 +30,33 @@ export function ChatPanel() {
     const value = text.trim()
     if (value.length === 0 || sending) return
 
+    setNotice('')
     const id = `owner_${Date.now()}`
     setTurns((previous) => [...previous, { id, who: 'owner', text: value, pending: true }])
     setText('')
-    setNotice('')
     setSending(true)
     try {
       const reply = await sendChatFixture(value)
       setTurns((previous) => [
-        ...previous.map((turn) =>
-          turn.id === id ? { ...turn, pending: false } : turn,
-        ),
+        ...previous.map((turn) => (turn.id === id ? { ...turn, pending: false } : turn)),
         { id: `dog_${Date.now()}`, who: 'dog', text: reply },
       ])
     } catch {
-      setNotice('这次没确认送出，可重试。')
+      // 示例通道自身出错时保留原文，不声称已送达。
+      setText(value)
+      setNotice('示例没能生成，原文还在，可以再试一次。')
     } finally {
       setSending(false)
     }
   }
 
   return (
-    <section className={styles.panel} aria-labelledby="b4-chat-title">
-      <div className={styles.titleRow}>
-        <h2 id="b4-chat-title" className={styles.title}>说说话</h2>
-        <span className={styles.badge}>示例对话</span>
-      </div>
-
+    <section
+      className={styles.panel}
+      aria-label="聊聊"
+      data-reduced-motion={reducedMotion ? 'true' : undefined}
+    >
+      <p className={styles.notice}>本机示例，不会送出，也不会记成任务。</p>
       {notice && <p className={styles.notice} role="status">{notice}</p>}
 
       {turns.length === 0 ? (
@@ -73,7 +74,7 @@ export function ChatPanel() {
                 >
                   {turn.text}
                 </div>
-                {turn.pending && <span className={styles.pending}>还没送到</span>}
+                {turn.pending && <span className={styles.pending}>示例生成中</span>}
               </div>
             </div>
           ))}
@@ -91,7 +92,7 @@ export function ChatPanel() {
           placeholder="想说什么……"
         />
         <button type="submit" className={styles.primaryButton} disabled={sending}>
-          发送
+          发一条（示例）
         </button>
         <p className={styles.hint}>闲聊说完就完，不会记成任务。</p>
       </form>

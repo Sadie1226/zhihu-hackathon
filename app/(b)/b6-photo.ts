@@ -1,33 +1,128 @@
-// app/(b)/b6-photo.ts —— B6 照片归属校验（A 路径，不动契约）
-// 对外：uploadUrl 形状校验 + 文件头判型 + photoUrl 三段归属判断。
-import { randomUUID } from 'node:crypto'
-import { readSessionId } from '@/lib/auth/session'
+// app/(b)/b6-photo.ts —— B6 照片归属与内容校验（A 路径，不动公共契约）
+import { createHash, randomUUID } from 'node:crypto'
+import path from 'node:path'
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
-const SESSION_PREFIX_CHARS = 8
-const PHOTO_URL_RE = /^\/uploads\/s_([0-9a-z]{8})_([0-9a-z]{16})\.webp$/
+export const MAX_PHOTO_SIDE = 1600
 
-/** 上传：生成 s_<session8>_<随机16>.webp，session8 取匿名 session 的哈希前 8 位。 */
-export function makePhotoUrl(sessionId: string): string {
-  const session8 = sessionId.replace(/^anon_/, '').slice(0, SESSION_PREFIX_CHARS).padEnd(SESSION_PREFIX_CHARS, '0')
-  const rand = randomUUID().replace(/-/g, '').slice(0, 16)
-  return `/uploads/s_${session8}_${rand}.webp`
+/**
+ * 上传落盘目录的唯一来源：写入、回应校验、读取路由三处都调用它，避免漂移。
+ * 本地默认 ./data/uploads（.gitignore 已忽略 data/）；
+ * 部署由环境变量 UPLOAD_DIR 指到 /var/lib/zhihu-hackathon/uploads
+ * （systemd ReadWritePaths 已放行、StateDirectory 已建好父目录，service 无需改）。
+ * 不能放 public/uploads：next start 下代码目录只读，线上写入会 EACCES。
+ */
+export function uploadDir(): string {
+  // 路径是运行时读写的上传目录，不参与 build 文件追踪（否则整个项目被打进输出）。
+  return path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR || './data/uploads')
 }
 
-/** 文件头判型：不看扩展名。只读前 12 字节。 */
-export function detectMime(head: Uint8Array): 'image/jpeg' | 'image/png' | 'image/webp' | null {
-  const hex = (b: Uint8Array) => Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('')
-  if (head.length >= 3 && hex(head.slice(0, 3)) === 'ffd8ff') return 'image/jpeg'
-  if (head.length >= 8 && hex(head.slice(0, 8)) === '89504e470d0a1a0a') return 'image/png'
-  if (head.length >= 12 && Buffer.from(head.slice(0, 4)).toString('ascii') === 'RIFF'
-      && Buffer.from(head.slice(8, 12)).toString('ascii') === 'WEBP') return 'image/webp'
+export type PhotoMime = 'image/jpeg' | 'image/png' | 'image/webp'
+export type PhotoInfo = { mime: PhotoMime; width: number; height: number }
+
+const EXT_BY_MIME: Record<PhotoMime, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+// 归属取完整 session 哈希（readSessionId 返回 anon_ + 64 位十六进制），不再用前 8 位当凭证。
+const PHOTO_URL_RE = /^\/uploads\/s_([0-9a-f]{64})_([0-9a-f]{16})\.(jpg|png|webp)$/
+
+function ascii(head: Uint8Array, start: number, end: number): string {
+  let out = ''
+  for (let i = start; i < end && i < head.length; i += 1) out += String.fromCharCode(head[i])
+  return out
+}
+
+function jpegSize(head: Uint8Array): { width: number; height: number } | null {
+  if (head.length < 4 || head[0] !== 0xff || head[1] !== 0xd8) return null
+  let offset = 2
+  while (offset + 9 < head.length) {
+    if (head[offset] !== 0xff) { offset += 1; continue }
+    const marker = head[offset + 1]
+    if (marker === 0xff) { offset += 1; continue }
+    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2
+      continue
+    }
+    if (marker === 0xd9 || marker === 0xda) break
+    const length = (head[offset + 2] << 8) | head[offset + 3]
+    if (length < 2) break
+    const isSof = marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)
+    if (isSof) {
+      const height = (head[offset + 5] << 8) | head[offset + 6]
+      const width = (head[offset + 7] << 8) | head[offset + 8]
+      return width > 0 && height > 0 ? { width, height } : null
+    }
+    offset += 2 + length
+  }
   return null
 }
 
+function pngSize(head: Uint8Array): { width: number; height: number } | null {
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10]
+  if (head.length < 24 || signature.some((byte, index) => head[index] !== byte)) return null
+  if (ascii(head, 12, 16) !== 'IHDR') return null
+  const width = ((head[16] << 24) >>> 0) + (head[17] << 16) + (head[18] << 8) + head[19]
+  const height = ((head[20] << 24) >>> 0) + (head[21] << 16) + (head[22] << 8) + head[23]
+  return width > 0 && height > 0 ? { width, height } : null
+}
+
+function webpSize(head: Uint8Array): { width: number; height: number } | null {
+  if (head.length < 30 || ascii(head, 0, 4) !== 'RIFF' || ascii(head, 8, 12) !== 'WEBP') return null
+  const format = ascii(head, 12, 16)
+  if (format === 'VP8X') {
+    const width = 1 + head[24] + (head[25] << 8) + (head[26] << 16)
+    const height = 1 + head[27] + (head[28] << 8) + (head[29] << 16)
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  if (format === 'VP8 ' && head[23] === 0x9d && head[24] === 0x01 && head[25] === 0x2a) {
+    const width = (head[26] | (head[27] << 8)) & 0x3fff
+    const height = (head[28] | (head[29] << 8)) & 0x3fff
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  if (format === 'VP8L' && head[20] === 0x2f) {
+    const width = 1 + head[21] + ((head[22] & 0x3f) << 8)
+    const height = 1 + (head[22] >> 6) + (head[23] << 2) + ((head[24] & 0x0f) << 10)
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  return null
+}
+
+/** 只看文件头：格式、真实扩展名、MIME 与边长都由字节决定，不看客户端文件名。 */
+export function inspectPhoto(head: Uint8Array): PhotoInfo | null {
+  if (head.length >= 3 && head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) {
+    const size = jpegSize(head)
+    return size ? { mime: 'image/jpeg', ...size } : null
+  }
+  if (head[0] === 137 && head[1] === 80 && head[2] === 78 && head[3] === 71) {
+    const size = pngSize(head)
+    return size ? { mime: 'image/png', ...size } : null
+  }
+  if (ascii(head, 0, 4) === 'RIFF' && ascii(head, 8, 12) === 'WEBP') {
+    const size = webpSize(head)
+    return size ? { mime: 'image/webp', ...size } : null
+  }
+  return null
+}
+
+/** 完整 session 哈希作为归属前缀，随机串仍由服务端生成。 */
+export function sessionPhotoOwner(sessionId: string): string {
+  return createHash('sha256').update(sessionId).digest('hex')
+}
+
+export function makePhotoUrl(sessionId: string, mime: PhotoMime): string {
+  const random = randomUUID().replace(/-/g, '').slice(0, 16)
+  return `/uploads/s_${sessionPhotoOwner(sessionId)}_${random}.${EXT_BY_MIME[mime]}`
+}
+
+export function photoExtension(mime: PhotoMime): string {
+  return EXT_BY_MIME[mime]
+}
+
 /**
- * photoUrl 三段归属判断，全过才允许写进 reply.photo_url。
- * ① 形状 ② session 前缀 == 当前会话 ③ 文件真实存在。
- * 存在性由调用方注入 exists()（避免本模块直接碰 fs，便于测试）。
+ * photoUrl 三段归属：形状、完整 session 哈希、文件确实存在。
+ * 全过才允许写进 reply.photo_url；exists 由调用方注入，避免本模块碰 fs。
  */
 export function parseOwnPhotoUrl(
   photoUrl: unknown,
@@ -37,10 +132,7 @@ export function parseOwnPhotoUrl(
   if (typeof photoUrl !== 'string') return { ok: false, reason: 'shape' }
   const match = PHOTO_URL_RE.exec(photoUrl)
   if (!match) return { ok: false, reason: 'shape' }
-  const owner = sessionId.replace(/^anon_/, '').slice(0, SESSION_PREFIX_CHARS).padEnd(SESSION_PREFIX_CHARS, '0')
-  if (match[1] !== owner) return { ok: false, reason: 'owner' }
+  if (match[1] !== sessionPhotoOwner(sessionId)) return { ok: false, reason: 'owner' }
   if (!exists(photoUrl.slice('/uploads/'.length))) return { ok: false, reason: 'missing' }
   return { ok: true, name: photoUrl }
 }
-
-export { readSessionId }

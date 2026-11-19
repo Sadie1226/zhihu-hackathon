@@ -51,7 +51,7 @@ POST /api/chat
 - 这条**不卡 b4 交付**：夹具是 02 表第 336 行明文要求的形态。
 - 请 A 在站会排优先级；B 不催 C 改 `contracts/`，也不自己写一份当既成事实。
 
-## 5. 附：不需要 C 做的事
+## 5. 附：不需要 C 做的事（11-19 复核后更新）
 
-- 不要为 b4 新建 `v_wish_active` 视图或 `wish.source/source_url` 字段——那是另外的请求，b4 用不到。
+- `v_wish_active`、`wish.source/source_url`、`Trip.wishId` 已由 C 心愿 v3（`8b7fe9f`）合入 main。本请求不再要求 C 新建这些字段；B 心愿路由改为**消费**现有契约边界（`ownerWishFields` / `revokeWish` / `wishDto`），不在 B 文件里复制一份来源字段定义。
 - 不要为禁词检查新增 `scripts/check-words.sh`；`scripts/check-all.sh` 第 4 步已覆盖，`scripts/` 归 C。
