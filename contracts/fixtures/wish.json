@@ -1,6 +1,6 @@
 {
   "sourceMode": "fixture",
-  "note": "三条心愿，第三条已撤销（revoked_at 有值，不是被删掉——手账还要能翻回去）。category 必须是六类之一，c 拿它查 CATEGORY_KEYWORDS 做搜索。",
+  "note": "前三条为主人心愿，第三条已撤销但保留记录；第四条为收藏来源字段样例。全部为 fixture，未执行 OAuth 或真实收藏抓取。",
   "wishes": [
     {
       "id": "wish_001",
@@ -8,7 +8,9 @@
       "text": "最近好想看看下雪的地方",
       "category": "自然风景",
       "created_at": "2026-11-16T00:20:00Z",
-      "revoked_at": null
+      "revoked_at": null,
+      "source": "owner",
+      "source_url": null
     },
     {
       "id": "wish_002",
@@ -16,7 +18,9 @@
       "text": "想知道别人家的老城区都长什么样",
       "category": "城市角落",
       "created_at": "2026-11-16T00:22:00Z",
-      "revoked_at": null
+      "revoked_at": null,
+      "source": "owner",
+      "source_url": null
     },
     {
       "id": "wish_003",
@@ -24,7 +28,19 @@
       "text": "找点冷知识看看",
       "category": "冷知识",
       "created_at": "2026-11-16T00:25:00Z",
-      "revoked_at": "2026-11-16T01:00:00Z"
+      "revoked_at": "2026-11-16T01:00:00Z",
+      "source": "owner",
+      "source_url": null
+    },
+    {
+      "id": "wish_collection_fixture",
+      "dog_id": "dog_seed_07",
+      "text": "收藏主题测试样例",
+      "category": "冷知识",
+      "created_at": "2026-11-16T00:25:00Z",
+      "revoked_at": null,
+      "source": "collection",
+      "source_url": "https://www.zhihu.com/question/123/answer/456"
     }
   ]
 }

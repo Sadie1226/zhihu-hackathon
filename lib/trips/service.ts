@@ -3,6 +3,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { TRIPS_PER_DAY_MAX, TRIP_MIN_GAP_HOURS } from '../../contracts/types.ts'
 import type { Trip, TripStatus, TripTrigger, Find, Exchange } from '../../contracts/types.ts'
 import { deliverOnTripStart } from '../mailbox/deliver.mjs'
+import { selectActiveWish } from '../wishes/contract.ts'
 
 export class TripError extends Error {
   code: 'NOT_FOUND' | 'CONFLICT'
@@ -19,11 +20,11 @@ export const isTerminal = (status: string): status is TerminalStatus =>
 
 type TripRow = {
   id: string; dog_id: string; seq: number; status: TripStatus; trigger: TripTrigger
-  created_at: string; started_at: string | null; ended_at: string | null
+  created_at: string; started_at: string | null; ended_at: string | null; wish_id: string | null
 }
 function tripDto(row: TripRow): Trip {
   return { id: row.id, dogId: row.dog_id, seq: row.seq, status: row.status, trigger: row.trigger,
-    createdAt: row.created_at, startedAt: row.started_at, endedAt: row.ended_at }
+    createdAt: row.created_at, startedAt: row.started_at, endedAt: row.ended_at, wishId: row.wish_id }
 }
 
 /** Synchronous callbacks only: the write lock spans ownership, policy, state and delivery. */
@@ -111,7 +112,11 @@ export function createTripService(db: DatabaseSync, options: { now?: () => Date;
         if (last && Date.parse(at) - Date.parse(String(last.started_at)) < TRIP_MIN_GAP_HOURS * 3600000) {
           conflict('两次出发需要间隔至少 6 小时')
         }
-        db.prepare("UPDATE trip SET status = 'running', started_at = ? WHERE id = ?").run(at, id)
+        // Resolve at actual departure, under this write lock, so a wish revoked
+        // while pending cannot become the provenance of a future trip.
+        const wish = trip.trigger === 'wish' ? selectActiveWish(db, trip.dogId, sessionId) : null
+        db.prepare("UPDATE trip SET status = 'running', started_at = ?, wish_id = ? WHERE id = ?")
+          .run(at, wish?.id ?? null, id)
         const { deliveredIds } = deliverOnTripStart(db, trip.dogId, trip.seq, at)
         const delivered = deliveredIds.map(exchangeId => {
           const row = db.prepare(`SELECT id, from_dog AS fromDog, to_dog AS toDog, kind, payload,
