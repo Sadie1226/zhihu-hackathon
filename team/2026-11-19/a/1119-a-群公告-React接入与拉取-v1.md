@@ -2,9 +2,12 @@
 
 各位，A 的 React 领养、小屋和统一面板容器已推送，**还没有合并 main**。只 pull main 看不到这批改动。
 
-**仓库：** https://github.com/Sadie1226/zhihu-hackathon  
-**分支：** `a5-a5b-react-1119`  
-**在线查看：** [GitHub 分支目录](https://github.com/Sadie1226/zhihu-hackathon/tree/a5-a5b-react-1119)  
+**仓库：** https://github.com/Sadie1226/zhihu-hackathon
+
+**分支：** `a5-a5b-react-1119`
+
+**在线查看：** [GitHub 分支目录](https://github.com/Sadie1226/zhihu-hackathon/tree/a5-a5b-react-1119)
+
 **当前代码基线：** `b35a8b0`（之后可能继续增加接入文档）。
 
 ## 怎么拿到
