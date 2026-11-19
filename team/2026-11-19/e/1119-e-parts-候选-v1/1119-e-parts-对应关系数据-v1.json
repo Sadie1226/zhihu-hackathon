@@ -1,0 +1,1820 @@
+{
+  "canvas": 96,
+  "parts_scale": 0.260274,
+  "items": [
+    {
+      "id": "C01",
+      "category": "衣服",
+      "rule": "cloth-hood",
+      "name": "青蛙雨衣",
+      "slug": "frog-raincoat",
+      "file": "1119-e-parts-cloth-01-frog-raincoat-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        1
+      ],
+      "source_bbox": [
+        92,
+        72,
+        383,
+        458,
+        292,
+        387
+      ],
+      "target": [
+        13,
+        3,
+        82,
+        83
+      ],
+      "align": "center",
+      "content": [
+        17,
+        3,
+        77,
+        83,
+        61,
+        81
+      ],
+      "scale": 0.209302,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "连帽，帽兜自带，按正式 cloth-raincoat 的全身框落位；不叠另一顶帽"
+    },
+    {
+      "id": "C02",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "蓝卫衣",
+      "slug": "blue-hoodie",
+      "file": "1119-e-parts-cloth-02-blue-hoodie-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        2
+      ],
+      "source_bbox": [
+        469,
+        253,
+        744,
+        458,
+        276,
+        206
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        67,
+        84,
+        43,
+        32
+      ],
+      "scale": 0.15534,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "连帽卫衣，带抽绳与云朵图案"
+    },
+    {
+      "id": "C03",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "条纹毛衣",
+      "slug": "stripe-sweater",
+      "file": "1119-e-parts-cloth-03-stripe-sweater-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        807,
+        277,
+        1111,
+        458,
+        305,
+        182
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        19,
+        53,
+        72,
+        84,
+        54,
+        32
+      ],
+      "scale": 0.175824,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "棕红黄横条纹"
+    },
+    {
+      "id": "C04",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "红黄条纹围裙",
+      "slug": "stripe-apron",
+      "file": "1119-e-parts-cloth-04-stripe-apron-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        1169,
+        283,
+        1454,
+        458,
+        286,
+        176
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        20,
+        53,
+        71,
+        84,
+        52,
+        32
+      ],
+      "scale": 0.181818,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "白泡泡袖，胸前黄口袋带 M 标"
+    },
+    {
+      "id": "C05",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "棕色背带裤",
+      "slug": "brown-overalls",
+      "file": "1119-e-parts-cloth-05-brown-overalls-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        1530,
+        278,
+        1836,
+        458,
+        307,
+        181
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        19,
+        53,
+        72,
+        84,
+        54,
+        32
+      ],
+      "scale": 0.176796,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "工装背带裤，灰色内衬"
+    },
+    {
+      "id": "C06",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "黄围巾风衣",
+      "slug": "scarf-coat",
+      "file": "1119-e-parts-cloth-06-scarf-coat-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        82,
+        769,
+        393,
+        998,
+        312,
+        230
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        67,
+        84,
+        43,
+        32
+      ],
+      "scale": 0.13913,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "卡其风衣＋黄色围巾"
+    },
+    {
+      "id": "C07",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "红披肩格衫",
+      "slug": "shawl-plaid",
+      "file": "1119-e-parts-cloth-07-shawl-plaid-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        456,
+        795,
+        758,
+        990,
+        303,
+        196
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        22,
+        53,
+        70,
+        84,
+        49,
+        32
+      ],
+      "scale": 0.163265,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "红披肩、红白格衬衫、棕马甲、腰带"
+    },
+    {
+      "id": "C08",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "蓝格睡衣",
+      "slug": "blue-plaid-pajamas",
+      "file": "1119-e-parts-cloth-08-blue-plaid-pajamas-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        803,
+        795,
+        1116,
+        1020,
+        314,
+        226
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        24,
+        53,
+        67,
+        84,
+        44,
+        32
+      ],
+      "scale": 0.141593,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "蓝白格上下套装"
+    },
+    {
+      "id": "C09",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "白背心",
+      "slug": "white-vest",
+      "file": "1119-e-parts-cloth-09-white-vest-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        10
+      ],
+      "source_bbox": [
+        1213,
+        815,
+        1432,
+        980,
+        220,
+        166
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        66,
+        84,
+        42,
+        32
+      ],
+      "scale": 0.192771,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "纯白无袖，白色身体上只剩描边"
+    },
+    {
+      "id": "C10",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "粉衫背带裤",
+      "slug": "pink-overalls",
+      "file": "1119-e-parts-cloth-10-pink-overalls-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        9
+      ],
+      "source_bbox": [
+        1530,
+        795,
+        1839,
+        1005,
+        310,
+        211
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        23,
+        53,
+        69,
+        84,
+        47,
+        32
+      ],
+      "scale": 0.151659,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "粉短袖＋深蓝牛仔背带裤"
+    },
+    {
+      "id": "H01",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "橙护耳帽",
+      "slug": "earflap-orange",
+      "file": "1119-e-parts-hat-01-earflap-orange-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        496,
+        83,
+        763,
+        255,
+        268,
+        173
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        6,
+        61,
+        23,
+        28,
+        18
+      ],
+      "scale": 0.104046,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "两侧护耳，右耳垂坠"
+    },
+    {
+      "id": "H02",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "棕贝雷帽",
+      "slug": "beret-brown",
+      "file": "1119-e-parts-hat-02-beret-brown-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        2
+      ],
+      "source_bbox": [
+        822,
+        68,
+        1096,
+        209,
+        275,
+        142
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        10,
+        61,
+        23,
+        28,
+        14
+      ],
+      "scale": 0.101818,
+      "overflow": [
+        0,
+        4,
+        0,
+        0
+      ],
+      "note": "带帽顶小柄"
+    },
+    {
+      "id": "H03",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "红棒球帽",
+      "slug": "cap-red-m",
+      "file": "1119-e-parts-hat-03-cap-red-m-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        1196,
+        77,
+        1423,
+        198,
+        228,
+        122
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.122807,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "黄色 M 标"
+    },
+    {
+      "id": "H04",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "灰贝雷帽",
+      "slug": "beret-grey",
+      "file": "1119-e-parts-hat-04-beret-grey-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        1
+      ],
+      "source_bbox": [
+        1554,
+        63,
+        1806,
+        199,
+        253,
+        137
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.110672,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "带帽顶小柄"
+    },
+    {
+      "id": "H05",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "棕牛仔帽",
+      "slug": "cowboy-brown",
+      "file": "1119-e-parts-hat-05-cowboy-brown-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        442,
+        605,
+        772,
+        749,
+        331,
+        145
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        12,
+        61,
+        23,
+        28,
+        12
+      ],
+      "scale": 0.084592,
+      "overflow": [
+        0,
+        6,
+        0,
+        0
+      ],
+      "note": "两侧卷檐"
+    },
+    {
+      "id": "H06",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "蓝白格睡帽",
+      "slug": "nightcap-blue-check",
+      "file": "1119-e-parts-hat-06-nightcap-blue-check-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        838,
+        608,
+        1139,
+        770,
+        302,
+        163
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.092715,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "右侧白绒球"
+    },
+    {
+      "id": "H07",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "黄帽",
+      "slug": "cap-yellow",
+      "file": "1119-e-parts-hat-07-cap-yellow-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        1170,
+        609,
+        1474,
+        754,
+        305,
+        146
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        11,
+        61,
+        23,
+        28,
+        13
+      ],
+      "scale": 0.091803,
+      "overflow": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "note": "鸭舌造型"
+    },
+    {
+      "id": "H08",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "灰条纹毛线帽",
+      "slug": "beanie-grey-stripe",
+      "file": "1119-e-parts-hat-08-beanie-grey-stripe-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        1559,
+        608,
+        1806,
+        734,
+        248,
+        127
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        10,
+        61,
+        23,
+        28,
+        14
+      ],
+      "scale": 0.112903,
+      "overflow": [
+        0,
+        4,
+        0,
+        0
+      ],
+      "note": "竖条纹针织"
+    },
+    {
+      "id": "G01",
+      "category": "眼镜",
+      "rule": "glasses-round",
+      "name": "圆框眼镜",
+      "slug": "round-black",
+      "file": "1119-e-parts-glasses-01-round-black-96-v1.png",
+      "source": "1119-parts-03-glasses-a.png",
+      "components": [
+        1,
+        2
+      ],
+      "source_bbox": [
+        904,
+        192,
+        1144,
+        299,
+        241,
+        108
+      ],
+      "target": [
+        23,
+        23,
+        71,
+        37
+      ],
+      "align": "center",
+      "content": [
+        31,
+        23,
+        63,
+        37,
+        33,
+        15
+      ],
+      "scale": 0.138889,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "左右两片空心镜框，桥接处断开，按一件合成"
+    },
+    {
+      "id": "G02",
+      "category": "眼镜",
+      "rule": "glasses-sun",
+      "name": "墨镜哑光",
+      "slug": "sun-matte",
+      "file": "1119-e-parts-glasses-02-sun-matte-96-v1.png",
+      "source": "1119-parts-03-glasses-a.png",
+      "components": [
+        3,
+        4
+      ],
+      "source_bbox": [
+        1306,
+        746,
+        1519,
+        798,
+        214,
+        53
+      ],
+      "target": [
+        27,
+        26,
+        66,
+        40
+      ],
+      "align": "center",
+      "content": [
+        27,
+        28,
+        66,
+        37,
+        40,
+        10
+      ],
+      "scale": 0.186916,
+      "overflow": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "note": "无高光"
+    },
+    {
+      "id": "G03",
+      "category": "眼镜",
+      "rule": "glasses-round",
+      "name": "金丝圆框眼镜",
+      "slug": "round-gold",
+      "file": "1119-e-parts-glasses-03-round-gold-96-v1.png",
+      "source": "1119-parts-05-glasses-b.png",
+      "components": [
+        1,
+        2
+      ],
+      "source_bbox": [
+        1106,
+        380,
+        1393,
+        463,
+        288,
+        84
+      ],
+      "target": [
+        23,
+        23,
+        71,
+        37
+      ],
+      "align": "center",
+      "content": [
+        23,
+        24,
+        71,
+        37,
+        49,
+        14
+      ],
+      "scale": 0.170139,
+      "overflow": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "note": "金色细框，带镜腿"
+    },
+    {
+      "id": "G04",
+      "category": "眼镜",
+      "rule": "glasses-sun",
+      "name": "墨镜高光",
+      "slug": "sun-shine",
+      "file": "1119-e-parts-glasses-04-sun-shine-96-v1.png",
+      "source": "1119-parts-05-glasses-b.png",
+      "components": [
+        3,
+        4
+      ],
+      "source_bbox": [
+        645,
+        1300,
+        898,
+        1362,
+        254,
+        63
+      ],
+      "target": [
+        27,
+        26,
+        66,
+        40
+      ],
+      "align": "center",
+      "content": [
+        27,
+        28,
+        66,
+        37,
+        40,
+        10
+      ],
+      "scale": 0.15748,
+      "overflow": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "note": "两条斜高光"
+    },
+    {
+      "id": "F01",
+      "category": "表情",
+      "rule": "face",
+      "name": "表情盘-闭眼",
+      "slug": "plate-closed",
+      "file": "1119-e-parts-face-01-plate-closed-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        1,
+        11,
+        13
+      ],
+      "source_bbox": [
+        908,
+        185,
+        999,
+        270,
+        92,
+        86
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        37,
+        28,
+        56,
+        46,
+        20,
+        19
+      ],
+      "scale": 0.22093,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "圆盘内两条横线＝闭眼；横线与圆盘分离，按一件合成"
+    },
+    {
+      "id": "F02",
+      "category": "表情",
+      "rule": "face",
+      "name": "表情盘-闭眼带泪",
+      "slug": "plate-closed-tear",
+      "file": "1119-e-parts-face-02-plate-closed-tear-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        2,
+        12,
+        14
+      ],
+      "source_bbox": [
+        1048,
+        185,
+        1140,
+        294,
+        93,
+        110
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        39,
+        28,
+        54,
+        46,
+        16,
+        19
+      ],
+      "scale": 0.172727,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "同 F01，右下挂一滴泪"
+    },
+    {
+      "id": "P01",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "尖角眼",
+      "slug": "eye-angle",
+      "file": "1119-e-parts-face-part-01-eye-angle-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        703,
+        205,
+        735,
+        236,
+        33,
+        32
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        29,
+        26,
+        37,
+        33,
+        9,
+        8
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "单个 < 形"
+    },
+    {
+      "id": "P02",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-a",
+      "slug": "eye-oval-a",
+      "file": "1119-e-parts-face-part-02-eye-oval-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        178,
+        212,
+        190,
+        232,
+        13,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        32,
+        27,
+        34,
+        31,
+        3,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "P03",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-b",
+      "slug": "eye-oval-b",
+      "file": "1119-e-parts-face-part-03-eye-oval-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        322,
+        212,
+        334,
+        232,
+        13,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        32,
+        27,
+        34,
+        31,
+        3,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "P04",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-c",
+      "slug": "eye-oval-c",
+      "file": "1119-e-parts-face-part-04-eye-oval-c-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        569,
+        212,
+        582,
+        232,
+        14,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        31,
+        27,
+        34,
+        31,
+        4,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "P05",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-a",
+      "slug": "eye-arc-a",
+      "file": "1119-e-parts-face-part-05-eye-arc-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        1308,
+        212,
+        1349,
+        235,
+        42,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形"
+    },
+    {
+      "id": "P06",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-b",
+      "slug": "eye-arc-b",
+      "file": "1119-e-parts-face-part-06-eye-arc-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        1449,
+        212,
+        1489,
+        235,
+        41,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形"
+    },
+    {
+      "id": "P07",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "闭眼横条-a",
+      "slug": "eye-bar-a",
+      "file": "1119-e-parts-face-part-07-eye-bar-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        9
+      ],
+      "source_bbox": [
+        1705,
+        217,
+        1742,
+        234,
+        38,
+        18
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        27,
+        37,
+        31,
+        10,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "P08",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "闭眼横条-b",
+      "slug": "eye-bar-b",
+      "file": "1119-e-parts-face-part-08-eye-bar-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        10
+      ],
+      "source_bbox": [
+        1846,
+        217,
+        1884,
+        234,
+        39,
+        18
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        27,
+        37,
+        31,
+        10,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "P09",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "晕眩眼-a",
+      "slug": "eye-spiral-a",
+      "file": "1119-e-parts-face-part-09-eye-spiral-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        15
+      ],
+      "source_bbox": [
+        541,
+        727,
+        613,
+        799,
+        73,
+        73
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        20,
+        42,
+        38,
+        19,
+        19
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "螺旋"
+    },
+    {
+      "id": "P10",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "晕眩眼-b",
+      "slug": "eye-spiral-b",
+      "file": "1119-e-parts-face-part-10-eye-spiral-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        16
+      ],
+      "source_bbox": [
+        684,
+        727,
+        756,
+        799,
+        73,
+        73
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        20,
+        42,
+        38,
+        19,
+        19
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "螺旋"
+    },
+    {
+      "id": "P11",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "四角星-a",
+      "slug": "spark-a",
+      "file": "1119-e-parts-face-part-11-spark-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        17
+      ],
+      "source_bbox": [
+        164,
+        729,
+        207,
+        776,
+        44,
+        48
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        24,
+        38,
+        35,
+        11,
+        12
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "特效"
+    },
+    {
+      "id": "P12",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "四角星-b",
+      "slug": "spark-b",
+      "file": "1119-e-parts-face-part-12-spark-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        18
+      ],
+      "source_bbox": [
+        307,
+        729,
+        350,
+        776,
+        44,
+        48
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        24,
+        38,
+        35,
+        11,
+        12
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "特效"
+    },
+    {
+      "id": "P13",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "墨镜片-a",
+      "slug": "lens-dark-a",
+      "file": "1119-e-parts-face-part-13-lens-dark-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        19
+      ],
+      "source_bbox": [
+        1309,
+        747,
+        1380,
+        799,
+        72,
+        53
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        22,
+        42,
+        35,
+        19,
+        14
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "带小高光点"
+    },
+    {
+      "id": "P14",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "墨镜片-b",
+      "slug": "lens-dark-b",
+      "file": "1119-e-parts-face-part-14-lens-dark-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        20
+      ],
+      "source_bbox": [
+        1445,
+        747,
+        1513,
+        799,
+        69,
+        53
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        22,
+        41,
+        35,
+        18,
+        14
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "带小高光点"
+    },
+    {
+      "id": "P15",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-c",
+      "slug": "eye-arc-c",
+      "file": "1119-e-parts-face-part-15-eye-arc-c-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        21
+      ],
+      "source_bbox": [
+        1707,
+        767,
+        1748,
+        790,
+        42,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形"
+    },
+    {
+      "id": "P16",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-d",
+      "slug": "eye-arc-d",
+      "file": "1119-e-parts-face-part-16-eye-arc-d-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        22
+      ],
+      "source_bbox": [
+        1847,
+        767,
+        1887,
+        790,
+        41,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形"
+    },
+    {
+      "id": "P17",
+      "category": "表情零件",
+      "rule": "part-mouth",
+      "name": "笑嘴-a",
+      "slug": "mouth-smile-a",
+      "file": "1119-e-parts-face-part-17-mouth-smile-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        23
+      ],
+      "source_bbox": [
+        933,
+        776,
+        976,
+        798,
+        44,
+        23
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        41,
+        40,
+        51,
+        45,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∪ 形"
+    },
+    {
+      "id": "P18",
+      "category": "表情零件",
+      "rule": "part-mouth",
+      "name": "笑嘴-b",
+      "slug": "mouth-smile-b",
+      "file": "1119-e-parts-face-part-18-mouth-smile-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        24
+      ],
+      "source_bbox": [
+        1072,
+        776,
+        1116,
+        798,
+        45,
+        23
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        41,
+        40,
+        52,
+        45,
+        12,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∪ 形"
+    }
+  ]
+}

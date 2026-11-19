@@ -1,0 +1,2970 @@
+{
+  "baseline": {
+    "cloth": {
+      "files": [
+        "cloth-apron.png",
+        "cloth-hoodie.png",
+        "cloth-jacket.png",
+        "cloth-scarf-coat.png",
+        "cloth-sweater.png"
+      ],
+      "nose_overlap": [
+        0.0,
+        0.0
+      ],
+      "ear_overlap": [
+        0.0,
+        0.0
+      ],
+      "torso_cover": [
+        58.7,
+        75.8
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "detail": {
+        "cloth-apron.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 58.7,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            18,
+            53,
+            74,
+            84
+          ],
+          "px": 1158
+        },
+        "cloth-hoodie.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 74.9,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            18,
+            53,
+            74,
+            84
+          ],
+          "px": 1471
+        },
+        "cloth-jacket.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 74.8,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            18,
+            53,
+            74,
+            84
+          ],
+          "px": 1471
+        },
+        "cloth-scarf-coat.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 69.2,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            18,
+            53,
+            74,
+            84
+          ],
+          "px": 1340
+        },
+        "cloth-sweater.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 75.8,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            18,
+            53,
+            74,
+            84
+          ],
+          "px": 1492
+        }
+      }
+    },
+    "cloth-hood": {
+      "files": [
+        "cloth-raincoat.png"
+      ],
+      "nose_overlap": [
+        6.4,
+        6.4
+      ],
+      "ear_overlap": [
+        42.3,
+        42.3
+      ],
+      "torso_cover": [
+        82.6,
+        82.6
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        true
+      ],
+      "detail": {
+        "cloth-raincoat.png": {
+          "nose_overlap": 6.4,
+          "ear_overlap": 42.3,
+          "torso_cover": 82.6,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            13,
+            3,
+            82,
+            83
+          ],
+          "px": 2853
+        }
+      }
+    },
+    "hat": {
+      "files": [
+        "hat-beanie.png",
+        "hat-cap.png",
+        "hat-straw.png"
+      ],
+      "nose_overlap": [
+        0.0,
+        3.6
+      ],
+      "ear_overlap": [
+        6.5,
+        22.8
+      ],
+      "torso_cover": [
+        0.0,
+        0.0
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        false,
+        false,
+        false
+      ],
+      "detail": {
+        "hat-beanie.png": {
+          "nose_overlap": 3.6,
+          "ear_overlap": 21.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": false,
+          "bbox": [
+            34,
+            6,
+            61,
+            23
+          ],
+          "px": 303
+        },
+        "hat-cap.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 6.5,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": false,
+          "bbox": [
+            30,
+            12,
+            56,
+            21
+          ],
+          "px": 161
+        },
+        "hat-straw.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 22.8,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": false,
+          "bbox": [
+            34,
+            6,
+            61,
+            21
+          ],
+          "px": 275
+        }
+      }
+    },
+    "glasses-round": {
+      "files": [
+        "glasses-round.png"
+      ],
+      "nose_overlap": [
+        33.2,
+        33.2
+      ],
+      "ear_overlap": [
+        0.0,
+        0.0
+      ],
+      "torso_cover": [
+        0.0,
+        0.0
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        true
+      ],
+      "detail": {
+        "glasses-round.png": {
+          "nose_overlap": 33.2,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            23,
+            23,
+            71,
+            37
+          ],
+          "px": 256
+        }
+      }
+    },
+    "glasses-sun": {
+      "files": [
+        "glasses-square.png",
+        "glasses-sun.png"
+      ],
+      "nose_overlap": [
+        35.5,
+        65.5
+      ],
+      "ear_overlap": [
+        0.0,
+        0.0
+      ],
+      "torso_cover": [
+        0.0,
+        0.0
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        true,
+        true
+      ],
+      "detail": {
+        "glasses-square.png": {
+          "nose_overlap": 35.5,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            27,
+            26,
+            66,
+            40
+          ],
+          "px": 266
+        },
+        "glasses-sun.png": {
+          "nose_overlap": 65.5,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            27,
+            26,
+            66,
+            40
+          ],
+          "px": 478
+        }
+      }
+    },
+    "face": {
+      "files": [
+        "face-happy.png",
+        "face-hopeful.png",
+        "face-tired.png",
+        "face-waiting.png"
+      ],
+      "nose_overlap": [
+        0.0,
+        0.0
+      ],
+      "ear_overlap": [
+        0.0,
+        0.0
+      ],
+      "torso_cover": [
+        0.0,
+        0.0
+      ],
+      "seat_gap": [
+        0,
+        0
+      ],
+      "eye_span": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "detail": {
+        "face-happy.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            31,
+            28,
+            63,
+            46
+          ],
+          "px": 68
+        },
+        "face-hopeful.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            31,
+            28,
+            63,
+            46
+          ],
+          "px": 70
+        },
+        "face-tired.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            31,
+            28,
+            63,
+            46
+          ],
+          "px": 57
+        },
+        "face-waiting.png": {
+          "nose_overlap": 0.0,
+          "ear_overlap": 0.0,
+          "torso_cover": 0.0,
+          "seat_gap": 0,
+          "eye_span": true,
+          "bbox": [
+            31,
+            28,
+            63,
+            46
+          ],
+          "px": 49
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "id": "C01",
+      "category": "衣服",
+      "rule": "cloth-hood",
+      "name": "青蛙雨衣",
+      "slug": "frog-raincoat",
+      "file": "1119-e-parts-cloth-01-frog-raincoat-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        1
+      ],
+      "source_bbox": [
+        92,
+        72,
+        383,
+        458,
+        292,
+        387
+      ],
+      "target": [
+        13,
+        3,
+        82,
+        83
+      ],
+      "align": "center",
+      "content": [
+        17,
+        3,
+        77,
+        83,
+        61,
+        81
+      ],
+      "scale": 0.209302,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "连帽，帽兜自带，按正式 cloth-raincoat 的全身框落位；不叠另一顶帽",
+      "nose_overlap": 0.0,
+      "ear_overlap": 67.6,
+      "torso_cover": 80.1,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        17,
+        3,
+        77,
+        83
+      ],
+      "px": 3153,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C02",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "蓝卫衣",
+      "slug": "blue-hoodie",
+      "file": "1119-e-parts-cloth-02-blue-hoodie-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        2
+      ],
+      "source_bbox": [
+        469,
+        253,
+        744,
+        458,
+        276,
+        206
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        67,
+        84,
+        43,
+        32
+      ],
+      "scale": 0.15534,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "连帽卫衣，带抽绳与云朵图案",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 56.8,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        25,
+        53,
+        67,
+        84
+      ],
+      "px": 1083,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C03",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "条纹毛衣",
+      "slug": "stripe-sweater",
+      "file": "1119-e-parts-cloth-03-stripe-sweater-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        807,
+        277,
+        1111,
+        458,
+        305,
+        182
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        19,
+        53,
+        72,
+        84,
+        54,
+        32
+      ],
+      "scale": 0.175824,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "棕红黄横条纹",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 71.3,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        19,
+        53,
+        72,
+        84
+      ],
+      "px": 1366,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C04",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "红黄条纹围裙",
+      "slug": "stripe-apron",
+      "file": "1119-e-parts-cloth-04-stripe-apron-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        1169,
+        283,
+        1454,
+        458,
+        286,
+        176
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        20,
+        53,
+        71,
+        84,
+        52,
+        32
+      ],
+      "scale": 0.181818,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "白泡泡袖，胸前黄口袋带 M 标",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 67.4,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        20,
+        53,
+        71,
+        84
+      ],
+      "px": 1298,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C05",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "棕色背带裤",
+      "slug": "brown-overalls",
+      "file": "1119-e-parts-cloth-05-brown-overalls-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        1530,
+        278,
+        1836,
+        458,
+        307,
+        181
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        19,
+        53,
+        72,
+        84,
+        54,
+        32
+      ],
+      "scale": 0.176796,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "工装背带裤，灰色内衬",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 68.4,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        19,
+        53,
+        72,
+        84
+      ],
+      "px": 1304,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C06",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "黄围巾风衣",
+      "slug": "scarf-coat",
+      "file": "1119-e-parts-cloth-06-scarf-coat-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        82,
+        769,
+        393,
+        998,
+        312,
+        230
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        67,
+        84,
+        43,
+        32
+      ],
+      "scale": 0.13913,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "卡其风衣＋黄色围巾",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 57.3,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        25,
+        53,
+        67,
+        84
+      ],
+      "px": 1098,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C07",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "红披肩格衫",
+      "slug": "shawl-plaid",
+      "file": "1119-e-parts-cloth-07-shawl-plaid-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        456,
+        795,
+        758,
+        990,
+        303,
+        196
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        22,
+        53,
+        70,
+        84,
+        49,
+        32
+      ],
+      "scale": 0.163265,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "红披肩、红白格衬衫、棕马甲、腰带",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 62.3,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        22,
+        53,
+        70,
+        84
+      ],
+      "px": 1183,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C08",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "蓝格睡衣",
+      "slug": "blue-plaid-pajamas",
+      "file": "1119-e-parts-cloth-08-blue-plaid-pajamas-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        803,
+        795,
+        1116,
+        1020,
+        314,
+        226
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        24,
+        53,
+        67,
+        84,
+        44,
+        32
+      ],
+      "scale": 0.141593,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "蓝白格上下套装",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 53.8,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        24,
+        53,
+        67,
+        84
+      ],
+      "px": 1017,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C09",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "白背心",
+      "slug": "white-vest",
+      "file": "1119-e-parts-cloth-09-white-vest-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        10
+      ],
+      "source_bbox": [
+        1213,
+        815,
+        1432,
+        980,
+        220,
+        166
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        25,
+        53,
+        66,
+        84,
+        42,
+        32
+      ],
+      "scale": 0.192771,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "纯白无袖，白色身体上只剩描边",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 55.8,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        25,
+        53,
+        66,
+        84
+      ],
+      "px": 1079,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "C10",
+      "category": "衣服",
+      "rule": "cloth",
+      "name": "粉衫背带裤",
+      "slug": "pink-overalls",
+      "file": "1119-e-parts-cloth-10-pink-overalls-96-v1.png",
+      "source": "1119-parts-01-cloth.jpg",
+      "components": [
+        9
+      ],
+      "source_bbox": [
+        1530,
+        795,
+        1839,
+        1005,
+        310,
+        211
+      ],
+      "target": [
+        18,
+        53,
+        74,
+        84
+      ],
+      "align": "center",
+      "content": [
+        23,
+        53,
+        69,
+        84,
+        47,
+        32
+      ],
+      "scale": 0.151659,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "粉短袖＋深蓝牛仔背带裤",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 58.7,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        23,
+        53,
+        69,
+        84
+      ],
+      "px": 1115,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H01",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "橙护耳帽",
+      "slug": "earflap-orange",
+      "file": "1119-e-parts-hat-01-earflap-orange-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        496,
+        83,
+        763,
+        255,
+        268,
+        173
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        6,
+        61,
+        23,
+        28,
+        18
+      ],
+      "scale": 0.104046,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "两侧护耳，右耳垂坠",
+      "nose_overlap": 0.0,
+      "ear_overlap": 29.9,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "px": 198,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H02",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "棕贝雷帽",
+      "slug": "beret-brown",
+      "file": "1119-e-parts-hat-02-beret-brown-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        2
+      ],
+      "source_bbox": [
+        822,
+        68,
+        1096,
+        209,
+        275,
+        142
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        10,
+        61,
+        23,
+        28,
+        14
+      ],
+      "scale": 0.101818,
+      "overflow": [
+        0,
+        4,
+        0,
+        0
+      ],
+      "note": "带帽顶小柄",
+      "nose_overlap": 0.0,
+      "ear_overlap": 6.8,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        10,
+        61,
+        23
+      ],
+      "px": 194,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H03",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "红棒球帽",
+      "slug": "cap-red-m",
+      "file": "1119-e-parts-hat-03-cap-red-m-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        1196,
+        77,
+        1423,
+        198,
+        228,
+        122
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.122807,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "黄色 M 标",
+      "nose_overlap": 0.0,
+      "ear_overlap": 19.8,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        9,
+        61,
+        23
+      ],
+      "px": 280,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H04",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "灰贝雷帽",
+      "slug": "beret-grey",
+      "file": "1119-e-parts-hat-04-beret-grey-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        1
+      ],
+      "source_bbox": [
+        1554,
+        63,
+        1806,
+        199,
+        253,
+        137
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.110672,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "带帽顶小柄",
+      "nose_overlap": 0.0,
+      "ear_overlap": 11.7,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        9,
+        61,
+        23
+      ],
+      "px": 249,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H05",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "棕牛仔帽",
+      "slug": "cowboy-brown",
+      "file": "1119-e-parts-hat-05-cowboy-brown-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        442,
+        605,
+        772,
+        749,
+        331,
+        145
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        12,
+        61,
+        23,
+        28,
+        12
+      ],
+      "scale": 0.084592,
+      "overflow": [
+        0,
+        6,
+        0,
+        0
+      ],
+      "note": "两侧卷檐",
+      "nose_overlap": 0.0,
+      "ear_overlap": 3.7,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        12,
+        61,
+        23
+      ],
+      "px": 177,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H06",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "蓝白格睡帽",
+      "slug": "nightcap-blue-check",
+      "file": "1119-e-parts-hat-06-nightcap-blue-check-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        838,
+        608,
+        1139,
+        770,
+        302,
+        163
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        9,
+        61,
+        23,
+        28,
+        15
+      ],
+      "scale": 0.092715,
+      "overflow": [
+        0,
+        3,
+        0,
+        0
+      ],
+      "note": "右侧白绒球",
+      "nose_overlap": 0.0,
+      "ear_overlap": 20.4,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        9,
+        61,
+        23
+      ],
+      "px": 180,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H07",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "黄帽",
+      "slug": "cap-yellow",
+      "file": "1119-e-parts-hat-07-cap-yellow-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        1170,
+        609,
+        1474,
+        754,
+        305,
+        146
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        11,
+        61,
+        23,
+        28,
+        13
+      ],
+      "scale": 0.091803,
+      "overflow": [
+        0,
+        5,
+        0,
+        0
+      ],
+      "note": "鸭舌造型",
+      "nose_overlap": 0.0,
+      "ear_overlap": 9.9,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        11,
+        61,
+        23
+      ],
+      "px": 171,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "H08",
+      "category": "帽子",
+      "rule": "hat",
+      "name": "灰条纹毛线帽",
+      "slug": "beanie-grey-stripe",
+      "file": "1119-e-parts-hat-08-beanie-grey-stripe-96-v1.png",
+      "source": "1119-parts-02-hat.jpg",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        1559,
+        608,
+        1806,
+        734,
+        248,
+        127
+      ],
+      "target": [
+        34,
+        6,
+        61,
+        23
+      ],
+      "align": "bottom-center",
+      "content": [
+        34,
+        10,
+        61,
+        23,
+        28,
+        14
+      ],
+      "scale": 0.112903,
+      "overflow": [
+        0,
+        4,
+        0,
+        0
+      ],
+      "note": "竖条纹针织",
+      "nose_overlap": 0.0,
+      "ear_overlap": 15.1,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        34,
+        10,
+        61,
+        23
+      ],
+      "px": 242,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "G01",
+      "category": "眼镜",
+      "rule": "glasses-round",
+      "name": "圆框眼镜",
+      "slug": "round-black",
+      "file": "1119-e-parts-glasses-01-round-black-96-v1.png",
+      "source": "1119-parts-03-glasses-a.png",
+      "components": [
+        1,
+        2
+      ],
+      "source_bbox": [
+        904,
+        192,
+        1144,
+        299,
+        241,
+        108
+      ],
+      "target": [
+        23,
+        23,
+        71,
+        37
+      ],
+      "align": "center",
+      "content": [
+        31,
+        23,
+        63,
+        37,
+        33,
+        15
+      ],
+      "scale": 0.138889,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "左右两片空心镜框，桥接处断开，按一件合成",
+      "nose_overlap": 10.5,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        31,
+        23,
+        63,
+        37
+      ],
+      "px": 80,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "G02",
+      "category": "眼镜",
+      "rule": "glasses-sun",
+      "name": "墨镜哑光",
+      "slug": "sun-matte",
+      "file": "1119-e-parts-glasses-02-sun-matte-96-v1.png",
+      "source": "1119-parts-03-glasses-a.png",
+      "components": [
+        3,
+        4
+      ],
+      "source_bbox": [
+        1306,
+        746,
+        1519,
+        798,
+        214,
+        53
+      ],
+      "target": [
+        27,
+        26,
+        66,
+        40
+      ],
+      "align": "center",
+      "content": [
+        27,
+        28,
+        66,
+        37,
+        40,
+        10
+      ],
+      "scale": 0.186916,
+      "overflow": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "note": "无高光",
+      "nose_overlap": 14.5,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        27,
+        28,
+        66,
+        37
+      ],
+      "px": 241,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "G03",
+      "category": "眼镜",
+      "rule": "glasses-round",
+      "name": "金丝圆框眼镜",
+      "slug": "round-gold",
+      "file": "1119-e-parts-glasses-03-round-gold-96-v1.png",
+      "source": "1119-parts-05-glasses-b.png",
+      "components": [
+        1,
+        2
+      ],
+      "source_bbox": [
+        1106,
+        380,
+        1393,
+        463,
+        288,
+        84
+      ],
+      "target": [
+        23,
+        23,
+        71,
+        37
+      ],
+      "align": "center",
+      "content": [
+        23,
+        24,
+        71,
+        37,
+        49,
+        14
+      ],
+      "scale": 0.170139,
+      "overflow": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "note": "金色细框，带镜腿",
+      "nose_overlap": 5.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        23,
+        24,
+        71,
+        37
+      ],
+      "px": 113,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "G04",
+      "category": "眼镜",
+      "rule": "glasses-sun",
+      "name": "墨镜高光",
+      "slug": "sun-shine",
+      "file": "1119-e-parts-glasses-04-sun-shine-96-v1.png",
+      "source": "1119-parts-05-glasses-b.png",
+      "components": [
+        3,
+        4
+      ],
+      "source_bbox": [
+        645,
+        1300,
+        898,
+        1362,
+        254,
+        63
+      ],
+      "target": [
+        27,
+        26,
+        66,
+        40
+      ],
+      "align": "center",
+      "content": [
+        27,
+        28,
+        66,
+        37,
+        40,
+        10
+      ],
+      "scale": 0.15748,
+      "overflow": [
+        0,
+        2,
+        0,
+        0
+      ],
+      "note": "两条斜高光",
+      "nose_overlap": 23.2,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": true,
+      "bbox": [
+        27,
+        28,
+        66,
+        37
+      ],
+      "px": 269,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "通过",
+      "fails": []
+    },
+    {
+      "id": "F01",
+      "category": "表情",
+      "rule": "face",
+      "name": "表情盘-闭眼",
+      "slug": "plate-closed",
+      "file": "1119-e-parts-face-01-plate-closed-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        1,
+        11,
+        13
+      ],
+      "source_bbox": [
+        908,
+        185,
+        999,
+        270,
+        92,
+        86
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        37,
+        28,
+        56,
+        46,
+        20,
+        19
+      ],
+      "scale": 0.22093,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "圆盘内两条横线＝闭眼；横线与圆盘分离，按一件合成",
+      "nose_overlap": 32.7,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        37,
+        28,
+        56,
+        46
+      ],
+      "px": 194,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "返工",
+      "fails": [
+        "盖鼻子 32.7% ＞ 正式上限 0.0%"
+      ]
+    },
+    {
+      "id": "F02",
+      "category": "表情",
+      "rule": "face",
+      "name": "表情盘-闭眼带泪",
+      "slug": "plate-closed-tear",
+      "file": "1119-e-parts-face-02-plate-closed-tear-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        2,
+        12,
+        14
+      ],
+      "source_bbox": [
+        1048,
+        185,
+        1140,
+        294,
+        93,
+        110
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        39,
+        28,
+        54,
+        46,
+        16,
+        19
+      ],
+      "scale": 0.172727,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "同 F01，右下挂一滴泪",
+      "nose_overlap": 28.6,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        39,
+        28,
+        54,
+        46
+      ],
+      "px": 142,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "返工",
+      "fails": [
+        "盖鼻子 28.6% ＞ 正式上限 0.0%"
+      ]
+    },
+    {
+      "id": "P01",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "尖角眼",
+      "slug": "eye-angle",
+      "file": "1119-e-parts-face-part-01-eye-angle-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        3
+      ],
+      "source_bbox": [
+        703,
+        205,
+        735,
+        236,
+        33,
+        32
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        29,
+        26,
+        37,
+        33,
+        9,
+        8
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "单个 < 形",
+      "nose_overlap": 1.4,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        29,
+        26,
+        37,
+        33
+      ],
+      "px": 29,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P02",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-a",
+      "slug": "eye-oval-a",
+      "file": "1119-e-parts-face-part-02-eye-oval-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        4
+      ],
+      "source_bbox": [
+        178,
+        212,
+        190,
+        232,
+        13,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        32,
+        27,
+        34,
+        31,
+        3,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        32,
+        27,
+        34,
+        31
+      ],
+      "px": 12,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P03",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-b",
+      "slug": "eye-oval-b",
+      "file": "1119-e-parts-face-part-03-eye-oval-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        5
+      ],
+      "source_bbox": [
+        322,
+        212,
+        334,
+        232,
+        13,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        32,
+        27,
+        34,
+        31,
+        3,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        32,
+        27,
+        34,
+        31
+      ],
+      "px": 11,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P04",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "竖椭圆眼-c",
+      "slug": "eye-oval-c",
+      "file": "1119-e-parts-face-part-04-eye-oval-c-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        6
+      ],
+      "source_bbox": [
+        569,
+        212,
+        582,
+        232,
+        14,
+        21
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        31,
+        27,
+        34,
+        31,
+        4,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        31,
+        27,
+        34,
+        31
+      ],
+      "px": 16,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P05",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-a",
+      "slug": "eye-arc-a",
+      "file": "1119-e-parts-face-part-05-eye-arc-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        7
+      ],
+      "source_bbox": [
+        1308,
+        212,
+        1349,
+        235,
+        42,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形",
+      "nose_overlap": 3.2,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        26,
+        38,
+        31
+      ],
+      "px": 31,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P06",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-b",
+      "slug": "eye-arc-b",
+      "file": "1119-e-parts-face-part-06-eye-arc-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        8
+      ],
+      "source_bbox": [
+        1449,
+        212,
+        1489,
+        235,
+        41,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形",
+      "nose_overlap": 3.2,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        26,
+        38,
+        31
+      ],
+      "px": 32,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P07",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "闭眼横条-a",
+      "slug": "eye-bar-a",
+      "file": "1119-e-parts-face-part-07-eye-bar-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        9
+      ],
+      "source_bbox": [
+        1705,
+        217,
+        1742,
+        234,
+        38,
+        18
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        27,
+        37,
+        31,
+        10,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "",
+      "nose_overlap": 0.9,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        27,
+        37,
+        31
+      ],
+      "px": 38,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P08",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "闭眼横条-b",
+      "slug": "eye-bar-b",
+      "file": "1119-e-parts-face-part-08-eye-bar-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        10
+      ],
+      "source_bbox": [
+        1846,
+        217,
+        1884,
+        234,
+        39,
+        18
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        27,
+        37,
+        31,
+        10,
+        5
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "",
+      "nose_overlap": 0.9,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        27,
+        37,
+        31
+      ],
+      "px": 38,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P09",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "晕眩眼-a",
+      "slug": "eye-spiral-a",
+      "file": "1119-e-parts-face-part-09-eye-spiral-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        15
+      ],
+      "source_bbox": [
+        541,
+        727,
+        613,
+        799,
+        73,
+        73
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        20,
+        42,
+        38,
+        19,
+        19
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "螺旋",
+      "nose_overlap": 26.8,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        24,
+        20,
+        42,
+        38
+      ],
+      "px": 287,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P10",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "晕眩眼-b",
+      "slug": "eye-spiral-b",
+      "file": "1119-e-parts-face-part-10-eye-spiral-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        16
+      ],
+      "source_bbox": [
+        684,
+        727,
+        756,
+        799,
+        73,
+        73
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        20,
+        42,
+        38,
+        19,
+        19
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "螺旋",
+      "nose_overlap": 25.9,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        24,
+        20,
+        42,
+        38
+      ],
+      "px": 287,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P11",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "四角星-a",
+      "slug": "spark-a",
+      "file": "1119-e-parts-face-part-11-spark-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        17
+      ],
+      "source_bbox": [
+        164,
+        729,
+        207,
+        776,
+        44,
+        48
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        24,
+        38,
+        35,
+        11,
+        12
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "特效",
+      "nose_overlap": 1.4,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        24,
+        38,
+        35
+      ],
+      "px": 43,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P12",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "四角星-b",
+      "slug": "spark-b",
+      "file": "1119-e-parts-face-part-12-spark-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        18
+      ],
+      "source_bbox": [
+        307,
+        729,
+        350,
+        776,
+        44,
+        48
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        24,
+        38,
+        35,
+        11,
+        12
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "特效",
+      "nose_overlap": 1.4,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        24,
+        38,
+        35
+      ],
+      "px": 45,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P13",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "墨镜片-a",
+      "slug": "lens-dark-a",
+      "file": "1119-e-parts-face-part-13-lens-dark-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        19
+      ],
+      "source_bbox": [
+        1309,
+        747,
+        1380,
+        799,
+        72,
+        53
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        22,
+        42,
+        35,
+        19,
+        14
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "带小高光点",
+      "nose_overlap": 25.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        24,
+        22,
+        42,
+        35
+      ],
+      "px": 234,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P14",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "墨镜片-b",
+      "slug": "lens-dark-b",
+      "file": "1119-e-parts-face-part-14-lens-dark-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        20
+      ],
+      "source_bbox": [
+        1445,
+        747,
+        1513,
+        799,
+        69,
+        53
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        24,
+        22,
+        41,
+        35,
+        18,
+        14
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "带小高光点",
+      "nose_overlap": 20.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        24,
+        22,
+        41,
+        35
+      ],
+      "px": 228,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P15",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-c",
+      "slug": "eye-arc-c",
+      "file": "1119-e-parts-face-part-15-eye-arc-c-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        21
+      ],
+      "source_bbox": [
+        1707,
+        767,
+        1748,
+        790,
+        42,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形",
+      "nose_overlap": 2.7,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        26,
+        38,
+        31
+      ],
+      "px": 31,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P16",
+      "category": "表情零件",
+      "rule": "part-eye",
+      "name": "弯眼-d",
+      "slug": "eye-arc-d",
+      "file": "1119-e-parts-face-part-16-eye-arc-d-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        22
+      ],
+      "source_bbox": [
+        1847,
+        767,
+        1887,
+        790,
+        41,
+        24
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        28,
+        26,
+        38,
+        31,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∩ 形",
+      "nose_overlap": 3.2,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        28,
+        26,
+        38,
+        31
+      ],
+      "px": 32,
+      "fits": false,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": [
+        "越出目标框"
+      ]
+    },
+    {
+      "id": "P17",
+      "category": "表情零件",
+      "rule": "part-mouth",
+      "name": "笑嘴-a",
+      "slug": "mouth-smile-a",
+      "file": "1119-e-parts-face-part-17-mouth-smile-a-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        23
+      ],
+      "source_bbox": [
+        933,
+        776,
+        976,
+        798,
+        44,
+        23
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        41,
+        40,
+        51,
+        45,
+        11,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∪ 形",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        41,
+        40,
+        51,
+        45
+      ],
+      "px": 50,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": []
+    },
+    {
+      "id": "P18",
+      "category": "表情零件",
+      "rule": "part-mouth",
+      "name": "笑嘴-b",
+      "slug": "mouth-smile-b",
+      "file": "1119-e-parts-face-part-18-mouth-smile-b-96-v1.png",
+      "source": "1119-parts-04-face.png",
+      "components": [
+        24
+      ],
+      "source_bbox": [
+        1072,
+        776,
+        1116,
+        798,
+        45,
+        23
+      ],
+      "target": [
+        31,
+        28,
+        63,
+        46
+      ],
+      "align": "center",
+      "content": [
+        41,
+        40,
+        52,
+        45,
+        12,
+        6
+      ],
+      "scale": 0.260274,
+      "overflow": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "∪ 形",
+      "nose_overlap": 0.0,
+      "ear_overlap": 0.0,
+      "torso_cover": 0.0,
+      "seat_gap": 0,
+      "eye_span": false,
+      "bbox": [
+        41,
+        40,
+        52,
+        45
+      ],
+      "px": 56,
+      "fits": true,
+      "alpha_ok": true,
+      "size_ok": true,
+      "verdict": "零件（无锚点）",
+      "fails": []
+    }
+  ]
+}
