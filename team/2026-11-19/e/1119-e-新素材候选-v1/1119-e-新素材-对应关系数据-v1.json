@@ -1,0 +1,1035 @@
+{
+ "canvas": [
+  96,
+  96
+ ],
+ "anchor": {
+  "centerX": 47.5,
+  "footBaseline": 92,
+  "eyeCentre": 30.0,
+  "mouthCentre": 43.5
+ },
+ "resample": "PIL Image.BOX（面积平均）+ alpha 128 二值化",
+ "items": [
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    92,
+    72,
+    383,
+    458
+   ],
+   "source_size": [
+    292,
+    387
+   ],
+   "category": "cloth",
+   "name": "青蛙雨衣",
+   "slug": "frog-raincoat",
+   "mode": "full",
+   "params": {
+    "h": 81,
+    "bottom": 83
+   },
+   "file": "1119-e-cloth-frog-raincoat-96-v1.png",
+   "raw": "raw-cloth-frog-raincoat.png",
+   "scale": 0.209302,
+   "w": 61,
+   "h": 81,
+   "left": 17,
+   "top": 3,
+   "content": [
+    17,
+    3,
+    77,
+    83
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    469,
+    253,
+    744,
+    458
+   ],
+   "source_size": [
+    276,
+    206
+   ],
+   "category": "cloth",
+   "name": "蓝卫衣",
+   "slug": "blue-hoodie",
+   "mode": "torso",
+   "params": {
+    "w": 52,
+    "top": 52
+   },
+   "file": "1119-e-cloth-blue-hoodie-96-v1.png",
+   "raw": "raw-cloth-blue-hoodie.png",
+   "scale": 0.188406,
+   "w": 52,
+   "h": 39,
+   "left": 22,
+   "top": 52,
+   "content": [
+    22,
+    52,
+    73,
+    90
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    807,
+    277,
+    1111,
+    458
+   ],
+   "source_size": [
+    305,
+    182
+   ],
+   "category": "cloth",
+   "name": "条纹毛衣",
+   "slug": "stripe-sweater",
+   "mode": "torso",
+   "params": {
+    "w": 54,
+    "top": 55
+   },
+   "file": "1119-e-cloth-stripe-sweater-96-v1.png",
+   "raw": "raw-cloth-stripe-sweater.png",
+   "scale": 0.177049,
+   "w": 54,
+   "h": 32,
+   "left": 20,
+   "top": 55,
+   "content": [
+    20,
+    55,
+    73,
+    86
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    1169,
+    283,
+    1454,
+    458
+   ],
+   "source_size": [
+    286,
+    176
+   ],
+   "category": "cloth",
+   "name": "红黄条纹衫",
+   "slug": "red-stripe-shirt",
+   "mode": "torso",
+   "params": {
+    "w": 50,
+    "top": 54
+   },
+   "file": "1119-e-cloth-red-stripe-shirt-96-v1.png",
+   "raw": "raw-cloth-red-stripe-shirt.png",
+   "scale": 0.174825,
+   "w": 50,
+   "h": 31,
+   "left": 22,
+   "top": 54,
+   "content": [
+    22,
+    54,
+    71,
+    84
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    1530,
+    278,
+    1836,
+    458
+   ],
+   "source_size": [
+    307,
+    181
+   ],
+   "category": "cloth",
+   "name": "棕背带裤",
+   "slug": "brown-overalls",
+   "mode": "torso",
+   "params": {
+    "w": 54,
+    "top": 53
+   },
+   "file": "1119-e-cloth-brown-overalls-96-v1.png",
+   "raw": "raw-cloth-brown-overalls.png",
+   "scale": 0.175896,
+   "w": 54,
+   "h": 32,
+   "left": 20,
+   "top": 53,
+   "content": [
+    20,
+    53,
+    73,
+    84
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    82,
+    769,
+    393,
+    998
+   ],
+   "source_size": [
+    312,
+    230
+   ],
+   "category": "cloth",
+   "name": "米色风衣黄围巾",
+   "slug": "trench-scarf",
+   "mode": "torso",
+   "params": {
+    "w": 58,
+    "top": 51
+   },
+   "file": "1119-e-cloth-trench-scarf-96-v1.png",
+   "raw": "raw-cloth-trench-scarf.png",
+   "scale": 0.185897,
+   "w": 58,
+   "h": 43,
+   "left": 18,
+   "top": 50,
+   "content": [
+    18,
+    50,
+    75,
+    92
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    456,
+    795,
+    758,
+    990
+   ],
+   "source_size": [
+    303,
+    196
+   ],
+   "category": "cloth",
+   "name": "红围巾格纹马甲",
+   "slug": "plaid-vest-scarf",
+   "mode": "torso",
+   "params": {
+    "w": 56,
+    "top": 51
+   },
+   "file": "1119-e-cloth-plaid-vest-scarf-96-v1.png",
+   "raw": "raw-cloth-plaid-vest-scarf.png",
+   "scale": 0.184818,
+   "w": 56,
+   "h": 36,
+   "left": 20,
+   "top": 51,
+   "content": [
+    20,
+    51,
+    75,
+    86
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    803,
+    795,
+    1116,
+    1020
+   ],
+   "source_size": [
+    314,
+    226
+   ],
+   "category": "cloth",
+   "name": "蓝格睡衣",
+   "slug": "blue-plaid-pajamas",
+   "mode": "torso",
+   "params": {
+    "w": 54,
+    "top": 53
+   },
+   "file": "1119-e-cloth-blue-plaid-pajamas-96-v1.png",
+   "raw": "raw-cloth-blue-plaid-pajamas.png",
+   "scale": 0.171975,
+   "w": 54,
+   "h": 39,
+   "left": 20,
+   "top": 53,
+   "content": [
+    20,
+    53,
+    73,
+    91
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    1213,
+    815,
+    1432,
+    980
+   ],
+   "source_size": [
+    220,
+    166
+   ],
+   "category": "cloth",
+   "name": "白背心",
+   "slug": "white-tank",
+   "mode": "torso",
+   "params": {
+    "w": 44,
+    "top": 55
+   },
+   "file": "1119-e-cloth-white-tank-96-v1.png",
+   "raw": "raw-cloth-white-tank.png",
+   "scale": 0.2,
+   "w": 44,
+   "h": 33,
+   "left": 26,
+   "top": 55,
+   "content": [
+    26,
+    55,
+    69,
+    87
+   ]
+  },
+  {
+   "source": "1119-新素材-01-衣服表.jpg",
+   "source_box": [
+    1530,
+    795,
+    1839,
+    1005
+   ],
+   "source_size": [
+    310,
+    211
+   ],
+   "category": "cloth",
+   "name": "粉衫藏青背带裤",
+   "slug": "pink-overalls",
+   "mode": "torso",
+   "params": {
+    "w": 54,
+    "top": 53
+   },
+   "file": "1119-e-cloth-pink-overalls-96-v1.png",
+   "raw": "raw-cloth-pink-overalls.png",
+   "scale": 0.174194,
+   "w": 54,
+   "h": 37,
+   "left": 20,
+   "top": 53,
+   "content": [
+    20,
+    53,
+    73,
+    89
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    496,
+    83,
+    763,
+    255
+   ],
+   "source_size": [
+    268,
+    173
+   ],
+   "category": "hat",
+   "name": "橙色鸭舌帽",
+   "slug": "orange-cap",
+   "mode": "hat",
+   "params": {
+    "h": 18,
+    "bottom": 23
+   },
+   "file": "1119-e-hat-orange-cap-96-v1.png",
+   "raw": "raw-hat-orange-cap.png",
+   "scale": 0.104046,
+   "w": 28,
+   "h": 18,
+   "left": 34,
+   "top": 6,
+   "content": [
+    34,
+    6,
+    61,
+    23
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    822,
+    68,
+    1096,
+    209
+   ],
+   "source_size": [
+    275,
+    142
+   ],
+   "category": "hat",
+   "name": "棕色贝雷帽",
+   "slug": "brown-beret",
+   "mode": "hat",
+   "params": {
+    "h": 17,
+    "bottom": 22
+   },
+   "file": "1119-e-hat-brown-beret-96-v1.png",
+   "raw": "raw-hat-brown-beret.png",
+   "scale": 0.119718,
+   "w": 33,
+   "h": 17,
+   "left": 31,
+   "top": 6,
+   "content": [
+    31,
+    6,
+    63,
+    22
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    1196,
+    77,
+    1423,
+    198
+   ],
+   "source_size": [
+    228,
+    122
+   ],
+   "category": "hat",
+   "name": "红帽M标",
+   "slug": "red-m-cap",
+   "mode": "hat",
+   "params": {
+    "h": 16,
+    "bottom": 21
+   },
+   "file": "1119-e-hat-red-m-cap-96-v1.png",
+   "raw": "raw-hat-red-m-cap.png",
+   "scale": 0.131148,
+   "w": 30,
+   "h": 16,
+   "left": 32,
+   "top": 6,
+   "content": [
+    32,
+    6,
+    61,
+    21
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    1554,
+    63,
+    1806,
+    199
+   ],
+   "source_size": [
+    253,
+    137
+   ],
+   "category": "hat",
+   "name": "灰针织帽",
+   "slug": "grey-beanie",
+   "mode": "hat",
+   "params": {
+    "h": 18,
+    "bottom": 23
+   },
+   "file": "1119-e-hat-grey-beanie-96-v1.png",
+   "raw": "raw-hat-grey-beanie.png",
+   "scale": 0.131387,
+   "w": 33,
+   "h": 18,
+   "left": 31,
+   "top": 6,
+   "content": [
+    31,
+    6,
+    63,
+    23
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    442,
+    605,
+    772,
+    749
+   ],
+   "source_size": [
+    331,
+    145
+   ],
+   "category": "hat",
+   "name": "棕色牛仔帽",
+   "slug": "cowboy-hat",
+   "mode": "hat",
+   "params": {
+    "h": 18,
+    "bottom": 21
+   },
+   "file": "1119-e-hat-cowboy-hat-96-v1.png",
+   "raw": "raw-hat-cowboy-hat.png",
+   "scale": 0.124138,
+   "w": 41,
+   "h": 18,
+   "left": 27,
+   "top": 4,
+   "content": [
+    27,
+    4,
+    67,
+    21
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    838,
+    608,
+    1139,
+    770
+   ],
+   "source_size": [
+    302,
+    163
+   ],
+   "category": "hat",
+   "name": "蓝白睡帽",
+   "slug": "striped-nightcap",
+   "mode": "hat",
+   "params": {
+    "h": 18,
+    "bottom": 23
+   },
+   "file": "1119-e-hat-striped-nightcap-96-v1.png",
+   "raw": "raw-hat-striped-nightcap.png",
+   "scale": 0.110429,
+   "w": 33,
+   "h": 18,
+   "left": 31,
+   "top": 6,
+   "content": [
+    31,
+    6,
+    63,
+    23
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    1170,
+    609,
+    1474,
+    754
+   ],
+   "source_size": [
+    305,
+    146
+   ],
+   "category": "hat",
+   "name": "黄色棒球帽",
+   "slug": "yellow-cap",
+   "mode": "hat",
+   "params": {
+    "h": 17,
+    "bottom": 22
+   },
+   "file": "1119-e-hat-yellow-cap-96-v1.png",
+   "raw": "raw-hat-yellow-cap.png",
+   "scale": 0.116438,
+   "w": 36,
+   "h": 17,
+   "left": 30,
+   "top": 6,
+   "content": [
+    30,
+    6,
+    65,
+    22
+   ]
+  },
+  {
+   "source": "1119-新素材-02-帽子表.jpg",
+   "source_box": [
+    1559,
+    608,
+    1806,
+    734
+   ],
+   "source_size": [
+    248,
+    127
+   ],
+   "category": "hat",
+   "name": "灰罗纹帽",
+   "slug": "grey-ribbed-beanie",
+   "mode": "hat",
+   "params": {
+    "h": 17,
+    "bottom": 22
+   },
+   "file": "1119-e-hat-grey-ribbed-beanie-96-v1.png",
+   "raw": "raw-hat-grey-ribbed-beanie.png",
+   "scale": 0.133858,
+   "w": 33,
+   "h": 17,
+   "left": 31,
+   "top": 6,
+   "content": [
+    31,
+    6,
+    63,
+    22
+   ]
+  },
+  {
+   "source": "1119-新素材-03-眼镜嘴-A.png",
+   "source_box": [
+    903,
+    192,
+    1145,
+    300
+   ],
+   "source_size": [
+    241,
+    108
+   ],
+   "category": "glasses",
+   "name": "椭圆细框眼镜",
+   "slug": "oval-thin",
+   "mode": "glasses",
+   "params": {
+    "w": 43,
+    "vc": 33
+   },
+   "file": "1119-e-glasses-oval-thin-96-v1.png",
+   "raw": "raw-glasses-oval-thin.png",
+   "scale": 0.178423,
+   "w": 43,
+   "h": 19,
+   "left": 26,
+   "top": 24,
+   "content": [
+    26,
+    24,
+    68,
+    42
+   ]
+  },
+  {
+   "source": "1119-新素材-05-眼镜-C.png",
+   "source_box": [
+    1104,
+    377,
+    1396,
+    467
+   ],
+   "source_size": [
+    287,
+    84
+   ],
+   "category": "glasses",
+   "name": "金色圆框眼镜",
+   "slug": "round-gold",
+   "mode": "glasses",
+   "params": {
+    "w": 49,
+    "vc": 29.5
+   },
+   "file": "1119-e-glasses-round-gold-96-v1.png",
+   "raw": "raw-glasses-round-gold.png",
+   "scale": 0.170732,
+   "w": 49,
+   "h": 14,
+   "left": 23,
+   "top": 22,
+   "content": [
+    23,
+    22,
+    71,
+    35
+   ]
+  },
+  {
+   "source": "1119-新素材-05-眼镜-C.png",
+   "source_box": [
+    643,
+    1297,
+    900,
+    1366
+   ],
+   "source_size": [
+    254,
+    63
+   ],
+   "category": "glasses",
+   "name": "黑色墨镜",
+   "slug": "sun-black",
+   "mode": "glasses",
+   "params": {
+    "w": 40,
+    "vc": 30.5
+   },
+   "file": "1119-e-glasses-sun-black-96-v1.png",
+   "raw": "raw-glasses-sun-black.png",
+   "scale": 0.15748,
+   "w": 40,
+   "h": 10,
+   "left": 28,
+   "top": 26,
+   "content": [
+    28,
+    26,
+    67,
+    35
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    177,
+    211,
+    335,
+    232
+   ],
+   "source_size": [
+    157,
+    21
+   ],
+   "category": "face",
+   "name": "点眼",
+   "slug": "eyes-dot",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-dot-96-v1.png",
+   "raw": "raw-face-eyes-dot.png",
+   "scale": 0.210191,
+   "w": 33,
+   "h": 4,
+   "left": 31,
+   "top": 28,
+   "content": [
+    31,
+    28,
+    63,
+    31
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    1308,
+    211,
+    1490,
+    235
+   ],
+   "source_size": [
+    181,
+    24
+   ],
+   "category": "face",
+   "name": "弯弯眼",
+   "slug": "eyes-happy",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-happy-96-v1.png",
+   "raw": "raw-face-eyes-happy.png",
+   "scale": 0.18232,
+   "w": 33,
+   "h": 4,
+   "left": 31,
+   "top": 28,
+   "content": [
+    31,
+    28,
+    63,
+    31
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    1704,
+    216,
+    1884,
+    235
+   ],
+   "source_size": [
+    180,
+    18
+   ],
+   "category": "face",
+   "name": "平眼",
+   "slug": "eyes-flat",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-flat-96-v1.png",
+   "raw": "raw-face-eyes-flat.png",
+   "scale": 0.183333,
+   "w": 33,
+   "h": 3,
+   "left": 31,
+   "top": 28,
+   "content": [
+    31,
+    28,
+    63,
+    30
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    163,
+    729,
+    351,
+    777
+   ],
+   "source_size": [
+    187,
+    48
+   ],
+   "category": "face",
+   "name": "星星眼",
+   "slug": "eyes-sparkle",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-sparkle-96-v1.png",
+   "raw": "raw-face-eyes-sparkle.png",
+   "scale": 0.176471,
+   "w": 31,
+   "h": 8,
+   "left": 32,
+   "top": 26,
+   "content": [
+    32,
+    26,
+    62,
+    33
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    932,
+    776,
+    1117,
+    799
+   ],
+   "source_size": [
+    184,
+    23
+   ],
+   "category": "face",
+   "name": "弯月闭眼",
+   "slug": "eyes-closed",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-closed-96-v1.png",
+   "raw": "raw-face-eyes-closed.png",
+   "scale": 0.179348,
+   "w": 33,
+   "h": 4,
+   "left": 31,
+   "top": 28,
+   "content": [
+    31,
+    28,
+    63,
+    31
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    1706,
+    766,
+    1888,
+    791
+   ],
+   "source_size": [
+    181,
+    24
+   ],
+   "category": "face",
+   "name": "委屈眼",
+   "slug": "eyes-sad",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-sad-96-v1.png",
+   "raw": "raw-face-eyes-sad.png",
+   "scale": 0.18232,
+   "w": 33,
+   "h": 4,
+   "left": 31,
+   "top": 28,
+   "content": [
+    31,
+    28,
+    63,
+    31
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    540,
+    726,
+    757,
+    800
+   ],
+   "source_size": [
+    216,
+    73
+   ],
+   "category": "face",
+   "name": "晕圈眼",
+   "slug": "eyes-dizzy",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-dizzy-96-v1.png",
+   "raw": "raw-face-eyes-dizzy.png",
+   "scale": 0.152778,
+   "w": 33,
+   "h": 11,
+   "left": 31,
+   "top": 24,
+   "content": [
+    31,
+    24,
+    63,
+    34
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    907,
+    184,
+    1142,
+    295
+   ],
+   "source_size": [
+    233,
+    110
+   ],
+   "category": "face",
+   "name": "横线眼",
+   "slug": "eyes-line",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-line-96-v1.png",
+   "raw": "raw-face-eyes-line.png",
+   "scale": 0.141631,
+   "w": 33,
+   "h": 16,
+   "left": 31,
+   "top": 22,
+   "content": [
+    31,
+    22,
+    63,
+    37
+   ]
+  },
+  {
+   "source": "1119-新素材-04-表情符号-B.png",
+   "source_box": [
+    1309,
+    746,
+    1514,
+    799
+   ],
+   "source_size": [
+    204,
+    53
+   ],
+   "category": "face",
+   "name": "方块闭眼",
+   "slug": "eyes-block",
+   "mode": "eyes",
+   "params": {
+    "w": 33,
+    "vc": 30.0
+   },
+   "file": "1119-e-face-eyes-block-96-v1.png",
+   "raw": "raw-face-eyes-block.png",
+   "scale": 0.161765,
+   "w": 33,
+   "h": 9,
+   "left": 31,
+   "top": 26,
+   "content": [
+    31,
+    26,
+    63,
+    34
+   ]
+  }
+ ]
+}

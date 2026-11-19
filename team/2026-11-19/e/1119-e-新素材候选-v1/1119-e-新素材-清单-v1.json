@@ -1,0 +1,153 @@
+{
+ "status": "CANDIDATE — 未通过人工合成审核，不得写入正式 manifest",
+ "canvas": [
+  96,
+  96
+ ],
+ "anchor": {
+  "centerX": 47.5,
+  "eyeCentre": 30.0,
+  "mouthCentre": 43.5
+ },
+ "note": "所有 PNG 共用 (0,0) 原点；只做等比缩放与平移，未重绘/锐化/减色",
+ "layers": [
+  "1119-e-cloth-frog-raincoat-96-v1.png",
+  "1119-e-cloth-blue-hoodie-96-v1.png",
+  "1119-e-cloth-stripe-sweater-96-v1.png",
+  "1119-e-cloth-red-stripe-shirt-96-v1.png",
+  "1119-e-cloth-brown-overalls-96-v1.png",
+  "1119-e-cloth-trench-scarf-96-v1.png",
+  "1119-e-cloth-plaid-vest-scarf-96-v1.png",
+  "1119-e-cloth-blue-plaid-pajamas-96-v1.png",
+  "1119-e-cloth-white-tank-96-v1.png",
+  "1119-e-cloth-pink-overalls-96-v1.png",
+  "1119-e-hat-orange-cap-96-v1.png",
+  "1119-e-hat-brown-beret-96-v1.png",
+  "1119-e-hat-red-m-cap-96-v1.png",
+  "1119-e-hat-grey-beanie-96-v1.png",
+  "1119-e-hat-cowboy-hat-96-v1.png",
+  "1119-e-hat-striped-nightcap-96-v1.png",
+  "1119-e-hat-yellow-cap-96-v1.png",
+  "1119-e-hat-grey-ribbed-beanie-96-v1.png",
+  "1119-e-glasses-oval-thin-96-v1.png",
+  "1119-e-glasses-round-gold-96-v1.png",
+  "1119-e-glasses-sun-black-96-v1.png",
+  "1119-e-face-eyes-dot-96-v1.png",
+  "1119-e-face-eyes-happy-96-v1.png",
+  "1119-e-face-eyes-flat-96-v1.png",
+  "1119-e-face-eyes-sparkle-96-v1.png",
+  "1119-e-face-eyes-closed-96-v1.png",
+  "1119-e-face-eyes-sad-96-v1.png",
+  "1119-e-face-eyes-dizzy-96-v1.png",
+  "1119-e-face-eyes-line-96-v1.png",
+  "1119-e-face-eyes-block-96-v1.png",
+  "1119-e-face-calm-96-v1.png",
+  "1119-e-face-happy-96-v1.png",
+  "1119-e-face-surprised-96-v1.png",
+  "1119-e-face-dizzy-96-v1.png",
+  "1119-e-face-excited-96-v1.png",
+  "1119-e-face-sad-96-v1.png"
+ ],
+ "composedFaces": [
+  {
+   "file": "1119-e-face-calm-96-v1.png",
+   "name": "平静",
+   "slug": "face-calm",
+   "from_parts": [
+    "face-eyes-dot",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  },
+  {
+   "file": "1119-e-face-happy-96-v1.png",
+   "name": "开心",
+   "slug": "face-happy",
+   "from_parts": [
+    "face-eyes-happy",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  },
+  {
+   "file": "1119-e-face-surprised-96-v1.png",
+   "name": "惊讶",
+   "slug": "face-surprised",
+   "from_parts": [
+    "face-eyes-line",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  },
+  {
+   "file": "1119-e-face-dizzy-96-v1.png",
+   "name": "晕乎",
+   "slug": "face-dizzy",
+   "from_parts": [
+    "face-eyes-dizzy",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  },
+  {
+   "file": "1119-e-face-excited-96-v1.png",
+   "name": "兴奋",
+   "slug": "face-excited",
+   "from_parts": [
+    "face-eyes-sparkle",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  },
+  {
+   "file": "1119-e-face-sad-96-v1.png",
+   "name": "委屈",
+   "slug": "face-sad",
+   "from_parts": [
+    "face-eyes-sad",
+    "face-mouth-formal（正式 face-happy 的嘴）"
+   ]
+  }
+ ],
+ "byCategory": {
+  "cloth": [
+   "1119-e-cloth-frog-raincoat-96-v1.png",
+   "1119-e-cloth-blue-hoodie-96-v1.png",
+   "1119-e-cloth-stripe-sweater-96-v1.png",
+   "1119-e-cloth-red-stripe-shirt-96-v1.png",
+   "1119-e-cloth-brown-overalls-96-v1.png",
+   "1119-e-cloth-trench-scarf-96-v1.png",
+   "1119-e-cloth-plaid-vest-scarf-96-v1.png",
+   "1119-e-cloth-blue-plaid-pajamas-96-v1.png",
+   "1119-e-cloth-white-tank-96-v1.png",
+   "1119-e-cloth-pink-overalls-96-v1.png"
+  ],
+  "hat": [
+   "1119-e-hat-orange-cap-96-v1.png",
+   "1119-e-hat-brown-beret-96-v1.png",
+   "1119-e-hat-red-m-cap-96-v1.png",
+   "1119-e-hat-grey-beanie-96-v1.png",
+   "1119-e-hat-cowboy-hat-96-v1.png",
+   "1119-e-hat-striped-nightcap-96-v1.png",
+   "1119-e-hat-yellow-cap-96-v1.png",
+   "1119-e-hat-grey-ribbed-beanie-96-v1.png"
+  ],
+  "glasses": [
+   "1119-e-glasses-oval-thin-96-v1.png",
+   "1119-e-glasses-round-gold-96-v1.png",
+   "1119-e-glasses-sun-black-96-v1.png"
+  ],
+  "face": [
+   "1119-e-face-eyes-dot-96-v1.png",
+   "1119-e-face-eyes-happy-96-v1.png",
+   "1119-e-face-eyes-flat-96-v1.png",
+   "1119-e-face-eyes-sparkle-96-v1.png",
+   "1119-e-face-eyes-closed-96-v1.png",
+   "1119-e-face-eyes-sad-96-v1.png",
+   "1119-e-face-eyes-dizzy-96-v1.png",
+   "1119-e-face-eyes-line-96-v1.png",
+   "1119-e-face-eyes-block-96-v1.png",
+   "1119-e-face-calm-96-v1.png",
+   "1119-e-face-happy-96-v1.png",
+   "1119-e-face-surprised-96-v1.png",
+   "1119-e-face-dizzy-96-v1.png",
+   "1119-e-face-excited-96-v1.png",
+   "1119-e-face-sad-96-v1.png"
+  ]
+ }
+}

@@ -1,0 +1,1021 @@
+{
+ "checks": {
+  "canvas_all_96": true,
+  "rgba": true,
+  "alpha_binary": true,
+  "no_edge_clipping": true,
+  "centre_within_1px": true,
+  "not_empty": true
+ },
+ "all_pass": true,
+ "items": [
+  {
+   "index": "1119-e-cloth-frog-raincoat-96-v1.png",
+   "name": "青蛙雨衣",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    17,
+    3,
+    77,
+    83,
+    61,
+    81
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 4095,
+   "colours": 2644
+  },
+  {
+   "index": "1119-e-cloth-blue-hoodie-96-v1.png",
+   "name": "蓝卫衣",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    22,
+    52,
+    73,
+    90,
+    52,
+    39
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 1598,
+   "colours": 1191
+  },
+  {
+   "index": "1119-e-cloth-stripe-sweater-96-v1.png",
+   "name": "条纹毛衣",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    20,
+    55,
+    73,
+    86,
+    54,
+    32
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1366,
+   "colours": 1189
+  },
+  {
+   "index": "1119-e-cloth-red-stripe-shirt-96-v1.png",
+   "name": "红黄条纹衫",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    22,
+    54,
+    71,
+    84,
+    50,
+    31
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1203,
+   "colours": 1080
+  },
+  {
+   "index": "1119-e-cloth-brown-overalls-96-v1.png",
+   "name": "棕背带裤",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    20,
+    53,
+    73,
+    84,
+    54,
+    32
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1304,
+   "colours": 1038
+  },
+  {
+   "index": "1119-e-cloth-trench-scarf-96-v1.png",
+   "name": "米色风衣黄围巾",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    18,
+    50,
+    75,
+    92,
+    58,
+    43
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1987,
+   "colours": 1564
+  },
+  {
+   "index": "1119-e-cloth-plaid-vest-scarf-96-v1.png",
+   "name": "红围巾格纹马甲",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    20,
+    51,
+    75,
+    86,
+    56,
+    36
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 1519,
+   "colours": 1295
+  },
+  {
+   "index": "1119-e-cloth-blue-plaid-pajamas-96-v1.png",
+   "name": "蓝格睡衣",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    20,
+    53,
+    73,
+    91,
+    54,
+    39
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1519,
+   "colours": 1383
+  },
+  {
+   "index": "1119-e-cloth-white-tank-96-v1.png",
+   "name": "白背心",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    26,
+    55,
+    69,
+    87,
+    44,
+    33
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 1173,
+   "colours": 464
+  },
+  {
+   "index": "1119-e-cloth-pink-overalls-96-v1.png",
+   "name": "粉衫藏青背带裤",
+   "category": "cloth",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    20,
+    53,
+    73,
+    89,
+    54,
+    37
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 1478,
+   "colours": 1016
+  },
+  {
+   "index": "1119-e-hat-orange-cap-96-v1.png",
+   "name": "橙色鸭舌帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    34,
+    6,
+    61,
+    23,
+    28,
+    18
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 198,
+   "colours": 191
+  },
+  {
+   "index": "1119-e-hat-brown-beret-96-v1.png",
+   "name": "棕色贝雷帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    6,
+    63,
+    22,
+    33,
+    17
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 277,
+   "colours": 200
+  },
+  {
+   "index": "1119-e-hat-red-m-cap-96-v1.png",
+   "name": "红帽M标",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    32,
+    6,
+    61,
+    21,
+    30,
+    16
+   ],
+   "centre_x": 46.5,
+   "centre_dev": -1.0,
+   "touches_edge": false,
+   "opaque_px": 324,
+   "colours": 312
+  },
+  {
+   "index": "1119-e-hat-grey-beanie-96-v1.png",
+   "name": "灰针织帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    6,
+    63,
+    23,
+    33,
+    18
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 353,
+   "colours": 246
+  },
+  {
+   "index": "1119-e-hat-cowboy-hat-96-v1.png",
+   "name": "棕色牛仔帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    27,
+    4,
+    67,
+    21,
+    41,
+    18
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 388,
+   "colours": 355
+  },
+  {
+   "index": "1119-e-hat-striped-nightcap-96-v1.png",
+   "name": "蓝白睡帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    6,
+    63,
+    23,
+    33,
+    18
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 260,
+   "colours": 256
+  },
+  {
+   "index": "1119-e-hat-yellow-cap-96-v1.png",
+   "name": "黄色棒球帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    30,
+    6,
+    65,
+    22,
+    36,
+    17
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 283,
+   "colours": 253
+  },
+  {
+   "index": "1119-e-hat-grey-ribbed-beanie-96-v1.png",
+   "name": "灰罗纹帽",
+   "category": "hat",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    6,
+    63,
+    22,
+    33,
+    17
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 340,
+   "colours": 221
+  },
+  {
+   "index": "1119-e-glasses-oval-thin-96-v1.png",
+   "name": "椭圆细框眼镜",
+   "category": "glasses",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    26,
+    24,
+    68,
+    42,
+    43,
+    19
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 134,
+   "colours": 122
+  },
+  {
+   "index": "1119-e-glasses-round-gold-96-v1.png",
+   "name": "金色圆框眼镜",
+   "category": "glasses",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    23,
+    22,
+    71,
+    35,
+    49,
+    14
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 120,
+   "colours": 118
+  },
+  {
+   "index": "1119-e-glasses-sun-black-96-v1.png",
+   "name": "黑色墨镜",
+   "category": "glasses",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    28,
+    26,
+    67,
+    35,
+    40,
+    10
+   ],
+   "centre_x": 47.5,
+   "centre_dev": 0.0,
+   "touches_edge": false,
+   "opaque_px": 269,
+   "colours": 154
+  },
+  {
+   "index": "1119-e-face-eyes-dot-96-v1.png",
+   "name": "点眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    31,
+    33,
+    4
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 20,
+   "colours": 18
+  },
+  {
+   "index": "1119-e-face-eyes-happy-96-v1.png",
+   "name": "弯弯眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    31,
+    33,
+    4
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 26,
+   "colours": 26
+  },
+  {
+   "index": "1119-e-face-eyes-flat-96-v1.png",
+   "name": "平眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    30,
+    33,
+    3
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 32,
+   "colours": 30
+  },
+  {
+   "index": "1119-e-face-eyes-sparkle-96-v1.png",
+   "name": "星星眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    32,
+    26,
+    62,
+    33,
+    31,
+    8
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 39,
+   "colours": 36
+  },
+  {
+   "index": "1119-e-face-eyes-closed-96-v1.png",
+   "name": "弯月闭眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    31,
+    33,
+    4
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 50,
+   "colours": 44
+  },
+  {
+   "index": "1119-e-face-eyes-sad-96-v1.png",
+   "name": "委屈眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    31,
+    33,
+    4
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 26,
+   "colours": 24
+  },
+  {
+   "index": "1119-e-face-eyes-dizzy-96-v1.png",
+   "name": "晕圈眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    24,
+    63,
+    34,
+    33,
+    11
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 190,
+   "colours": 171
+  },
+  {
+   "index": "1119-e-face-eyes-line-96-v1.png",
+   "name": "横线眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    22,
+    63,
+    37,
+    33,
+    16
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 162,
+   "colours": 153
+  },
+  {
+   "index": "1119-e-face-eyes-block-96-v1.png",
+   "name": "方块闭眼",
+   "category": "face",
+   "composed": false,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    26,
+    63,
+    34,
+    33,
+    9
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 180,
+   "colours": 94
+  },
+  {
+   "index": "1119-e-face-calm-96-v1.png",
+   "name": "平静",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    46,
+    33,
+    19
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 70,
+   "colours": 34
+  },
+  {
+   "index": "1119-e-face-happy-96-v1.png",
+   "name": "开心",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    46,
+    33,
+    19
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 76,
+   "colours": 42
+  },
+  {
+   "index": "1119-e-face-surprised-96-v1.png",
+   "name": "惊讶",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    22,
+    63,
+    46,
+    33,
+    25
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 212,
+   "colours": 169
+  },
+  {
+   "index": "1119-e-face-dizzy-96-v1.png",
+   "name": "晕乎",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    24,
+    63,
+    46,
+    33,
+    23
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 240,
+   "colours": 187
+  },
+  {
+   "index": "1119-e-face-excited-96-v1.png",
+   "name": "兴奋",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    32,
+    26,
+    62,
+    46,
+    31,
+    21
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 89,
+   "colours": 52
+  },
+  {
+   "index": "1119-e-face-sad-96-v1.png",
+   "name": "委屈",
+   "category": "face",
+   "composed": true,
+   "size": [
+    96,
+    96
+   ],
+   "mode": "RGBA",
+   "alpha_values": [
+    0,
+    255
+   ],
+   "content": [
+    31,
+    28,
+    63,
+    46,
+    33,
+    19
+   ],
+   "centre_x": 47.0,
+   "centre_dev": -0.5,
+   "touches_edge": false,
+   "opaque_px": 76,
+   "colours": 40
+  }
+ ]
+}
