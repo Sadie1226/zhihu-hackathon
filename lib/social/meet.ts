@@ -13,6 +13,12 @@
  *   1. **`dog_a < dog_b`**。不排序，schema 的 CHECK 当场报错。
  *   2. **`first_met_at` 只写一次**。第二次相遇只动 `last_met_at` 和 `met_count`。
  *
+ * 11-19 晚按 a 的复核（`team/2026-11-19/a/1119-a-给D-请求-相遇幂等与旅途校验-v1.md`）
+ * 改了三处，都是「可复现、不靠猜」的：
+ *   3. **相遇必须带 exchange**。纯记关系没有幂等锚点，重试就虚增报价 → `NO_EXCHANGE_IN_MEET`。
+ *   4. **tripId 必须验证**。存在 / 属于发起狗 / 状态 `running`，三条都在事务之前拒。
+ *   5. **重放返回库里的事实**。`recordExchange` 命中幂等时回查那一行，不再返回本次 draft。
+ *
  * 跑测试：node --experimental-strip-types lib/social/meet.test.ts
  */
 
@@ -35,6 +41,11 @@ export type MeetErrorCode =
   | 'DOG_NOT_FOUND'           // id 不存在
   | 'KIND_NOT_IN_MEET'        // 相遇只能带 greeting / find
   | 'MISSING_IDEMPOTENCY_KEY' // 没给 id 也没给幂等键，无法保证不重复写
+  // ↓ 11-19 晚补：a 复核 d4-meet 提出的两条可复现问题
+  | 'NO_EXCHANGE_IN_MEET'     // 既没有 outgoing 也没有 incoming —— 纯记关系不可幂等，直接拒
+  | 'TRIP_NOT_FOUND'          // tripId 在 trip 表里不存在
+  | 'TRIP_NOT_OWNED'          // 这趟出行不是发起狗的
+  | 'TRIP_NOT_OPEN'           // 出行状态不允许相遇（只有 running 可以）
 
 export class SocialWriteError extends Error {
   readonly code: MeetErrorCode | RuleCode
@@ -51,6 +62,15 @@ export class SocialWriteError extends Error {
 // ===========================================================================
 // 二、小工具
 // ===========================================================================
+
+/**
+ * 能发生相遇的出行状态。只有 `running`。
+ *
+ * `pending` 是还没出门，`done` / `failed` / `timeout` 是已经结束。
+ * 相遇一定发生在路上，所以这条是单值而不是集合 —— 哪天要放开，
+ * 改这一处，`meet()` 的报错文案会跟着变。
+ */
+export const MEETABLE_TRIP_STATUS = 'running'
 
 /** 契约要求 `2026-11-16T12:00:00Z` 这种秒级 UTC，`toISOString()` 多三位毫秒，去掉。 */
 export function nowIso(now?: string | Date): string {
@@ -119,6 +139,14 @@ export interface RecordResult {
   /** false = 命中幂等，库里原本就有这条。 */
   inserted: boolean
   deliverAfterTripSeq: number
+  /**
+   * 这条 exchange 的**持久化事实**。
+   *
+   * `inserted: false` 时这里是**从库里读回来的那一行**，不是本次调用传进来的 draft。
+   * 之前的实现直接返回 draft，导致同一个幂等键重放时，调用方拿到的是自己刚编的内容
+   * （库里存的是第一次的）—— 如果拿它当「已送达的那句话」渲染，用户会看到一条不存在的消息。
+   * a 在 11-19 复核里点到了这一点。
+   */
   exchange: NormalizedExchange
 }
 
@@ -182,11 +210,43 @@ export function recordExchange(
       createdAt,
     )
 
+  if (Number(res.changes) === 1) {
+    return { id, inserted: true, deliverAfterTripSeq, exchange: value }
+  }
+
+  // 命中幂等：库里已经有一条同 id 的记录。**返回它，不返回本次的 draft。**
+  // 走到这里一定读得到（DO NOTHING 只在主键冲突时发生），读不到才是真异常。
+  const existing = db
+    .prepare(
+      `SELECT from_dog, to_dog, kind, payload, deliver_after_trip_seq
+         FROM exchange WHERE id = ?`,
+    )
+    .get(id) as
+    | {
+        from_dog: string
+        to_dog: string
+        kind: ExchangeKind
+        payload: string
+        deliver_after_trip_seq: number
+      }
+    | undefined
+
+  if (!existing) {
+    // 理论上不可达：DO NOTHING 只在主键冲突时返回 changes=0，冲突就意味着有行。
+    // 真走到这里说明存储层状态不对，宁可炸掉也不返回一个编出来的 payload。
+    throw new Error(`幂等命中但读不回记录 ${id} —— 存储层状态异常`)
+  }
+
   return {
     id,
-    inserted: Number(res.changes) === 1,
-    deliverAfterTripSeq,
-    exchange: value,
+    inserted: false,
+    deliverAfterTripSeq: Number(existing.deliver_after_trip_seq),
+    exchange: {
+      fromDog: existing.from_dog,
+      toDog: existing.to_dog,
+      kind: existing.kind,
+      payload: JSON.parse(existing.payload) as Record<string, unknown>,
+    },
   }
 }
 
@@ -362,6 +422,10 @@ export interface MeetResult {
  *
  * 相遇只允许 `greeting` / `find`。`gift` 和 `co_owner_message` 有投递语义，归 `gift.ts`。
  * 这条不是洁癖：种子狗不伪造主人回话，而 `co_owner_message` 正是捎话的入口。
+ *
+ * 顺序是：**先拒，后写**。自己遇自己、没带 exchange、tripId 不存在/不归属/状态不对、
+ * 狗不存在、被拉黑、gate 不放行 —— 全部在 `BEGIN IMMEDIATE` 之前抛，库一个字节都没动。
+ * 只有真需要原子性的「关系 + 交换」才进事务。
  */
 export function meet(input: MeetInput): MeetResult {
   const { db, dogId, otherDogId, tripId } = input
@@ -385,6 +449,9 @@ export function meet(input: MeetInput): MeetResult {
     )
   }
 
+  // 顺序说明：先确认「东西存不存在」，再判断「这次调用说了什么」。
+  // 狗 id 写错时，报 DOG_NOT_FOUND 比报 NO_EXCHANGE_IN_MEET 有用得多 ——
+  // 调用方拿着后一条会去翻 payload，其实问题是 id 拼错了。
   const known = db
     .prepare('SELECT id FROM dog WHERE id IN (?, ?)')
     .all(dogId, otherDogId) as Array<{ id: string }>
@@ -392,6 +459,50 @@ export function meet(input: MeetInput): MeetResult {
   const missing = [dogId, otherDogId].filter((id) => !knownIds.has(id))
   if (missing.length > 0) {
     throw new SocialWriteError('DOG_NOT_FOUND', `狗不存在：${missing.join(', ')}`, 'dogId')
+  }
+
+  // ---- 这趟出行必须真实存在、属于发起狗、而且正在走 ----
+  //
+  // 之前只把 tripId 当字符串拼进幂等键，随便传 `does_not_exist` 也能写进关系，
+  // 还能凭空把 tripId 属于别的狗的情况当成有效相遇。三种都拒，且都在事务之前拒 ——
+  // 拒绝时不留下任何关系或交换。
+  const trip = db
+    .prepare('SELECT id, dog_id, status FROM trip WHERE id = ?')
+    .get(tripId) as { id: string; dog_id: string; status: string } | undefined
+  if (!trip) {
+    throw new SocialWriteError('TRIP_NOT_FOUND', `出行不存在：${tripId}`, 'tripId')
+  }
+  if (trip.dog_id !== dogId) {
+    throw new SocialWriteError(
+      'TRIP_NOT_OWNED',
+      `出行 ${tripId} 属于 ${trip.dog_id}，不是 ${dogId}`,
+      'tripId',
+    )
+  }
+  // 只认 running：pending 还没出门、done/failed/timeout 已经结束。
+  // 相遇只发生在路上，收件狗那趟出行是另一条记录，与这里无关。
+  if (trip.status !== MEETABLE_TRIP_STATUS) {
+    throw new SocialWriteError(
+      'TRIP_NOT_OPEN',
+      `出行 ${tripId} 状态为 ${trip.status}，只有 ${MEETABLE_TRIP_STATUS} 能相遇`,
+      'tripId',
+    )
+  }
+
+  // ---- 要么带东西，要么别调用 ----
+  //
+  // 重放判定靠「派生一个 exchange id，看库里有没有」，probeId 就是那个锚点。
+  // 两个方向都不给 = 没有锚点 = 同一 tripId 调第二次会把 met_count 再 +1。
+  // `relation` 表没有「哪次出行见的」字段，磕不出幂等键 —— 所以这条路径**根本不该存在**。
+  //
+  // 11-19 晚：a 复核发现纯关系路径重试就把报价虚增一次。选择「明确拒绝」而不是
+  // 「补一条存储约束」—— 后者要改 c 的 schema，走契约流程，今天走不完。
+  if (!input.outgoing && !input.incoming) {
+    throw new SocialWriteError(
+      'NO_EXCHANGE_IN_MEET',
+      '相遇至少带一条 outgoing 或 incoming；只记关系的调用无法幂等，不支持',
+      'outgoing',
+    )
   }
 
   // 拉黑双向排除：关系表一对只存一条（dog_a < dog_b），查一次等于查两个方向。
@@ -421,21 +532,15 @@ export function meet(input: MeetInput): MeetResult {
       const seen = db.prepare('SELECT id FROM exchange WHERE id = ?').get(probeId)
       if (seen) {
         const existing = readRelation(db, dogId, otherDogId)
-        db.exec('COMMIT')
-        return {
-          relation:
-            existing ?? {
-              id: '',
-              dogA: orderPair(dogId, otherDogId)[0],
-              dogB: orderPair(dogId, otherDogId)[1],
-              metCount: 0,
-              firstMetAt: when,
-              lastMetAt: when,
-              created: false,
-            },
-          exchanges: [],
-          replayed: true,
+        // 交换在、关系读不回来 —— 同一个事务写的，正常不可能。
+        // 以前这里会编一个 metCount:0 的关系返回，等于把假事实交给调用方；宁可炸。
+        if (!existing) {
+          throw new Error(`重放探测命中 ${probeId}，但读不回关系 ${dogId} × ${otherDogId}`)
         }
+        db.exec('COMMIT')
+        // 重放：`exchanges` 留空，不返回本次调用传的 payload。
+        // 需要内容就按 deriveExchangeId 自己查，库里的才是事实（见 recordExchange 的注释）。
+        return { relation: existing, exchanges: [], replayed: true }
       }
     }
 
@@ -474,16 +579,18 @@ export function meet(input: MeetInput): MeetResult {
 // ===========================================================================
 
 /**
- * TODO(等 c) `find.payload.sourceFindId`
+ * TODO(等契约合并) `find.payload.sourceFindId` + `sourceMode`
  *
- * 「礼物必须有出处」这条验收，d1 与 d3 都写了。但 `ExchangePayload` 的四个形状里
- * 现在没有 `sourceFindId`，c 的答复是「未决」。
+ * 11-19 晚 c 已正式批准：`sourceFindId` 进 `find`、`gift` 两种 payload，同时同步
+ * `sourceMode`（非知乎发现允许 null）；`fromDog` 是发送狗、`sourceFindId` 是关联的旅途发现，
+ * 两者不能混淆。
  *
- * 本文件的处理：**不硬编码、也不偷偷塞键**。`payload` 原样交给 `rules.ts`，
- * 未批的键会被 `UNKNOWN_KEY` 拒 —— 这是对的，等 c 批了在 `rules.ts` 的
- * `PENDING_KEYS.find` 里加一行，这里一个字都不用改。
+ * 但 c 同时说「**D 今天先按现有字段写业务，不要自行修改 K**」——契约增补由 c 改
+ * `types.ts` / `api.md` / `fixtures`，合并之后 d 才动 `rules.ts` 的白名单。
  *
- * 同一趟里「捡到 find」和「把它寄出去」在内存里拿得到引用，所以 d4 的验收不依赖这个字段。
+ * 所以本文件现在仍然：**不硬编码、也不偷偷塞键**。带 `sourceFindId` 的 payload 会被
+ * `rules.ts` 的 `UNKNOWN_KEY` 拒 —— 这是对的。c 的增补合并后，只需把
+ * `rules.ts` 的 `PENDING_KEYS.find` 挪到 `PAYLOAD_KEYS.find`，这里一个字都不用改。
  */
 
 /**
@@ -491,5 +598,6 @@ export function meet(input: MeetInput): MeetResult {
  *
  * a 的 `1119-a5-给D-请求` 第 1 条要求「匹配排除同 owner，不能只看 session」。
  * 但 `dog` 表现在只有 `session_id`，没有 owner 列，c3 的稳定归属也没定稿。
- * 本文件不猜字段：等 c 定了，加进 `ExchangeGate` 的判断里。
+ * 11-19 晚 c 的答复是「继续等公共身份口径，不猜字段」。
+ * 定了之后加进 `ExchangeGate` 的判断里。
  */
