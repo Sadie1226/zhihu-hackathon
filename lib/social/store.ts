@@ -1,0 +1,179 @@
+/**
+ * 看山出门 · d · 社交写入的存储边界（store.ts）
+ *
+ * 出 d，2026-11-19。依据 c 11/19 答复第 1 条：
+ *   「业务逻辑必须独立于存储……11/21 接入 C8 正式持久化接口，只替换存储适配器，
+ *     不重写相遇和礼物逻辑。Mock 验收与真实信箱验收分开记录。」
+ *
+ * 所以 meet.ts / gift.ts 只认这个接口，不直接 import `node:sqlite`。
+ * 换存储 = 换一个实现，业务代码一行不改。
+ *
+ * **这个接口刻意不含三样东西**（c 明确禁止 Mock 越权）：
+ *   1. 没有 setDelivered —— 投递时间归 c 的投递器，Mock 更不许直接标「已到」
+ *   2. 没有 now() —— 时间由调用方传，Adapter 不自己造一个「当前时间」再决定到达
+ *   3. 没有 nextTripSeq 自增 —— 只给 currentSeq 读数，「+1」在业务层算，
+ *      这样 Mock 和真库算出来的 deliver_after_trip_seq 必然一致
+ */
+
+import type { ExchangeKind } from './rules.ts'
+
+// ===========================================================================
+// 一、行形状（camelCase。DB 的 snake_case 由适配器负责转）
+// ===========================================================================
+
+/** 一条待写入的 exchange。deliverAfterTripSeq 已经算好，store 只管落。 */
+export interface ExchangeRow {
+  id: string
+  fromDog: string
+  toDog: string
+  kind: ExchangeKind
+  payload: Record<string, unknown>
+  /** 收件狗第几次出行到达。业务层算，不由 store 决定。 */
+  deliverAfterTripSeq: number
+  createdAt: string
+}
+
+/** 一对狗的关系。dogA < dogB 由业务层保证，store 不排序。 */
+export interface RelationRow {
+  id: string
+  dogA: string
+  dogB: string
+  firstMetAt: string
+  lastMetAt: string
+  metCount: number
+  isBlocked: 0 | 1
+  blockedAt: string | null
+}
+
+/** upsertRelation 的返回值：让调用方知道这是第几次见。 */
+export interface RelationUpsertResult {
+  relation: RelationRow
+  /** true 表示这一次是首次相遇（刚插入），false 表示累加。 */
+  firstTime: boolean
+}
+
+export interface SocialStore {
+  /** 写一条 exchange。同 id 再来返回 'duplicate'，不覆盖、不报错 —— 幂等。 */
+  insertExchange(row: ExchangeRow): 'inserted' | 'duplicate'
+
+  /**
+   * 相遇一次：首次插入 metCount=1，之后 lastMetAt 更新、metCount+1。
+   * firstMetAt 一旦写入永不改。
+   */
+  upsertRelation(input: {
+    dogA: string
+    dogB: string
+    at: string
+  }): RelationUpsertResult
+
+  /** 双向判断，调用方传任意顺序都行。 */
+  isBlocked(a: string, b: string): boolean
+
+  /** 收件狗当前第几次出行。只读，不自增。 */
+  currentSeq(dogId: string): number
+
+  /**
+   * 读：这只狗是不是种子狗（`dog.is_sample = 1`）。
+   *
+   * 这条不在 c 给的四方法里，是 d 加的第五个 —— 加它的原因只有一个：
+   * **「种子狗不伪造主人回话」这条红线，在写入侧唯一能拦的位置就是这里。**
+   * 不查 `is_sample`，`gift.ts` 就没法拒绝「用种子狗的身份说一句主人的话」。
+   *
+   * 它只读、不写任何状态，不会让 Mock 越权（越权指的是自己决定投递时间/标已到）。
+   * 如果 c 反对，替代方案是让上游调用方先自查 —— 但那等于把红线交给每个调用点。
+   */
+  isSample(dogId: string): boolean
+}
+
+// ===========================================================================
+// 二、确定性 id
+// ===========================================================================
+//
+// relation 的主键做成「两只狗 id 排序后拼起来」：
+//   · 同一对狗永远同一个 id → upsert 天然幂等，不靠先查后写
+//   · 不排序会造出 (a,b) 和 (b,a) 两条，schema 的 CHECK (dog_a < dog_b) 也会拦
+
+export function pairKey(a: string, b: string): [string, string] {
+  return a < b ? [a, b] : [b, a]
+}
+
+export function relationId(a: string, b: string): string {
+  const [lo, hi] = pairKey(a, b)
+  return `rel_${lo}__${hi}`
+}
+
+// ===========================================================================
+// 三、内存实现（测试与 Mock 阶段用）
+// ===========================================================================
+//
+// 只用来跑通逻辑和验收，**不代表真实信箱**。c 答复要求「Mock 验收与真实信箱验收
+// 分开记录」，所以这个类的每条测试都标注 mock，真实库测试放在 store.sqlite.test.ts。
+
+export interface MemoryStoreOptions {
+  /** 预置的 blocked 对（升序对）。 */
+  blocked?: Array<[string, string]>
+  /** 预置的每只狗当前 seq。 */
+  seqs?: Record<string, number>
+  /** 预置的种子狗 id（`is_sample = 1`）。 */
+  samples?: string[]
+}
+
+export interface MemoryStore extends SocialStore {
+  readonly exchanges: ExchangeRow[]
+  readonly relations: Map<string, RelationRow>
+}
+
+export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
+  const exchanges: ExchangeRow[] = []
+  const relations = new Map<string, RelationRow>()
+  const blocked = new Set((opts.blocked ?? []).map(([a, b]) => relationId(a, b)))
+  const seqs = { ...(opts.seqs ?? {}) }
+  const samples = new Set(opts.samples ?? [])
+
+  return {
+    exchanges,
+    relations,
+
+    insertExchange(row) {
+      if (exchanges.some((e) => e.id === row.id)) return 'duplicate'
+      // 复制一份，防止调用方后续改对象污染「已落库」的数据
+      exchanges.push({ ...row, payload: { ...row.payload } })
+      return 'inserted'
+    },
+
+    upsertRelation({ dogA, dogB, at }) {
+      const [lo, hi] = pairKey(dogA, dogB)
+      const id = relationId(lo, hi)
+      const hit = relations.get(id)
+      if (hit) {
+        const next: RelationRow = { ...hit, lastMetAt: at, metCount: hit.metCount + 1 }
+        relations.set(id, next)
+        return { relation: next, firstTime: false }
+      }
+      const row: RelationRow = {
+        id,
+        dogA: lo,
+        dogB: hi,
+        firstMetAt: at,
+        lastMetAt: at,
+        metCount: 1,
+        isBlocked: 0,
+        blockedAt: null,
+      }
+      relations.set(id, row)
+      return { relation: row, firstTime: true }
+    },
+
+    isBlocked(a, b) {
+      return blocked.has(relationId(a, b))
+    },
+
+    currentSeq(dogId) {
+      return seqs[dogId] ?? 0
+    },
+
+    isSample(dogId) {
+      return samples.has(dogId)
+    },
+  }
+}
