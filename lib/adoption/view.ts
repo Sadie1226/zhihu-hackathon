@@ -19,6 +19,8 @@ export type DogView = Pick<
 export type SessionView = {
   provider: 'development' | 'zhihu' | 'unavailable'
   authenticated: boolean
+  /** Non-authorizing, namespaced UI draft key; never usable as a session credential. */
+  draftScope?: string | null
   dog: DogView | null
 }
 export type ProfileSection = {

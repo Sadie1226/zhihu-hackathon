@@ -16,6 +16,8 @@ import type { DogView, SessionView } from '@/lib/adoption/view'
 import type { Feature, PanelContext, ShellBindings } from './ports'
 import { ProfilePanel, SettingsPanel } from './system-panels'
 import s from './shell.module.css'
+import '@/components/v25/theme.css'
+import '@/components/v25/integration.css'
 
 const fixedIds = new Set([
   'profile',
@@ -267,33 +269,43 @@ export function AppShellProvider({
       }}
     >
       {children}
-      <dialog
-        ref={dialog}
-        className={s.dialog}
-        aria-labelledby="shell-panel-title"
-        onCancel={closePanel}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) closePanel()
-        }}
-      >
-        <div className={s.panel} key={dogId ?? 'no-dog'}>
-          <header className={s.panelHeader}>
-            <h2 id="shell-panel-title">
-              {titles[active ?? ''] ??
-                features.find((f) => f.id === active)?.label ??
-                '小屋'}
-            </h2>
-            <button type="button" onClick={closePanel} aria-label="关闭面板">
-              关闭
-            </button>
-          </header>
-          {visited.map((id) => (
-            <div key={id} hidden={active !== id}>
-              <PanelBoundary active={active === id}>{panel(id)}</PanelBoundary>
+      <div data-v25="" className="v25-modal-scope">
+        <dialog
+          ref={dialog}
+          className="home-panel v25-dialog"
+          aria-labelledby="shell-panel-title"
+          onCancel={closePanel}
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return
+            const box = event.currentTarget.getBoundingClientRect()
+            if (
+              event.clientX < box.left || event.clientX > box.right ||
+              event.clientY < box.top || event.clientY > box.bottom
+            ) closePanel()
+          }}
+        >
+          <div key={dogId ?? 'no-dog'}>
+            <div className="panel-heading">
+              <h2 id="shell-panel-title">
+                {titles[active ?? ''] ??
+                  features.find((f) => f.id === active)?.label ??
+                  '小屋'}
+              </h2>
+              <button type="button" onClick={closePanel} aria-label="关闭面板">
+                关闭
+              </button>
             </div>
-          ))}
-        </div>
-      </dialog>
+            <p className="panel-demo">测试身份 · 模拟资料 · 参考外观</p>
+            {visited.map((id) => (
+              <div key={id} hidden={active !== id}>
+                <PanelBoundary active={active === id}>
+                  {panel(id)}
+                </PanelBoundary>
+              </div>
+            ))}
+          </div>
+        </dialog>
+      </div>
     </ShellContext.Provider>
   )
 }

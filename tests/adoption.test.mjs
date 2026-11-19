@@ -123,6 +123,19 @@ test('creation is durable/idempotent; conflict cannot create another dog or spoo
   assert.equal('sessionId' in dog, false)
   assert.notEqual(createDevelopmentDog(db, 'owner-b', input).id, dog.id)
 })
+
+test('v25 slider preserves all 21 positions; invalid increments cannot reach generation', () => {
+  const fingerprints = new Set()
+  for (let position = 0; position <= 100; position += 5) {
+    const value = (position - 50) / 25
+    const parsed = parseDraft({...draft,tendencies:[value,0,0,0,0,0]})
+    assert.equal(parsed.tendencies[0],value)
+    fingerprints.add(generateDevelopment(parsed).fingerprint)
+  }
+  assert.equal(fingerprints.size,21)
+  for (const value of [NaN,Infinity,-Infinity,0.1,0.3,-2.2,2.2])
+    assert.throws(()=>parseDraft({...draft,tendencies:[value,0,0,0,0,0]}))
+})
 test('rename only updates name and refuses another owner', (t) => {
   const db = database(t),
     dog = createDevelopmentDog(db, 'owner-a', payload())
@@ -208,7 +221,20 @@ test('HTTP login/session, whitelist, same-origin, bad input and disabled provide
     'session',
     () => db,
   )
-  assert.equal((await session.json()).dog.id, dog.id)
+  const sessionView = await session.json()
+  assert.equal(sessionView.dog.id, dog.id)
+  assert.match(sessionView.draftScope,/^[a-f0-9]{64}$/)
+  assert.equal(JSON.stringify(sessionView).includes(cookie.split('=')[1]),false)
+  const repeat = await handleAdoptionRequest(
+    new Request('http://localhost:3000/api/session',{headers:{cookie}}),'session',()=>db,
+  )
+  assert.equal((await repeat.json()).draftScope,sessionView.draftScope)
+  const secondLogin = await handleAdoptionRequest(request({}), 'login', () => db)
+  const secondCookie=secondLogin.headers.get('set-cookie').split(';')[0]
+  const otherSession=await handleAdoptionRequest(
+    new Request('http://localhost:3000/api/session',{headers:{cookie:secondCookie}}),'session',()=>db,
+  )
+  assert.notEqual((await otherSession.json()).draftScope,sessionView.draftScope)
   assert.equal(
     (
       await handleAdoptionRequest(

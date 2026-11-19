@@ -1,0 +1,81 @@
+/* Integration semantics only; source layout and artwork live in theme.css. */
+[data-v25] [hidden] { display: none !important; }
+[data-v25].v25-modal-scope { min-height: 0; }
+[data-v25] .action-slot { display: contents; }
+[data-v25] .v25-dialog {
+  inset: auto;
+  top: 6vh;
+  bottom: 6vh;
+  right: max(24px, calc((100vw - 1240px) / 2));
+  height: 88vh;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  color: var(--ink);
+  font: 16px/1.7 KanshanPixel, 'Microsoft YaHei', sans-serif;
+}
+[data-v25] .v25-dialog::backdrop { background: #342a214d; }
+[data-v25] .v25-dialog .panel-heading { position: static; }
+[data-v25] .v25-dialog .panel-heading h2 { font-size: 23px; margin: 0; }
+[data-v25] .home-panel form { margin: 0; }
+[data-v25] .home-panel input.name { border-radius: 0; font-size: 20px; }
+[data-v25] .profile-character .reference-actor { margin: auto; }
+/* Keep the original sign's content flow; sibling targets avoid nested controls. */
+[data-v25] .scene-left-ui .v25-nameplate {
+  display: flex;
+  align-items: center;
+  border: 0;
+  text-align: center;
+  line-height: 1.4;
+  color: var(--rail-ink);
+}
+[data-v25] .scene-left-ui .nameplate-trigger {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  z-index: 0;
+}
+[data-v25] .v25-nameplate > img,
+[data-v25] .v25-nameplate > span { position: relative; pointer-events: none; }
+[data-v25] .nameplate-status { pointer-events: auto; text-decoration: none; }
+[data-v25] .room-speech a { color: inherit; text-decoration: none; }
+[data-v25] .room-actor:disabled,
+[data-v25] .home-dock button:disabled { opacity: 1; }
+[data-v25] .home-dock .dock-route {
+  border: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 2px 4px;
+  width: 68px;
+  min-height: 68px;
+  text-decoration: none;
+  flex: none;
+  pointer-events: auto;
+  color: var(--rail-ink);
+  line-height: 1.4;
+  text-shadow: 1px 0 var(--rail-cream), -1px 0 var(--rail-cream), 0 1px var(--rail-cream), 0 -1px var(--rail-cream);
+}
+[data-v25] .dock-route img {
+  filter: drop-shadow(1px 0 var(--rail-cream)) drop-shadow(-1px 0 var(--rail-cream)) drop-shadow(0 1px var(--rail-cream)) drop-shadow(0 -1px var(--rail-cream));
+}
+[data-v25] .trait-error { color: var(--error); }
+@media (max-width: 1000px) and (min-width: 601px) {
+  [data-v25] .home-dock .dock-route { width: 56px; min-height: 50px; padding: 1px; }
+  [data-v25] .home-dock .dock-route span { font-size: 12px; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  [data-v25] .v25-dialog { top: 12vh; bottom: 0; right: 0; }
+  [data-v25] .home-dock .dock-route { width: 56px; min-height: 59px; padding: 1px 3px; }
+  [data-v25] .home-dock .dock-route span { font-size: 12px; padding: 0 5px 1px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  [data-v25] .v25-dialog { top: 12px; bottom: 12px; height: calc(100vh - 24px); }
+}

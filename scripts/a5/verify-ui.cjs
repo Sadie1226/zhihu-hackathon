@@ -14,16 +14,36 @@ const fs = require('node:fs')
     throw new Error('A5 browser verification requires a local development preview')
   await page.goto(base + '/home')
   await page.waitForURL('**/adopt')
-  await page.getByRole('button', { name: '以测试身份进入' }).click()
-  await page
-    .getByRole('button', { name: '读取模拟知乎资料', exact: true })
-    .click()
-  await page.getByRole('textbox', { name: '给它一个名字' }).fill('小山')
-  await page.getByRole('button', { name: '整理三个性格词' }).click()
-  await page.getByRole('button', { name: '一起回小屋' }).click()
+  await page.getByRole('button', { name: '以测试身份开始 →' }).click()
+  await page.getByRole('button', { name: '继续，给它起个名字 →' }).click()
+  await page.locator('#dog-name').fill('小山')
+  await page.getByRole('button',{name:'自然风景',exact:true}).click()
+  await page.getByRole('button',{name:'城市角落',exact:true}).click()
+  await page.getByRole('button', { name: '继续，认识它的性格 →' }).click()
+  await page.getByRole('slider').first().fill('15')
+  await page.reload()
+  await page.getByRole('button', { name: '以测试身份开始 →' }).click()
+  await page.getByRole('button', { name: '继续，给它起个名字 →' }).click()
+  assert.equal(await page.locator('#dog-name').inputValue(),'小山')
+  assert.equal(await page.getByRole('button',{name:'自然风景',exact:true}).getAttribute('aria-pressed'),'true')
+  await page.getByRole('button', { name: '继续，认识它的性格 →' }).click()
+  assert.equal(await page.getByRole('slider').first().inputValue(),'15')
+  await page.getByRole('button', { name: '看看它的三个词 →' }).click()
+  await page.getByRole('button', { name: '去挑一套穿搭 →' }).click()
+  // Simulate a lost response AFTER the server commits, then retry the same receipt.
+  let committedDog
+  await page.route('**/api/dogs',async r=>{
+    const response=await r.fetch()
+    assert.equal(response.status(),200)
+    committedDog=(await response.json()).dog.id
+    await r.abort('failed')
+  },{times:1})
+  await page.getByRole('button', { name: '就这样，成为伙伴 →' }).click()
+  await page.getByRole('button', {name:'保留选择，再试一次 →'}).click()
+  await page.getByRole('button', { name: '进入它的小屋 →' }).click()
   await page.waitForURL('**/home')
-  await page.getByRole('heading', { name: '小山的小屋' }).waitFor()
-  await page.getByText('它在家里，慢慢过今天。 →', { exact: true }).waitFor()
+  await page.getByText('小山的小屋', { exact: true }).waitFor()
+  await page.getByText('阳光刚好，先一起坐一会儿吧。', { exact: true }).waitFor()
   await page
     .locator('img')
     .evaluateAll((imgs) => Promise.all(imgs.map((i) => i.decode())))
@@ -43,7 +63,7 @@ const fs = require('node:fs')
     '草稿名字',
   )
   await page.getByRole('textbox', { name: '它的名字' }).fill('小叶')
-  await page.getByRole('button', { name: '保存称呼' }).click()
+  await page.getByRole('button', { name: '保存这个称呼' }).click()
   await page.getByText('称呼已经记好了。').waitFor()
   await page.keyboard.press('Escape')
   assert.equal(
@@ -53,7 +73,7 @@ const fs = require('node:fs')
     '档案',
   )
   await page.reload()
-  await page.getByRole('heading', { name: '小叶的小屋' }).waitFor()
+  await page.getByText('小叶的小屋', { exact: true }).waitFor()
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.screenshot({ path: '.local/a5-home-desktop.png', fullPage: true })
   await page.goto(base + '/trip')
@@ -65,6 +85,7 @@ const fs = require('node:fs')
   const session = await (
     await context.request.get(base + '/api/session')
   ).json()
+  assert.equal(session.dog.id,committedDog)
   const trip = {
     id: 'review-trip',
     dogId: session.dog.id,
@@ -126,15 +147,14 @@ const fs = require('node:fs')
   }
   await page.route('**/api/dogs/*/trips?limit=2', r => r.fulfill({status:503,json:{code:'NETWORK',detail:'internal-only'}}))
   await page.goto(base + '/home')
-  await page.getByRole('link',{name:'暂时读不到它的近况 →'}).waitFor()
-  assert.equal(await page.getByText('它在家里，慢慢过今天。 →',{exact:true}).count(),0)
+  await page.getByRole('link',{name:'暂时读不到它的近况'}).waitFor()
+  assert.equal(await page.getByText('阳光刚好，先一起坐一会儿吧。',{exact:true}).count(),0)
   assert.equal(await page.getByText('internal-only',{exact:true}).count(),0)
   await page.goto(base + '/home')
   await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByRole('button', { name: '退出测试身份' }).click()
   await page.waitForURL('**/adopt')
-  await page.getByRole('button', { name: '以测试身份进入' }).waitFor()
-  await page.getByRole('button', { name: '以测试身份进入' }).click()
+  await page.getByRole('button', { name: '以测试身份开始 →' }).waitFor()
   await page.route('**/api/adoption/profile', (r) =>
     r.fulfill({
       json: {
@@ -149,19 +169,11 @@ const fs = require('node:fs')
       },
     }),
   )
-  await page
-    .getByRole('button', { name: '读取模拟知乎资料', exact: true })
-    .click()
-  await page.getByText('收藏：读取失败', { exact: true }).waitFor()
-  assert.equal(
-    await page.getByRole('button', { name: '整理三个性格词' }).isDisabled(),
-    true,
-  )
-  await page.getByRole('checkbox', { name: '我已了解失败项' }).check()
-  assert.equal(
-    await page.getByRole('button', { name: '整理三个性格词' }).isEnabled(),
-    true,
-  )
+  await page.getByRole('button', { name: '以测试身份开始 →' }).click()
+  await page.getByText('收藏：失败', { exact: true }).waitFor()
+  assert.equal(await page.getByRole('button', {name:'继续，给它起个名字 →'}).count(),0)
+  await page.getByRole('button', {name:'仅用已读资料继续 →'}).click()
+  assert.equal(await page.locator('#dog-name').inputValue(),'')
   await page.setViewportSize({ width: 667, height: 375 })
   assert.equal(
     await page.evaluate(
@@ -186,6 +198,8 @@ const fs = require('node:fs')
       {
         passed: [
           'adopt-persist',
+          'draft-refresh-restores-name-interests-and-slider',
+          'committed-create-lost-response-retry-same-dog',
           'mobile-no-overflow',
           'draft-preserved',
           'rename-persist',

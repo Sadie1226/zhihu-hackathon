@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { createHash } from 'node:crypto'
 import {
   ensureAnonymousSession,
   readSessionId,
@@ -78,6 +79,11 @@ export async function handleAdoptionRequest(
       return json({
         provider: 'development',
         authenticated: !!session,
+        draftScope: session
+          ? createHash('sha256')
+              .update(`a5-ui-draft-v1:${session}`)
+              .digest('hex')
+          : null,
         dog: session ? ownedDog(db, session) : null,
       })
     if (!session)

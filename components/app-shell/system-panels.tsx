@@ -1,11 +1,9 @@
 'use client'
-
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, useAppShell } from './shell'
-import { DogArt } from './visuals'
+import { ReferenceActor } from '@/components/v25/presentation'
 import type { DogView } from '@/lib/adoption/view'
-import s from './shell.module.css'
 
 export function ProfilePanel() {
   const { session, updateDog } = useAppShell()
@@ -37,29 +35,32 @@ export function ProfilePanel() {
   if (!dog) return null
   return (
     <>
-      <div className={s.portrait}>
-        <DogArt assembly={dog.assembly} />
+      <div className="profile-character">
+        <ReferenceActor assembly={dog.assembly} />
       </div>
       <form onSubmit={save}>
-        <label htmlFor="dog-name">它的名字</label>
+        <label htmlFor="rename">它的名字</label>
         <input
-          id="dog-name"
+          id="rename"
+          className="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
           aria-describedby="rename-help"
+          required
         />
-        <p id="rename-help" className={s.muted}>
-          1–6 个字，想换个称呼时也可以回来。
+        <p className="hint" id="rename-help">
+          名字规则沿用领养页：1–6个字。
         </p>
-        <button className={s.primary} disabled={busy}>
-          {busy ? '正在记下…' : '保存称呼'}
+        <button className="primary" disabled={busy}>
+          {busy ? '正在记下…' : '保存这个称呼'}
         </button>
-        <p role="status">{notice}</p>
+        <p className="panel-feedback" role="status">
+          {notice}
+        </p>
       </form>
       <h3>三个性格词</h3>
       <p>{dog.personalityTags.join(' · ')}</p>
-      <p className={s.muted}>测试身份 · 模拟资料生成。外观为参考预览。</p>
+      <p className="fine">外观修改位置已预留，当前不开放重新选择表情。</p>
     </>
   )
 }
@@ -82,7 +83,8 @@ export function SettingsPanel() {
   }
   return (
     <>
-      <label className={s.setting}>
+      <p>把这里调成舒服的样子。</p>
+      <label className="setting-row">
         <span>减少动态效果</span>
         <input
           type="checkbox"
@@ -90,19 +92,22 @@ export function SettingsPanel() {
           onChange={(e) => setReducedMotion(e.target.checked)}
         />
       </label>
-      <p className={s.muted}>也会遵循设备的减少动态偏好。当前画面保持静止。</p>
-      <h3>身份与授权</h3>
-      <p>当前为测试身份，知乎资料为模拟内容。</p>
-      <p>真实知乎登录接入后，需要重新领养；测试伙伴不会自动转入真实账号。</p>
-      <button
-        onClick={() => {
-          void logout()
-        }}
-        disabled={busy}
-      >
-        退出测试身份
-      </button>
-      <p role="alert">{error}</p>
+      <p className="hint">当前均为静态画面；该偏好会传给后续动画接口。</p>
+      <div className="settings-section">
+        <h3>账号与授权</h3>
+        <p>
+          当前为测试身份，知乎资料为模拟内容。真实知乎登录接入后需要重新领养；测试伙伴不会转入真实账号。
+        </p>
+        <button
+          disabled={busy}
+          onClick={() => {
+            void logout()
+          }}
+        >
+          退出测试身份
+        </button>
+        <p role="alert">{error}</p>
+      </div>
     </>
   )
 }

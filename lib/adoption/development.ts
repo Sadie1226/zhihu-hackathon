@@ -83,7 +83,12 @@ export function parseDraft(value: unknown): AdoptionDraft {
     !Array.isArray(input.tendencies) ||
     input.tendencies.length !== 6 ||
     input.tendencies.some(
-      (t) => typeof t !== 'number' || !Number.isInteger(t) || t < -2 || t > 2,
+      (t) =>
+        typeof t !== 'number' ||
+        !Number.isFinite(t) ||
+        t < -2 ||
+        t > 2 ||
+        Math.abs(t * 5 - Math.round(t * 5)) > 1e-8,
     )
   )
     invalid('请核对六组性格倾向')
