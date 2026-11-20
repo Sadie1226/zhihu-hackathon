@@ -3,6 +3,8 @@ import type { DatabaseSync } from 'node:sqlite'
 import type { Find } from '../../contracts/types.ts'
 import { readSessionId } from '../auth/session.ts'
 import { TripError } from './service.ts'
+import { proofTripId, verifiedSearchInput } from './search-proof.ts'
+import type { SearchProof } from './search-proof.ts'
 
 export type FindInput = Omit<Find, 'id' | 'createdAt'> & {
   /** Internal stable source identity for scene/moment, not a UI-supplied title. */
@@ -46,7 +48,7 @@ function sourceUrl(value: unknown, zhihu: boolean): string {
   return url.href
 }
 
-function normalized(input: FindInput): { data: Omit<Find, 'id' | 'createdAt'>; identity: string } {
+function normalized(input: FindInput, verified = false): { data: Omit<Find, 'id' | 'createdAt'>; identity: string } {
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
       Object.keys(input).some(key => !['tripId', 'kind', 'title', 'excerpt', 'sourceUrl', 'sourceMode',
         'authorityLevel', 'voteUpCount', 'assetPath', 'sourceKey'].includes(key))) return conflict()
@@ -56,8 +58,8 @@ function normalized(input: FindInput): { data: Omit<Find, 'id' | 'createdAt'>; i
   if (input.voteUpCount !== null && (!Number.isSafeInteger(input.voteUpCount) || input.voteUpCount < 0)) return conflict()
   if (input.assetPath !== null && (typeof input.assetPath !== 'string' || !/^\/(?!\/)/.test(input.assetPath) ||
       /[\\?#%\s]/.test(input.assetPath) || input.assetPath.split('/').some(part => part === '.' || part === '..'))) return conflict()
-  // This phase has no C5 provenance receipt or cache verifier. Never infer live from a URL.
-  if (input.kind === 'zhihu' ? input.sourceMode !== 'fixture' : input.sourceMode !== null) return conflict()
+  // Ordinary writes remain fixture-only. Only opaque successful C5 proofs authorize live.
+  if (input.kind === 'zhihu' ? input.sourceMode !== (verified ? 'live' : 'fixture') : input.sourceMode !== null) return conflict()
   const url = input.sourceUrl === null && input.kind !== 'zhihu' ? null : sourceUrl(input.sourceUrl, input.kind === 'zhihu')
   const key = input.sourceKey
   if (input.kind !== 'zhihu' && (!validId(key) || key.length > 200)) return conflict()
@@ -76,25 +78,20 @@ function normalized(input: FindInput): { data: Omit<Find, 'id' | 'createdAt'>; i
 export function createFindStore(db: DatabaseSync, options: { now?: () => Date } = {}) {
   function ownedTrip(tripId: string, sessionId: string) {
     if (!validId(tripId) || !validId(sessionId)) return missing()
-    const row = db.prepare(`SELECT t.status, t.started_at AS startedAt FROM trip t
+    const row = db.prepare(`SELECT t.status, t.started_at AS startedAt, d.blocked_topics AS blockedTopics,
+      d.is_sample AS isSample FROM trip t
       JOIN dog d ON d.id=t.dog_id WHERE t.id=? AND d.session_id=?`).get(tripId, sessionId)
     return row ?? missing()
   }
-  return {
-    list(tripId: string, sessionId: string): Find[] {
-      return transaction(db, false, () => {
-        ownedTrip(tripId, sessionId)
-        const rows = db.prepare(`SELECT ${projection} FROM find f JOIN trip t ON t.id=f.trip_id
-          JOIN dog d ON d.id=t.dog_id WHERE t.id=? AND d.session_id=? ORDER BY f.created_at,f.id`)
-          .all(tripId, sessionId) as unknown as Find[]
-        return rows.map(row => ({ ...row }))
-      })
-    },
-    write(input: FindInput, sessionId: string): Find {
-      return transaction(db, true, () => {
-        const trip = ownedTrip(input?.tripId, sessionId)
+  function write(inputOrProof: FindInput | SearchProof, sessionId: string, verified: boolean): Find {
+    return transaction(db, true, () => {
+        const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
+        const trip = ownedTrip(tripId, sessionId)
         if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
-        const { data, identity } = normalized(input)
+        if (verified && trip.isSample === 1) return conflict()
+        const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, sessionId,
+          JSON.parse(String(trip.blockedTopics)) as string[]) : inputOrProof as FindInput
+        const { data, identity } = normalized(input, verified)
         const id = `find_${createHash('sha256').update(JSON.stringify(['c6-find-v1', data.tripId, data.kind, identity])).digest('hex')}`
         let existing = db.prepare(`SELECT ${projection} FROM find f WHERE f.id=?`).get(id) as Find | undefined
         // Respect old rows with non-deterministic IDs too, without a new index/table.
@@ -118,7 +115,24 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
           VALUES(?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.tripId, data.kind, data.title, data.excerpt,
             data.sourceUrl, data.sourceMode, data.authorityLevel, data.voteUpCount, data.assetPath, at)
         return { id, ...data, createdAt: at }
+    })
+  }
+  return {
+    list(tripId: string, sessionId: string): Find[] {
+      return transaction(db, false, () => {
+        ownedTrip(tripId, sessionId)
+        const rows = db.prepare(`SELECT ${projection} FROM find f JOIN trip t ON t.id=f.trip_id
+          JOIN dog d ON d.id=t.dog_id WHERE t.id=? AND d.session_id=? ORDER BY f.created_at,f.id`)
+          .all(tripId, sessionId) as unknown as Find[]
+        return rows.map(row => ({ ...row }))
       })
+    },
+    write(input: FindInput, sessionId: string): Find {
+      return write(input, sessionId, false)
+    },
+    /** Trusted process-only capability; no body field can manufacture a proof. */
+    writeVerified(proof: SearchProof, sessionId: string): Find {
+      return write(proof, sessionId, true)
     },
   }
 }
