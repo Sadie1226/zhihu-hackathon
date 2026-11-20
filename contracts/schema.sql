@@ -130,9 +130,11 @@ CREATE TABLE snapshot (
   personality_tags    TEXT    NOT NULL
                               CHECK (json_valid(personality_tags)
                                      AND json_array_length(personality_tags) = 3),
-  interest_categories TEXT    NOT NULL
-                              CHECK (json_valid(interest_categories)
-                                     AND json_array_length(interest_categories) BETWEEN 2 AND 3),
+  -- NULL 表示未选兴趣限制；非 NULL 必须是现有六类中的 2–3 项，[] 不等于 NULL。
+  interest_categories TEXT CHECK (interest_categories IS NULL OR
+    CASE WHEN json_valid(interest_categories) THEN
+      json_type(interest_categories) = 'array' AND json_array_length(interest_categories) BETWEEN 2 AND 3
+    ELSE 0 END),
 
   -- d 写。最多 3 条，**只放摘要**（一句话），不放 find 原文、不放对话。
   recent_trips        TEXT    NOT NULL DEFAULT '[]'
@@ -146,6 +148,23 @@ CREATE TABLE snapshot (
 
   PRIMARY KEY (dog_id, version)
 );
+
+
+CREATE TRIGGER IF NOT EXISTS snapshot_interest_ins BEFORE INSERT ON snapshot
+WHEN NEW.interest_categories IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'snapshot: invalid interest category')
+  WHERE EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(NEW.interest_categories) THEN NEW.interest_categories ELSE '[]' END)
+    WHERE type <> 'text' OR value NOT IN ('自然风景','城市角落','手作与食物','人与故事','动物与植物','冷知识'));
+END;
+
+CREATE TRIGGER IF NOT EXISTS snapshot_interest_upd BEFORE UPDATE OF interest_categories ON snapshot
+WHEN NEW.interest_categories IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'snapshot: invalid interest category')
+  WHERE EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(NEW.interest_categories) THEN NEW.interest_categories ELSE '[]' END)
+    WHERE type <> 'text' OR value NOT IN ('自然风景','城市角落','手作与食物','人与故事','动物与植物','冷知识'));
+END;
 
 -- ---------------------------------------------------------------------------
 -- wish · 心愿（2.2）

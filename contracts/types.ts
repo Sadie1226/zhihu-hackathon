@@ -168,7 +168,8 @@ export interface Snapshot {
   dogId: string
   version: number
   personalityTags: PersonalityTag[]
-  interestCategories: InterestCategory[]
+  /** null = 未选兴趣限制；非 null 保留 2–3 项，[] 不等于 null。 */
+  interestCategories: InterestCategory[] | null
   /** 最多 3 条，只放摘要。**不放 find 原文、不放对话。** */
   recentTrips: string[]
   /** 当前在等什么，人话一句，如「等一条围巾的回音」。 */
@@ -263,9 +264,15 @@ export interface Exchange {
   readAt: IsoTime | null
 }
 
+/** 新记录由可信服务端显式填两个键；可选仅为读取历史 payload 兼容。 */
+export type ProvenanceFields = {
+  sourceFindId?: string | null
+  sourceMode?: SourceMode | null
+}
+
 /** 四种 kind 各自的 payload。**主人原话只许留在这里，绝不进 snapshot。** */
 export type ExchangePayload =
-  | { kind: 'find'; findTitle: string; findExcerpt: string | null; sourceUrl: string | null }
+  | ({ kind: 'find'; findTitle: string; findExcerpt: string | null; sourceUrl: string | null } & ProvenanceFields)
   | { kind: 'greeting'; line: string; weather: string | null }
   /**
    * gift —— 礼物（P0 第 8 条）。11-16 新增 `imagePath`：礼物图标走 AI 生成。
@@ -273,8 +280,38 @@ export type ExchangePayload =
    * 分三条流水线各管一段，会出现名字写「一小卷灰蓝色的毛线」、图画出来是个茶杯。
    * `imagePath` 可空；空时界面退成纯文字，不出现空白框。
    */
-  | { kind: 'gift'; giftName: string; note: string | null; imagePath: string | null }
+  | ({ kind: 'gift'; giftName: string; note: string | null; imagePath: string | null } & ProvenanceFields)
   | { kind: 'co_owner_message'; message: string; fromOwnerOf: string }
+
+/** Contract-only provenance check; not a replacement for D's full payload validator.
+ * source must be resolved by a trusted server JOIN find -> trip, never client fields.
+ * D4/C8 still need to invoke this boundary inside their actual write transaction.
+ */
+export function checkExchangeProvenance(payload: unknown, context: {
+  fromDog: string
+  trusted: boolean
+  source: { id: string; dogId: string; sourceMode: SourceMode | null } | null
+  historical?: boolean
+}): { ok: true } | { ok: false; reason: string } {
+  const fail = (reason: string): { ok: false; reason: string } => ({ ok: false, reason })
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return fail('Invalid payload object')
+  const p = payload as Record<string, unknown>
+  const hasId = Object.hasOwn(p, 'sourceFindId'), hasMode = Object.hasOwn(p, 'sourceMode')
+  if (p.kind === 'greeting' || p.kind === 'co_owner_message') {
+    return hasId || hasMode ? fail('This kind has no provenance fields') : { ok: true }
+  }
+  if (p.kind !== 'find' && p.kind !== 'gift') return fail('Invalid payload kind')
+  if (!hasId && !hasMode && context.historical) return { ok: true }
+  if (!hasId || !hasMode) return fail('New payloads require both provenance keys')
+  if (!context.trusted) return fail('Provenance must be supplied by a trusted server')
+  if (p.sourceMode !== null && !['live', 'cache', 'fixture'].includes(p.sourceMode as string)) return fail('Invalid sourceMode')
+  if (p.sourceFindId === null) return p.sourceMode === null ? { ok: true } : fail('No Find source requires null sourceMode')
+  if (typeof p.sourceFindId !== 'string' || !p.sourceFindId.trim() || p.sourceFindId !== p.sourceFindId.trim()) return fail('Invalid sourceFindId')
+  const source = context.source
+  if (!source || source.id !== p.sourceFindId || source.dogId !== context.fromDog) return fail('Source Find is not owned by sender')
+  if (source.sourceMode !== p.sourceMode) return fail('sourceMode must equal stored Find provenance')
+  return { ok: true }
+}
 
 /** 归来的一句话（2.3）。写入方：b。**必须和 trip 分表。** */
 export interface Message {
