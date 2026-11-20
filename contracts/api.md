@@ -229,6 +229,39 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 
 ### 4. 发现（c 实现）
 
+#### 独立归来分享读取（C，2026-11-20）
+
+```text
+GET /api/trips/:id/message
+入：path.id 为 trip ID；不接受 query 参数、sessionId 或 owner 覆盖。
+出：{ message: Message | null }
+```
+
+复用 `Message`，不增加字段、表、唯一约束或迁移。B 独占生成和写入，C 只读取。
+该接口供 A 的 `readMessage(tripId, signal): Promise<Message|null>` adapter 使用；
+**不能为读取内容 POST finish**，旧 finish 行为不变。
+
+- 当前 `readSessionId` cookie → dog.session_id → trip 归属；无/坏 cookie、非法/不存在 trip、跨会话均 HTTP 404 / NOT_FOUND，不返回假空值。
+- 存在且属于当前会话的 trip 没有 Message：HTTP 200，`{"message":null}`。
+- 有 Message：HTTP 200，五个 camelCase 字段 `id/tripId/text/mentionsFindId/createdAt`；不展开 Find、狗、session 或私有配置。
+- pending/running 以及 done/failed/timeout 均可读取已存在记录；读取不生成分享、不修改 trip 状态。failed/timeout 是否显示正常归来由 A 决定，允许单独只读历史。
+- **多条历史 Message 的暂行提案，待 B/A 确认**：按 `julianday(created_at) DESC, id DESC` 稳定取最新一条；同一时刻用 ID 倒序破同分。保留所有行，不引入“一趟只能一条”的写入约束或删除。
+- 非空 mentionsFindId 必须指向同一 trip 的 Find；包括同主人其他 trip 也不允许。所选最新行引用越界/丢失时返回 HTTP 503 / NETWORK，不返回引用 ID 或内容，不回退旧行，不当作无 Message；B 负责修正写入数据。
+- 数据库不可用、SQL 失败或所选记录损坏：HTTP 503 / NETWORK、retriable=true，只含脱敏提示，不暴露 SQL/路径；失败没有 message:null。
+- 所有成功/错误响应 `Cache-Control: no-store`、`Vary: Cookie`。Node runtime、动态 GET；无 POST 写入口。数据库读取为单条 SELECT，无任何业务写入。
+
+仅响应形状 fixture 示例（不是 B5 已生成或 A wiring 已接通的证据）：
+
+```json
+{
+  "message": {
+    "id": "msg_001", "tripId": "trip_001",
+    "text": "巷子里那面墙红透了，只有靠窗那块还是绿的。",
+    "mentionsFindId": "find_s1", "createdAt": "2026-11-16T01:04:00Z"
+  }
+}
+```
+
 ```
 GET /api/trips/:id/finds    出：{ finds: Find[] }
 ```
