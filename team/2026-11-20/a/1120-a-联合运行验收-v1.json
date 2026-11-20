@@ -1,0 +1,115 @@
+{
+  "fixtureOnly": true,
+  "realApiCalled": false,
+  "http": {
+    "owned": 200,
+    "missing": 404,
+    "foreign": 404,
+    "post": 405,
+    "productionDevelopmentIdentity": 404,
+    "sourceMode": "fixture",
+    "cacheControl": "no-store"
+  },
+  "ui": [
+    {
+      "width": 375,
+      "state": "pending",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "running",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "done",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "failed",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "timeout",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "home-timeout",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "empty",
+      "passed": true
+    },
+    {
+      "width": 375,
+      "state": "network",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "pending",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "running",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "done",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "failed",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "timeout",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "home-timeout",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "empty",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "state": "network",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Production local routing and explicit fixture UI states; not real OAuth/search or full product acceptance.",
+  "unitTests": {
+    "tests": 124,
+    "pass": 124,
+    "fail": 0
+  },
+  "dReview": {
+    "rules": 34,
+    "meet": 31,
+    "gift": 26,
+    "merged": false,
+    "k4IncompatibilityReproduced": true
+  },
+  "eventSql": {
+    "firstImport": 30,
+    "reimport": 30,
+    "disabledPreserved": true,
+    "assetRefsUpdated": true
+  }
+}
