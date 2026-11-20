@@ -7,7 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { meet } from '../lib/social/meet.ts'
 import { sendGift, sendCoOwnerMessage } from '../lib/social/gift.ts'
 import { createSqliteStore } from '../lib/social/sqlite-store.ts'
@@ -58,7 +58,7 @@ trip('trip_b1', 'dog_b', 1)
 trip('trip_b2', 'dog_b', 2)
 trip('trip_b3', 'dog_b', 3)
 
-const one = <T>(sql: string, ...args: unknown[]): T => db.prepare(sql).get(...args) as T
+const one = <T>(sql: string, ...args: SQLInputValue[]): T => db.prepare(sql).get(...args) as T
 const n = (t: string): number => Number(one<{ n: number }>(`SELECT COUNT(*) n FROM ${t}`).n)
 const rel = () =>
   one<{ met_count: number; first_met_at: string; last_met_at: string }>(
@@ -216,7 +216,7 @@ console.log('真来源   sourceFindId =', src.sourceFindId, ' sourceMode =', src
 
 const tryGift = (label: string, extra: Record<string, unknown>) => {
   try {
-    sendGift({ store, fromDog: 'dog_a', toDog: 'dog_b', giftName: '毛线', now: T1, ...(extra as never) })
+    sendGift({ store, fromDog: 'dog_a', toDog: 'dog_b', giftName: '毛线', now: T1, ...extra })
     console.log(label, '居然写进去了（错）')
   } catch (e: unknown) {
     console.log(label, '被拒：', (e as { code?: string }).code)
