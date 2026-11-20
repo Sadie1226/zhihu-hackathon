@@ -65,7 +65,7 @@ export function tripCaption(trip: Trip | null): string {
     pending: '它正在收拾随身的小包。',
     running: '它出门了，沿途的事回来再聊。',
     done: '它回来了，带着一些路上的见闻。',
-    timeout: '今天回来得晚，先坐一会儿。',
+    timeout: '这趟出行暂时没能确认结果。',
     failed: '这趟没能走完，已有的经历还在。',
   }[trip.status]
 }

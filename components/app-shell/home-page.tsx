@@ -27,7 +27,7 @@ function Home() {
           : trip?.status === 'pending'
             ? '准备出门'
             : trip?.status === 'timeout'
-              ? '回来歇一会儿'
+              ? '结果待确认'
               : trip?.status === 'failed'
                 ? '这趟没走完'
                 : '在家'

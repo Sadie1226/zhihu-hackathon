@@ -27,7 +27,7 @@ function TripPageBody() {
     setContentError('')
     if (
       !trip ||
-      !['done', 'timeout', 'failed'].includes(trip.status) ||
+      trip.status !== 'done' ||
       !bindings.readTripContent
     )
       return
@@ -43,7 +43,8 @@ function TripPageBody() {
       })
     return () => controller.abort()
   }, [trip?.id, trip?.status, bindings.readTripContent, revision])
-  const returned = trip && ['done', 'timeout', 'failed'].includes(trip.status)
+  const returned = trip?.status === 'done'
+  const interrupted = trip?.status === 'failed' || trip?.status === 'timeout'
   const Invitations = bindings.Invitations
   const scene = returned
     ? bindings.tripScenes?.done
@@ -76,7 +77,9 @@ function TripPageBody() {
                 ? '等出行记录读出来，再看看它的近况。'
                 : returned
                   ? '它已经回来了。'
-                  : trip
+                  : interrupted
+                    ? '这趟没有正常结束，出行记录仍会保留。'
+                    : trip
                     ? '给路上的它留一点安静。'
                     : '它还在家里。'}
             </p>
