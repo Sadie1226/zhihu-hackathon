@@ -224,6 +224,13 @@ node scripts/check-contracts.mjs
 
 ### 提交前自检
 
+统一门禁：Node 24+，运行 `bash scripts/check-all.sh`。五道分别为契约、投递器、密钥、禁词和社交回归。
+PowerShell 使用 `& 'C:\Program Files\Git\bin\bash.exe' scripts/check-all.sh`。
+`npm.cmd test` 同样包含社交回归；仅跑社交可用 `npm.cmd run test:social`。
+两者共用 `scripts/check-social.mjs`，逐个执行 `lib/social/*.test.ts`，并强制要求 rules/meet/gift 三套存在；任一失败或缺失均返回非零。
+新增存储契约等 `.test.ts` 会自动纳入。输出区分测试套件数和各套断言数，不把 Mock 与真实数据库验证混称为全量真库验收。
+验证门禁会拦住回归：`node scripts/verify-social-gate.mjs`，只修改 `.local/` 内隔离副本并保留证据。
+
 ```bash
 # 1. 禁词：不变量三的机器可查版本
 grep -rnE '连续|打卡|天数|坚持|别忘|快回来|还剩|已过期|差一点|加油|你还没|已经很久|太棒' app/ components/ lib/

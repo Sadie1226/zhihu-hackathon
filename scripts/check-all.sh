@@ -3,26 +3,26 @@
 #
 #   bash scripts/check-all.sh
 #
-# 四件事：契约一致 + 投递器正确 + 无密钥泄漏 + 禁词干净。
-# 在仓库根跑。需要 node 22+（node:sqlite 是 22 才有的）。
+# 五件事：契约一致 + 投递器正确 + 无密钥泄漏 + 禁词干净 + 社交回归。
+# 在仓库根跑。需要 Node 24+，与 package.json 保持一致。
 
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 FAIL=0
 
-echo "══ 1/4 契约自检（schema + fixtures + 邀请三态）"
+echo "══ 1/5 契约自检（schema + fixtures + 邀请三态）"
 node scripts/check-contracts.mjs || FAIL=1
 
 echo
-echo "══ 2/4 投递器自检（时间语义 + 幂等）"
+echo "══ 2/5 投递器自检（时间语义 + 幂等）"
 node scripts/check-mailbox.mjs || FAIL=1
 
 echo
-echo "══ 3/4 密钥扫描"
+echo "══ 3/5 密钥扫描"
 bash scripts/check-secrets.sh || FAIL=1
 
 echo
-echo "══ 4/4 禁词检查"
+echo "══ 4/5 禁词检查"
 # 12 个禁词，出现在用户可见的地方就算违规，包括按钮、空状态、toast、报错文案。
 # 「太棒了」也在里面 —— 表扬同样是评价，会让「不回应」显得像做错了事。
 PAT='连续|打卡|天数|坚持|别忘|快回来|还剩|已过期|差一点|加油|你还没|已经很久|太棒'
@@ -35,6 +35,10 @@ if [ -n "$HITS" ]; then
 else
   echo "✅ 禁词检查通过"
 fi
+
+echo
+echo "══ 5/5 社交回归（rules / meet / gift 及其他社交测试套件）"
+node scripts/check-social.mjs || FAIL=1
 
 echo
 echo "══════════════════════════════════════════════════════"
