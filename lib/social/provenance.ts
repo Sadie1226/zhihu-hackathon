@@ -45,6 +45,12 @@ export type ProvenanceResult = ProvenanceOk | ProvenanceFail
  * @param sourceFindId 调用方声明的 find.id。`undefined` / `null` 都表示「无来源」
  * @param claimedMode  调用方声称的档位。**只用于一致性核对，永不直接落库**
  *
+ * `claimedMode` 的三态（c 11-20 晚定的边界）：
+ *   `undefined` = 未声明 → 由库派生（推荐，调用方不需要知道档位）
+ *   `null`      = 明确声明「没有档位」→ 库里必须也是 null，否则拒
+ *   `'live'` 等 = 明确声明档位 → 必须与库里相等，否则拒
+ *   三者都不许「不一致但放行」。
+ *
  * 四条判定，顺序有意义（先便宜的后查库）：
  *   1. 无来源却声称档位 → 拒（凭空造出处）
  *   2. id 形状不对 → 拒（别拿垃圾去查库）
@@ -96,14 +102,17 @@ export function resolveProvenance(
       reason: `来源 Find ${sourceFindId} 属于 ${src.dogId}，不是寄件狗 ${fromDog}`,
     }
   }
-  if (claimedMode !== undefined && claimedMode !== null && claimedMode !== src.sourceMode) {
+  // 11-20 晚，c 的边界：**只有 `undefined` 算「未声明」**，`null` 是明确声明。
+  // 原来这里 `null` 被当成「没说」放行了 —— 传 `sourceMode: null` 配一条 live 的 find
+  // 会静默成功，等于调用方可以靠「说不清」绕过档位核对。现在 null 也要对得上。
+  if (claimedMode !== undefined && claimedMode !== src.sourceMode) {
     // 拒而不是「以库为准、静默改掉」：静默纠正会让调用方以为自己传的值生效了。
     return {
       ok: false,
       code: 'PROVENANCE_MISMATCH',
       path: '/payload/sourceMode',
       reason:
-        `sourceMode 与库里不一致：传入 ${claimedMode}，` +
+        `sourceMode 与库里不一致：传入 ${claimedMode === null ? 'null（明确声明无档位）' : claimedMode}，` +
         `实际 ${src.sourceMode === null ? 'null（scene/moment 没有档位）' : src.sourceMode}`,
     }
   }

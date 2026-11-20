@@ -319,7 +319,7 @@ check('A11d 调用方声称的 mode 与库里不符 → 拒，不静默纠正', 
   }, 'PROVENANCE_MISMATCH')
 })
 
-check('A11e 来源是 scene（库里 source_mode 为 null）→ payload 的 mode 也是 null，不升格成 live', () => {
+check('A11e 来源是 scene（库里 source_mode 为 null）→ 显式传 null 也通过，不升格成 live', () => {
   const store = mockStore({ finds: [{ id: 'find_scene_1', dogId: A, sourceMode: null }] })
   const r = sendGift({
     store,
@@ -327,12 +327,45 @@ check('A11e 来源是 scene（库里 source_mode 为 null）→ payload 的 mode
     toDog: B,
     giftName: '一颗螺帽',
     sourceFindId: 'find_scene_1',
+    // 明确声明「没有档位」—— 库里也是 null，两边对得上
+    sourceMode: null,
     imagePath: '/assets/gen/nut.webp',
     idempotencyKey: 'gift-scene',
     now: T0,
   })
   assert.equal(r.exchange.payload.sourceFindId, 'find_scene_1')
   assert.equal(r.exchange.payload.sourceMode, null)
+})
+
+check('A11g 显式 sourceMode=null 但库里有档位 → 拒（null 是明确声明，不是「没说」）', () => {
+  // c 11-20 晚的边界：只有 undefined 算未声明。传 null 等于声明「这条没有档位」，
+  // 库里有档位就是矛盾 —— 放行的话，调用方可以靠「说不清」绕过档位核对。
+  expectCode('', () => {
+    sendGift({
+      store: mockStore({ finds: [{ id: 'find_a_1', dogId: A, sourceMode: 'live' }] }),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_a_1',
+      sourceMode: null,
+      idempotencyKey: 'gift-src-null-lie',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+})
+
+check('A11h 不传 sourceMode（undefined）= 未声明 → 由库派生，不算不一致', () => {
+  const store = mockStore({ finds: [{ id: 'find_a_2', dogId: A, sourceMode: 'fixture' }] })
+  const r = sendGift({
+    store,
+    fromDog: A,
+    toDog: B,
+    giftName: '毛线',
+    sourceFindId: 'find_a_2',
+    idempotencyKey: 'gift-src-undefined',
+    now: T0,
+  })
+  assert.equal(r.exchange.payload.sourceMode, 'fixture')
 })
 
 check('A11f 捎话带来源字段 → 拒（K v4：捎话不挂来源）', () => {
@@ -722,6 +755,31 @@ check('B9d 真库：客户端自称 live 但库里是 cache → 拒', () => {
   assert.equal(exchangeRows(db).length, 0)
 })
 
+check('B9d2 真库：显式 sourceMode=null 但库里有档位 → 拒，一行都不落', () => {
+  const db = seedDb()
+  insertTrip(db, 'trip_a_1', A, 1)
+  insertFind(db, {
+    id: 'find_a_zhihu',
+    tripId: 'trip_a_1',
+    kind: 'zhihu',
+    sourceMode: 'live',
+    sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+  })
+  expectCode('', () => {
+    sendGift({
+      store: createSqliteStore(db),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_a_zhihu',
+      sourceMode: null,
+      idempotencyKey: 'gift-real-null-mode',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+  assert.equal(exchangeRows(db).length, 0)
+})
+
 check('B9e 真库：重放时来源字段也返回库里那份，不返回本次入参', () => {
   const db = seedDb()
   insertTrip(db, 'trip_a_1', A, 1)
@@ -776,6 +834,88 @@ check('B10 真库重放 → 返回库里那一行（value 取 DB 的 JSON），�
   assert.equal(second.exchange.payload.note, '天气要冷了')
   assert.equal(second.deliverAfterTripSeq, first.deliverAfterTripSeq)
   assert.equal(second.deliverAfterTripSeq, 1)
+})
+
+// ===========================================================================
+// C · C8 的事务包法（11-20 晚 c 的要求：一次事务里验寄件权 + 调用 D 的写入）
+// ===========================================================================
+
+console.log('\nC · C8 的调用形状（外层事务 + sendGift）')
+
+check('C1 C8 在外层事务里包 sendGift → 不撞 nested BEGIN，礼物照常落一行', () => {
+  const db = seedDb()
+  const store = createSqliteStore(db)
+  // 模拟 C8：在自己的事务里先做权限读（这里用 hasDog 代替），再调 sendGift
+  const r = store.transaction(() => {
+    assert.equal(store.hasDog(A), true)
+    return sendGift({
+      store,
+      fromDog: A,
+      toDog: B,
+      giftName: '一小卷灰蓝色的毛线',
+      idempotencyKey: 'gift-c8-outer',
+      now: T0,
+    })
+  })
+  assert.equal(r.inserted, true)
+  assert.equal(exchangeRows(db).length, 1)
+  db.close()
+})
+
+check('C2 外层事务在 sendGift 之后失败 → 礼物也不留（原子性覆盖到 C8 那一层）', () => {
+  const db = seedDb()
+  const store = createSqliteStore(db)
+  assert.throws(() => {
+    store.transaction(() => {
+      sendGift({
+        store,
+        fromDog: A,
+        toDog: B,
+        giftName: '毛线',
+        idempotencyKey: 'gift-c8-rollback',
+        now: T0,
+      })
+      // 模拟 C8 后续步骤失败（比如写自己的日志/事件失败）
+      throw new Error('C8 后续步骤失败')
+    })
+  }, /C8 后续步骤失败/)
+  assert.equal(exchangeRows(db).length, 0, '外层失败但礼物留下了 —— 事务没覆盖到调用方那一层')
+  db.close()
+})
+
+check('C3 sendGift 自己失败时，外层事务仍可用（内层只撤自己）', () => {
+  const db = seedDb()
+  const store = createSqliteStore(db)
+  // 外层先写一条无关礼物，再调一个会失败的 sendGift（来源不存在），外层接住错误
+  const r = store.transaction(() => {
+    const kept = sendGift({
+      store,
+      fromDog: A,
+      toDog: B,
+      giftName: '会留下的',
+      idempotencyKey: 'gift-c8-kept',
+      now: T0,
+    })
+    try {
+      sendGift({
+        store,
+        fromDog: A,
+        toDog: B,
+        giftName: '会被撤掉的',
+        sourceFindId: 'find_not_exist',
+        idempotencyKey: 'gift-c8-dropped',
+        now: T0,
+      })
+    } catch {
+      // 外层接住：内层只撤自己
+    }
+    return kept
+  })
+  assert.equal(r.inserted, true)
+  const rows = exchangeRows(db)
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].id, r.id)
+  db.close()
 })
 
 // ===========================================================================

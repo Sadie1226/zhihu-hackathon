@@ -306,6 +306,54 @@ for (const scene of [memoryScene(), sqliteScene()]) {
     assert.equal(scene.countExchange(), exBefore + 1)
     assert.equal(scene.countRelation(), relBefore)
   })
+
+  // 14. 嵌套 —— C8 在外层包一层「验证寄件权」，里面再调会开事务的业务函数
+  check('14 transaction 嵌套两层 → 不撞 nested BEGIN，两层写都留', () => {
+    const exBefore = scene.countExchange()
+    const got = store.transaction(() => {
+      store.insertExchange(exchangeRow('ex_nest_outer', '外层'))
+      return store.transaction(() => {
+        store.insertExchange(exchangeRow('ex_nest_inner', '内层'))
+        return 'done'
+      })
+    })
+    assert.equal(got, 'done', '内层返回值必须透传到外层')
+    assert.equal(scene.countExchange(), exBefore + 2)
+  })
+
+  // 15. 内层失败、外层接住 → 只撤内层（savepoint 语义），外层已写的留
+  check('15 嵌套内层抛错被外层接住 → 只撤内层，外层写留', () => {
+    const exBefore = scene.countExchange()
+    store.transaction(() => {
+      store.insertExchange(exchangeRow('ex_nest_keep', '外层保留'))
+      try {
+        store.transaction(() => {
+          store.insertExchange(exchangeRow('ex_nest_drop', '内层撤掉'))
+          throw new Error('内层故意失败')
+        })
+      } catch {
+        // 外层明确接住：这是「内层做不成、外层继续」的场景
+      }
+    })
+    assert.equal(store.readExchange('ex_nest_keep') !== null, true, '外层写被一起撤了 —— 嵌套语义错了')
+    assert.equal(store.readExchange('ex_nest_drop'), null, '内层写没被撤掉 —— savepoint 没生效')
+    assert.equal(scene.countExchange(), exBefore + 1)
+  })
+
+  // 16. 内层失败不接住 → 整体回滚（含外层已写的）
+  check('16 嵌套内层抛错不接住 → 整体回滚，外层已写的一起撤', () => {
+    const exBefore = scene.countExchange()
+    assert.throws(() => {
+      store.transaction(() => {
+        store.insertExchange(exchangeRow('ex_nest_all_outer', '外层也不留'))
+        store.transaction(() => {
+          throw new Error('内层炸了')
+        })
+      })
+    }, /内层炸了/)
+    assert.equal(scene.countExchange(), exBefore, '外层写没撤 —— 错误没传出去时整笔必须回滚')
+    assert.equal(store.readExchange('ex_nest_all_outer'), null)
+  })
 }
 
 // ===========================================================================

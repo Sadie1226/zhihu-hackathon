@@ -428,7 +428,9 @@ check('outgoing find 指向自己的真实发现 → 落库，mode 取表里的�
         findExcerpt: '茶还是满的。',
         sourceUrl: null,
         sourceFindId: 'find_owner_1',
-        sourceMode: null,
+        // 11-20 晚按 c 的边界改：`null` 现在算「明确声明没有档位」，与库里的 live 矛盾会拒。
+        // 想验「由库派生」就不传这个键（undefined）。原用例传 null 却期望 live，
+        // 那正是 c 要禁掉的静默纠正。
       },
     },
   })
@@ -463,6 +465,38 @@ check('incoming find 的来源属于对方 → 通过（归属按 fromDog=otherD
   assert.equal(r.exchanges.length, 1)
   assert.equal(r.exchanges[0].exchange.fromDog, 'dog_seed_07')
   assert.equal(r.exchanges[0].exchange.payload.sourceFindId, 'find_seed_1')
+  db.close()
+})
+
+check('incoming find 来源属于对方，但显式声明 sourceMode=null → 拒（null 是声明，不是没说）', () => {
+  const db = seedTwoDogs()
+  // 这条 find 挂在种子狗自己的出行上，档位是 live
+  insertFind(db, { id: 'find_seed_live', tripId: 'trip_seed_1', kind: 'zhihu', sourceMode: 'live' })
+  expectCode(
+    '',
+    () =>
+      meet({
+        store: storeOf(db),
+        dogId: 'dog_owner',
+        otherDogId: 'dog_seed_07',
+        tripId: 'trip_owner_1',
+        now: T0,
+        incoming: {
+          kind: 'find',
+          payload: {
+            kind: 'find',
+            findTitle: '河边的玻璃',
+            findExcerpt: null,
+            sourceUrl: null,
+            sourceFindId: 'find_seed_live',
+            sourceMode: null, // 库里是 live，这里明确说「没有档位」= 矛盾
+          },
+        },
+      }),
+    'PROVENANCE_MISMATCH',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
+  assert.equal(countRows(db, 'exchange'), 0)
   db.close()
 })
 

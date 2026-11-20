@@ -241,7 +241,25 @@ function provenanceOrThrow(
   return { sourceFindId: r.sourceFindId, sourceMode: r.sourceMode }
 }
 
+/**
+ * 写入的唯一入口，**外面套一个事务**（11-20 晚为 c 的事务要求补的）。
+ *
+ * 为什么必须包住整段：一次发送里有三次碰库 ——
+ *   1. `getFindSource`（来源必须是库里的真发现）
+ *   2. `currentSeq(toDog)`（算这次该在第几趟到）
+ *   3. `insertExchange`（落行）
+ * 三次分开做，收件狗可能在 2 和 3 之间真出发了一趟，写下的
+ * `deliver_after_trip_seq` 就少一趟 —— 礼物提前到达。这种错只在并发时出现，
+ * 事后查不出来，所以查与写必须同一个事务。
+ *
+ * `store.transaction` 可嵌套：C8 在外层再包一层「验证寄件狗权限」，不会撞
+ * `nested BEGIN`；内层抛错会沿 savepoint 撤掉，不要在外层把错误吞掉。
+ */
 function send(kind: SendKind, base: SendBase, payload: Record<string, unknown>): SendResult {
+  return base.store.transaction(() => sendBody(kind, base, payload))
+}
+
+function sendBody(kind: SendKind, base: SendBase, payload: Record<string, unknown>): SendResult {
   const { store, fromDog, toDog } = base
 
   if (kind !== 'gift' && kind !== 'co_owner_message') {

@@ -225,6 +225,8 @@ const tryGift = (label: string, extra: Record<string, unknown>) => {
 tryGift('假来源   ', { sourceFindId: 'find_ghost', idempotencyKey: 'gift-src-ghost' })
 tryGift('跨狗     ', { sourceFindId: 'find_b_zhihu', idempotencyKey: 'gift-src-cross' })
 tryGift('谎报档位 ', { sourceFindId: 'find_a_zhihu', sourceMode: 'cache', idempotencyKey: 'gift-src-lie' })
+// 11-20 晚 c 的边界：显式 null 是「明确声明没有档位」，与库里的 live 矛盾必须拒
+tryGift('显式 null ', { sourceFindId: 'find_a_zhihu', sourceMode: null, idempotencyKey: 'gift-src-null' })
 
 // step 4 那条 incoming find 没给来源 —— 键必须仍在，值为 null
 const noSrc = JSON.parse(

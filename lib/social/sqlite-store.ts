@@ -24,6 +24,21 @@ import type {
 } from './store.ts'
 
 export function createSqliteStore(db: DatabaseSync): SocialStore {
+  /**
+   * 事务嵌套深度。**11-20 晚为 C8 加的**：c 要求「C8 在一次事务中验证寄件狗权限、
+   * 调用 sendGift」，而 `sendGift` 自己也要开事务（来源查询 + 趟次计算 + 写入必须一致）。
+   * 如果不支持嵌套，C8 那边一包就会撞上 SQLite 的
+   * `cannot start a transaction within a transaction`。
+   *
+   * 语义（照 SQLite 的 SAVEPOINT）：
+   *   - 最外层：`BEGIN IMMEDIATE` … `COMMIT` / `ROLLBACK`
+   *   - 内层：`SAVEPOINT` … `RELEASE`；内层抛错只撤内层，错误继续往上抛
+   *
+   * **不要吞内层错误**：内层若被外层 try/catch 吃掉，外层会照常提交它自己的写 ——
+   * 那不是"什么都没发生"，是"一半发生"。
+   */
+  let depth = 0
+
   return {
     insertExchange(row: ExchangeRow): 'inserted' | 'duplicate' {
       // 幂等靠主键：同 id 再来静默跳过，不报错、不产生第二条。
@@ -180,20 +195,43 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
     },
 
     /**
-     * 事务。用 `BEGIN IMMEDIATE`：一开始就拿写锁，避免「读到没有、写的时候已经有了」。
+     * 事务。最外层用 `BEGIN IMMEDIATE`：一开始就拿写锁，避免「读到没有、写的时候已经有了」。
+     * 内层用 `SAVEPOINT`（见上面的 `depth` 注释）—— 不嵌套 `BEGIN`，也不自己提交。
      *
      * **不暴露 commit/rollback 句柄** —— 只给一个回调，成不成由抛不抛错决定。
      * 这是 c 的要求：Mock 与适配器都不能自己决定「什么时候算落地」。
+     *
+     * 调用方唯一的纪律：**不要在同一个连接上自己 `BEGIN` 再调这里**。
+     * 要包事务就用这个接口（可嵌套）；自己开 BEGIN 再进来，SQLite 会拒绝第二个 BEGIN。
      */
     transaction<T>(fn: () => T): T {
-      db.exec('BEGIN IMMEDIATE')
+      if (depth === 0) {
+        db.exec('BEGIN IMMEDIATE')
+        depth = 1
+        try {
+          const value = fn()
+          db.exec('COMMIT')
+          return value
+        } catch (err) {
+          db.exec('ROLLBACK')
+          throw err
+        } finally {
+          depth = 0
+        }
+      }
+
+      // ---- 内层：加入外层事务，用 savepoint 保证「内层失败只撤内层」 ----
+      const sp = `sp_d4_${depth}`
+      depth += 1
+      db.exec(`SAVEPOINT ${sp}`)
       try {
-        const value = fn()
-        db.exec('COMMIT')
-        return value
+        return fn()
       } catch (err) {
-        db.exec('ROLLBACK')
+        db.exec(`ROLLBACK TO ${sp}`)
+        db.exec(`RELEASE ${sp}`)
         throw err
+      } finally {
+        depth -= 1
       }
     },
   }
