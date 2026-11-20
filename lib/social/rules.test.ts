@@ -23,6 +23,7 @@
 
 import assert from 'node:assert/strict'
 import { normalize, validate, countChars } from './rules.ts'
+import { readProvenance } from './provenance.ts'
 
 let pass = 0
 let fail = 0
@@ -82,6 +83,8 @@ expectOk('1 ex_gift（自带 imagePath: null）', {
     giftName: '一小卷灰蓝色的毛线',
     note: '天气要冷了',
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -95,6 +98,8 @@ expectOk('2 ex_find', {
     findTitle: '修鞋摊旁边的搪瓷缸',
     findExcerpt: '缸沿上磕了两个口，茶还是满的。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -130,6 +135,8 @@ expectOk('5 d1-1 石头→豆子 find 搪瓷缸', {
     findTitle: '修鞋摊旁边的搪瓷缸',
     findExcerpt: '缸沿上磕了两个口，茶还是满的。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -143,6 +150,8 @@ expectOk('6 d1-2 老周→小满 find 老陈没出摊', {
     findTitle: '修鞋的老陈今天没出摊',
     findExcerpt: '工具箱还在，上面压了块砖。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -156,6 +165,8 @@ expectOk('7 d1-3 慢慢→三毛 find 井盖为什么是圆的', {
     findTitle: '为什么井盖是圆的',
     findExcerpt: '因为圆的怎么转都不会掉下去。',
     sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -169,6 +180,8 @@ expectOk('8 d1-4 秋秋→团子 find 河面上的雾', {
     findTitle: '河面上的雾',
     findExcerpt: '七点还没散，对岸的楼只剩轮廓。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -198,6 +211,8 @@ expectOk('11 d1-7 年糕→麦子 gift 毛线', {
     giftName: '一小卷灰蓝色的毛线',
     note: '天气要冷了',
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -211,6 +226,8 @@ expectOk('12 d1-8 铁蛋→冒冒 gift 石头 note:null', {
     giftName: '一块被水冲圆的石头',
     note: null,
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -244,6 +261,8 @@ expectOk('15 gift 带 imagePath', {
     giftName: '一小卷灰蓝色的毛线',
     note: null,
     imagePath: '/assets/gen/gift-niangao-01.webp',
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -411,7 +430,7 @@ expectCode(
     fromDog: 'dog_a1',
     toDog: 'dog_b1',
     kind: 'gift',
-    payload: { kind: 'gift', giftName: '   ', note: null, imagePath: null },
+    payload: { kind: 'gift', giftName: '   ', note: null, imagePath: null, sourceFindId: null, sourceMode: null },
   },
   'EMPTY_STRING',
 )
@@ -428,7 +447,8 @@ expectCode(
   'WRONG_TYPE',
 )
 
-// 26. sourceUrl 不是知乎 —— 原方案（sourceMode live + sourceUrl null）要等 c 批
+// 26. sourceUrl 不是知乎 —— 11-20：K v4 明确「sourceUrl 不是来源证明」，
+//     所以它只管格式（必须是指向知乎的 https），不参与 sourceMode 推断。
 expectCode(
   '26 sourceUrl 不是知乎域名',
   {
@@ -440,6 +460,8 @@ expectCode(
       findTitle: '一条不该有的链接',
       findExcerpt: null,
       sourceUrl: 'https://example.com/something',
+      sourceFindId: null,
+      sourceMode: null,
     },
   },
   'WRONG_TYPE',
@@ -508,6 +530,277 @@ console.log('\n【normalize】形状转换（不做校验）')
   pass++
   console.log('  ✅ countChars 只去空白，标点算一个字')
 }
+
+// ===========================================================================
+// 【K v4】来源字段的形状（find / gift）
+// ===========================================================================
+//
+// 只测**形状**。归属（这条 find 是不是寄件狗的）、以及「声称的 mode 是否等于
+// 库里那一行」，要查库才知道，纯函数做不了 —— 那些在 gift.test.ts / meet.test.ts
+// 里用真 schema 建库测。
+//
+// 契约出处：contracts/api.md「K v4：交换来源（仅 find / gift）」那张表。
+
+console.log('\n【K v4】来源字段的形状')
+
+const ZHIHU_URL = 'https://www.zhihu.com/question/000000000/answer/000000000'
+
+// 35. 正例：指向一条真实发现，档位 live
+expectOk('35 find 有来源 + live', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'find',
+  payload: {
+    kind: 'find',
+    findTitle: '为什么井盖是圆的',
+    findExcerpt: '因为圆的怎么转都不会掉下去。',
+    sourceUrl: ZHIHU_URL,
+    sourceFindId: 'find_a1_1',
+    sourceMode: 'live',
+  },
+})
+
+// 36. 正例：来源是自己捡到的一个场景 —— scene/moment 的档位**必须**是 null，
+//     不能因为带了图或链接就标成 live（契约原话）。
+expectOk('36 gift 来源是 scene → mode 为 null', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'gift',
+  payload: {
+    kind: 'gift',
+    giftName: '一块被水冲圆的石头',
+    note: null,
+    imagePath: '/assets/gen/stone.webp',
+    sourceFindId: 'find_a1_2',
+    sourceMode: null,
+  },
+})
+
+// 37. 反例：没有来源却声称 live —— 凭空造出处，正是不变量四要拦的
+expectCode(
+  '37 无来源却声明 live',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '一小卷毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: null,
+      sourceMode: 'live',
+    },
+  },
+  'PROVENANCE_MISMATCH',
+)
+
+// 38. 反例：档位不在三值里
+expectCode(
+  '38 sourceMode 非法值',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceFindId: 'find_a1_1',
+      sourceMode: 'realtime',
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 39. 反例：空串 id —— 要么给真 id，要么给 null，别给 ''
+expectCode(
+  '39 sourceFindId 空串',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: '',
+      sourceMode: null,
+    },
+  },
+  'EMPTY_STRING',
+)
+
+// 40. 反例：带首尾空格 —— 会被当成另一个 id，查库查不到，不如当场拒
+expectCode(
+  '40 sourceFindId 带前导空格',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: ' find_a1_1',
+      sourceMode: null,
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 41. 反例：类型不对
+expectCode(
+  '41 sourceFindId 是数字',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: 123,
+      sourceMode: null,
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 42. 反例：只给 id 不给 mode —— 「新 payload 必须两键俱全」
+expectCode(
+  '42 只有 sourceFindId，缺 sourceMode',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceFindId: 'find_a1_1',
+    },
+  },
+  'MISSING_FIELD',
+)
+
+// 43. 反例：只给 mode 不给 id
+expectCode(
+  '43 只有 sourceMode，缺 sourceFindId',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceMode: null,
+    },
+  },
+  'MISSING_FIELD',
+)
+
+// 44/45. 反例：greeting 和捎话都不许挂来源（契约原话：
+//   「greeting/捎话不能借此夹带来源、私人内容或额外身份信息」）
+expectCode(
+  '44 greeting 带 sourceFindId',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'greeting',
+    payload: { kind: 'greeting', line: '我这边晴。', weather: '晴', sourceFindId: 'find_a1_1' },
+  },
+  'UNKNOWN_KEY',
+)
+
+expectCode(
+  '45 捎话带 sourceMode',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'co_owner_message',
+    payload: { kind: 'co_owner_message', message: '楼下的桂花开了', fromOwnerOf: 'dog_a1', sourceMode: 'live' },
+  },
+  'UNKNOWN_KEY',
+)
+
+// 50. 正例：find 明确没有来源 —— 两个键都写 null，键在、值为空（不是省略）
+expectOk('50 find 无来源，两键显式 null', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'find',
+  payload: {
+    kind: 'find',
+    findTitle: '路边的井盖',
+    findExcerpt: null,
+    sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
+  },
+})
+
+// ===========================================================================
+// 五、读侧：历史 payload 缺来源键怎么办（K v4 请求的「历史缺键只做读取兼容」）
+// ===========================================================================
+//
+// 写入闸门 validate 要求两个来源键必须在；读取不能照这个标准卡历史行。
+// readProvenance 只取值、不拒绝，但要把「缺键」和「明确无来源」区分开。
+
+function expectRead(
+  name: string,
+  payload: unknown,
+  want: { sourceFindId: string | null; sourceMode: string | null; legacy: boolean },
+): void {
+  const got = readProvenance(payload)
+  const same =
+    got.sourceFindId === want.sourceFindId &&
+    got.sourceMode === (want.sourceMode as never) &&
+    got.legacy === want.legacy
+  if (same) {
+    pass++
+    console.log(`  ✅ ${name}`)
+  } else {
+    fail++
+    const msg = `${name} → 期望 ${JSON.stringify(want)}，实际 ${JSON.stringify(got)}`
+    failures.push(msg)
+    console.log(`  ❌ ${msg}`)
+  }
+}
+
+// 46. 历史行：K v4 之前写的 gift，payload 里没有这两个键
+expectRead(
+  '46 历史 gift 缺两个来源键 → 读出 null/null，标 legacy',
+  { kind: 'gift', giftName: '一小卷灰蓝色的毛线', note: null, imagePath: null },
+  { sourceFindId: null, sourceMode: null, legacy: true },
+)
+
+// 47. 新记录明确无来源：两个键在，值为 null —— 这不是历史行
+expectRead(
+  '47 新 gift 显式 null/null → 同样读出 null/null，但不标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: null, sourceMode: null },
+  { sourceFindId: null, sourceMode: null, legacy: false },
+)
+
+// 48. 半个来源（只有 id、没有 mode）→ 按历史行对待，不假装出处完整
+expectRead(
+  '48 只有 sourceFindId、没有 sourceMode → 不当成可用出处，标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: 'find_a1_1' },
+  { sourceFindId: 'find_a1_1', sourceMode: null, legacy: true },
+)
+
+// 49. scene/moment 的真实来源：id 有值、mode 本来就是 null，但这不是历史行
+expectRead(
+  '49 scene 来源（id 有值、mode 为 null）→ 不标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: 'find_scene_1', sourceMode: null },
+  { sourceFindId: 'find_scene_1', sourceMode: null, legacy: false },
+)
 
 // ===========================================================================
 // 汇总
