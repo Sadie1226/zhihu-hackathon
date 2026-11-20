@@ -1,0 +1,14 @@
+{
+  "passed": [
+    "identity-waiting",
+    "profile-reading",
+    "generation-failure",
+    "generation-loading",
+    "creation-failure",
+    "creation-loading",
+    "creation-success",
+    "profile-failure-blocks-continue",
+    "profile-empty-can-continue"
+  ],
+  "errors": []
+}

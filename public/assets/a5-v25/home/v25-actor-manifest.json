@@ -1,0 +1,37 @@
+{
+  "canvas": [
+    100,
+    116
+  ],
+  "sourceFrame": [
+    200,
+    232
+  ],
+  "worldOrigin": [
+    322,
+    99
+  ],
+  "footAnchor": [
+    50,
+    107.5
+  ],
+  "poses": {
+    "stand": {
+      "layers": [
+        "body",
+        "face",
+        "scarf",
+        "bag",
+        "leaf"
+      ],
+      "shadow": "v25-shadow-stand.png"
+    },
+    "sit": {
+      "image": "v25-kanshan-sit.png",
+      "shadow": "v25-shadow-sit.png"
+    }
+  },
+  "shadowOwner": "actor container; never baked into room",
+  "defaultPose": "stand",
+  "animationEnabled": false
+}
