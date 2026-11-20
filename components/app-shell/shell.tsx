@@ -3,9 +3,7 @@
 import {
   Component,
   Fragment,
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -13,8 +11,11 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import type { DogView, SessionView } from '@/lib/adoption/view'
-import type { Feature, PanelContext, ShellBindings } from './ports'
+import type { CommitChange, Feature, PanelContext, ShellBindings } from './ports'
 import { ProfilePanel, SettingsPanel } from './system-panels'
+import { FeedbackSurface } from './feedback-surface'
+import { ShellContext, useAppShell } from './context'
+export { useAppShell } from './context'
 import s from './shell.module.css'
 import '@/components/v25/theme.css'
 import '@/components/v25/integration.css'
@@ -27,26 +28,6 @@ const fixedIds = new Set([
   'mail',
   'journal',
 ])
-type ShellContextValue = {
-  session: SessionView | null
-  error: string
-  refresh: () => Promise<void>
-  updateDog: (dog: DogView) => void
-  reducedMotion: boolean
-  setReducedMotion: (value: boolean) => void
-  openPanel: (id: string) => void
-  closePanel: () => void
-  registerFeature: (feature: Feature) => () => void
-  features: Feature[]
-  bindings: ShellBindings
-}
-const ShellContext = createContext<ShellContextValue | null>(null)
-export function useAppShell() {
-  const value = useContext(ShellContext)
-  if (!value) throw new Error('AppShellProvider is missing')
-  return value
-}
-
 export async function api<T>(
   url: string,
   body?: unknown,
@@ -110,6 +91,7 @@ export function AppShellProvider({
   const [features, setFeatures] = useState<Feature[]>([])
   const [active, setActive] = useState<string | null>(null)
   const [visited, setVisited] = useState<string[]>([])
+  const [revisions, setRevisions] = useState<Partial<Record<CommitChange['resource'], number>>>({})
   const dialog = useRef<HTMLDialogElement>(null)
   const trigger = useRef<HTMLElement | null>(null)
   const request = useRef<AbortController | null>(null)
@@ -210,10 +192,14 @@ export function AppShellProvider({
     }
   }, [active])
   const dogId = session?.dog?.id
+  const scope = `${session?.draftScope ?? ''}:${dogId ?? ''}`
+  const currentScope = useRef(scope)
+  currentScope.current = scope
   useEffect(() => {
     setActive(null)
     setVisited([])
-  }, [dogId])
+    setRevisions({})
+  }, [scope])
   const updateDog = useCallback(
     (dog: DogView) =>
       setSession((current) =>
@@ -221,13 +207,16 @@ export function AppShellProvider({
       ),
     [],
   )
+  const committed = useCallback((change?: CommitChange) => {
+    if (currentScope.current !== scope) return
+    if (change?.resource === 'dog') void refresh()
+    else if (change) setRevisions(previous => ({ ...previous, [change.resource]: (previous[change.resource] ?? 0) + 1 }))
+  }, [scope, refresh])
   const context: PanelContext = {
     dogId: dogId ?? '',
     reducedMotion: preference || systemReduced,
     onClose: closePanel,
-    onCommitted: () => {
-      void refresh()
-    },
+    onCommitted: committed,
   }
   const titles: Record<string, string> = {
     profile: '它的小档案',
@@ -237,9 +226,9 @@ export function AppShellProvider({
   }
   function panel(id: string) {
     if (id === 'profile') return <ProfilePanel />
-    if (id === 'settings') return <SettingsPanel />
+    if (id === 'settings') return <SettingsPanel active={active === id} />
     const feature = features.find((item) => item.id === id)
-    if (feature) return feature.render(context)
+    if (feature) return feature.render({ ...context, active: active === id })
     const Body =
       id === 'chat'
         ? bindings.ChatPanel
@@ -247,7 +236,7 @@ export function AppShellProvider({
           ? bindings.WishPanel
           : null
     return Body && dogId ? (
-      <Body {...context} />
+      <Body {...context} active={active === id} />
     ) : (
       <p>这里暂时还没准备好。先在小屋坐一会儿吧。</p>
     )
@@ -266,10 +255,12 @@ export function AppShellProvider({
         registerFeature,
         features,
         bindings,
+        revisions,
+        committed,
       }}
     >
       {children}
-      <div data-v25="" className="v25-modal-scope">
+      <FeedbackSurface><div data-v25="" className="v25-modal-scope">
         <dialog
           ref={dialog}
           className="home-panel v25-dialog"
@@ -284,7 +275,7 @@ export function AppShellProvider({
             ) closePanel()
           }}
         >
-          <div key={dogId ?? 'no-dog'}>
+          <div key={scope}>
             <div className="panel-heading">
               <h2 id="shell-panel-title">
                 {titles[active ?? ''] ??
@@ -305,7 +296,7 @@ export function AppShellProvider({
             ))}
           </div>
         </dialog>
-      </div>
+      </div></FeedbackSurface>
     </ShellContext.Provider>
   )
 }
@@ -336,5 +327,5 @@ export function SessionGate({ children }: { children: ReactNode }) {
         <p role="status">正在打开小屋…</p>
       </main>
     )
-  return <Fragment key={session.dog.id}>{children}</Fragment>
+  return <Fragment key={`${session.draftScope ?? ''}:${session.dog.id}`}>{children}</Fragment>
 }

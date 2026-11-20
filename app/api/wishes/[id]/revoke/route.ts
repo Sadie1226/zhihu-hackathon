@@ -31,8 +31,9 @@ export async function PATCH(request: Request, context: Context): Promise<Respons
     if (!sessionId) return missing()
 
     const url = new URL(request.url)
+    const expectedOrigin = request.headers.has('host') ? `${url.protocol}//${request.headers.get('host')}` : url.origin
     if (request.headers.get('sec-fetch-site') === 'cross-site' ||
-        (request.headers.has('origin') && request.headers.get('origin') !== url.origin)) {
+        (request.headers.has('origin') && request.headers.get('origin') !== expectedOrigin)) {
       return conflict('请求来源不匹配')
     }
     if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {

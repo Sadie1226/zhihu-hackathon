@@ -46,14 +46,22 @@ export async function GET(request: Request, context: Context) {
     const db = getDatabase()
     const owned = db.prepare('SELECT 1 FROM dog WHERE id = ? AND session_id = ?').get(dogId, sessionId)
     if (!owned) return fail(404, 'NOT_FOUND', '这条记录不在这里')
+    const params = new URL(request.url).searchParams
+    if ([...params.keys()].some(key => !['state', 'tripId'].includes(key)) || params.getAll('tripId').length > 1)
+      return fail(409, 'CONFLICT', '读取条件不正确')
+    const tripId = params.get('tripId')
+    if (tripId !== null && (!tripId || !db.prepare('SELECT 1 FROM trip WHERE id=? AND dog_id=?').get(tripId, dogId)))
+      return fail(404, 'NOT_FOUND', '这条记录不在这里')
 
     const rows = db.prepare(
       `SELECT v.invitation_id, v.dog_id, v.text, i.based_on_find_id, v.created_at,
               v.state, v.reply_id, v.gone_alone_trip_id
        FROM v_invitation_state v JOIN invitation i ON i.id = v.invitation_id
-       WHERE v.dog_id = ?
+       WHERE v.dog_id = ? AND (? IS NULL OR EXISTS (
+         SELECT 1 FROM find f WHERE f.id=i.based_on_find_id AND f.trip_id=?
+       ))
        ORDER BY v.created_at DESC, v.invitation_id DESC`,
-    ).all(dogId) as InvitationRow[]
+    ).all(dogId, tripId, tripId) as InvitationRow[]
     const invitations: InvitationView[] = rows.map(dto)
     return Response.json({ invitations }, { headers })
   } catch {

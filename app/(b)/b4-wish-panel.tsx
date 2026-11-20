@@ -143,7 +143,7 @@ export function WishPanel({ dogId, reducedMotion, onCommitted, demo = false }: P
         ...previous.filter((wish) => wish.id !== data.wish.id),
       ])
       setText('')
-      onCommitted()
+      onCommitted({ resource: 'wishes', id: data.wish.id })
     } catch {
       setNotice('这次没记下，输入还在，可以再试一次。')
     } finally {
@@ -188,7 +188,7 @@ export function WishPanel({ dogId, reducedMotion, onCommitted, demo = false }: P
       setWishes((previous) => previous
         .map((item) => (item.id === data.wish.id ? data.wish : item))
         .filter((item) => item.revokedAt === null))
-      onCommitted()
+      onCommitted({ resource: 'wishes', id: data.wish.id })
     } catch {
       setNotice('这条还没撤销成功，可以再试一次。')
     } finally {
@@ -226,7 +226,7 @@ export function WishPanel({ dogId, reducedMotion, onCommitted, demo = false }: P
           <div className={styles.skeleton} />
           <div className={styles.skeleton} />
         </div>
-      ) : wishes.length === 0 ? (
+      ) : phase === 'ready' && wishes.length === 0 ? (
         <p className={styles.empty}>还没告诉它想看什么。</p>
       ) : (
         <ul className={styles.list}>

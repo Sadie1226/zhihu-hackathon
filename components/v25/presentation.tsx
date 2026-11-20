@@ -1,9 +1,10 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useId, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import type { Assembly } from '@/contracts/types'
 import { useAppShell } from '@/components/app-shell/shell'
+import { useFeedback } from '@/components/app-shell/use-feedback'
 import './theme.css'
 import './integration.css'
 
@@ -104,6 +105,9 @@ export function ReferenceActor({
   pose?: 'stand' | 'sit'
 }) {
   const { bindings, reducedMotion } = useAppShell()
+  const feedback = useFeedback()
+  const instance = useId()
+  useEffect(() => { feedback({ kind: 'actor', target: `actor-${instance}`, action: pose === 'sit' ? 'sit' : 'idle' }) }, [feedback, pose, instance])
   const Renderer = bindings.Dog
   if (Renderer)
     return <Renderer assembly={assembly} reducedMotion={reducedMotion} />

@@ -42,7 +42,7 @@ export function Invitations({ dogId, tripId, origin, returnTo }: InvitationPanel
     setPhase('loading')
     try {
       const response = await fetch(
-        `/api/dogs/${encodeURIComponent(dogId)}/invitations`,
+        `/api/dogs/${encodeURIComponent(dogId)}/invitations?tripId=${encodeURIComponent(tripId)}`,
         { signal: controller.signal, cache: 'no-store', credentials: 'same-origin' },
       )
       if (controller.signal.aborted || generation !== generationRef.current) return
@@ -65,7 +65,7 @@ export function Invitations({ dogId, tripId, origin, returnTo }: InvitationPanel
       setPhase('failed')
       setNotice('这次没读出来，可以再试一次。')
     }
-  }, [dogId])
+  }, [dogId, tripId])
 
   useEffect(() => {
     void load()
@@ -154,8 +154,8 @@ export function Invitations({ dogId, tripId, origin, returnTo }: InvitationPanel
 
       {phase === 'loading' ? (
         <div aria-label="正在读取"><div className={styles.skeleton} /></div>
-      ) : waiting.length === 0 ? (
-        <p className={styles.empty}>它在等你回一句话。</p>
+      ) : phase === 'ready' && waiting.length === 0 ? (
+        <p className={styles.empty}>这趟没有待回应的邀请，已有经历仍会留着。</p>
       ) : (
         <ul className={styles.list}>
           {waiting.map((invitation) => (

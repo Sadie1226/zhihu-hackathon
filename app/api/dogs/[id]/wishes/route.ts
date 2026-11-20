@@ -36,8 +36,9 @@ function ownedDog(db: DatabaseSync, dogId: string, sessionId: string): boolean {
 
 function crossSite(request: Request): boolean {
   const url = new URL(request.url)
+  const expectedOrigin = request.headers.has('host') ? `${url.protocol}//${request.headers.get('host')}` : url.origin
   return request.headers.get('sec-fetch-site') === 'cross-site' ||
-    (request.headers.has('origin') && request.headers.get('origin') !== url.origin)
+    (request.headers.has('origin') && request.headers.get('origin') !== expectedOrigin)
 }
 
 export async function GET(request: Request, context: Context): Promise<Response> {
