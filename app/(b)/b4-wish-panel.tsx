@@ -226,7 +226,11 @@ export function WishPanel({ dogId, reducedMotion, onCommitted, demo = false }: P
           <div className={styles.skeleton} />
           <div className={styles.skeleton} />
         </div>
-      ) : phase === 'ready' && wishes.length === 0 ? (
+      ) : phase === 'failed' ? (
+        <p className={styles.empty} role="alert">这次没读出来，点上面的「再试一次」。</p>
+      ) : phase === 'unauthorized' ? (
+        <p className={styles.empty}>这只狗不在当前会话里，请先返回。</p>
+      ) : wishes.length === 0 ? (
         <p className={styles.empty}>还没告诉它想看什么。</p>
       ) : (
         <ul className={styles.list}>

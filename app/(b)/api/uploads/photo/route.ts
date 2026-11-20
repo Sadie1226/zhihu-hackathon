@@ -4,8 +4,10 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { readSessionId } from '@/lib/auth/session'
+import { getDatabase } from '@/lib/db/index'
 import {
-  inspectPhoto, makePhotoUrl, uploadDir, MAX_PHOTO_BYTES, MAX_PHOTO_SIDE,
+  inspectPhoto, validatePhotoIntegrity, makePhotoUrl, uploadDir,
+  MAX_PHOTO_BYTES, MAX_PHOTO_SIDE,
 } from '../../../b6-photo'
 
 export const runtime = 'nodejs'
@@ -18,6 +20,19 @@ function fail(status: number, code: string, detail: string) {
 export async function POST(request: Request) {
   const sessionId = readSessionId(request)
   if (!sessionId) return fail(401, 'UNAUTHORIZED', '没有有效会话')
+
+  // A 评审 v2 §2-1：readSessionId 只验 Cookie 格式+哈希，格式正确但未经服务端
+  // 建立的 Cookie 也能通过。这里在 B 上传边界消费现有 dog.session_id 归属，
+  // 确认当前会话确由服务端建立（至少有一只狗归它）；无归属一律拒且不落文件。
+  // 正式身份底座由 C 收口后，这一行替换为查身份表即可，不改公共 schema。
+  let db
+  try {
+    db = getDatabase()
+  } catch {
+    return fail(503, 'NETWORK', '这次没连上，可以再试一次')
+  }
+  const owned = db.prepare('SELECT 1 FROM dog WHERE session_id = ? LIMIT 1').get(sessionId)
+  if (!owned) return fail(401, 'UNAUTHORIZED', '会话没有有效归属')
 
   let form: FormData
   try {
@@ -38,6 +53,12 @@ export async function POST(request: Request) {
   if (info.width > MAX_PHOTO_SIDE || info.height > MAX_PHOTO_SIDE) {
     return fail(413, 'PAYLOAD_TOO_LARGE', '图片边长不能超过 1600 像素')
   }
+  // A 评审 v2 §2-5：只看头部签名/IHDR 会让"仅签名+尺寸、没有像素数据"和截断文件
+  // 蒙混过关。这里对全字节做结构/结束块校验，损坏或截断一律拒；不引入图像库依赖。
+  const full = new Uint8Array(await file.arrayBuffer())
+  if (!validatePhotoIntegrity(full, info.mime)) {
+    return fail(415, 'UNSUPPORTED_MEDIA_TYPE', '图片内容损坏或截断，无法读取')
+  }
 
   const url = makePhotoUrl(sessionId, info.mime)
   const name = url.slice('/uploads/'.length)
@@ -46,7 +67,7 @@ export async function POST(request: Request) {
   }
   const dir = uploadDir()
   await mkdir(dir, { recursive: true })
-  await writeFile(path.join(dir, name), new Uint8Array(await file.arrayBuffer()))
+  await writeFile(path.join(dir, name), full)
 
   // 写什么格式就返回什么 MIME；不把 jpeg/png 原字节伪装成 webp。
   return Response.json(

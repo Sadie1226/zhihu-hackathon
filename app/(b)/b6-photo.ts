@@ -106,6 +106,93 @@ export function inspectPhoto(head: Uint8Array): PhotoInfo | null {
   return null
 }
 
+/**
+ * A 评审 v2 §2-5：inspectPhoto 只看文件头，仅签名+IHDR 尺寸而无像素数据、
+ * 或中途截断的文件都会被当成有效图片。这里对全字节做结构有效性校验：
+ *   - PNG：必须有 IDAT（真实像素块）与末尾 IEND，且遍历 chunk 长度不越界、CRC 自洽；
+ *   - JPEG：必须 SOI 开头、EOI 结尾，且含 SOS（扫描数据起点）；
+ *   - WebP：RIFF 声明长度必须与实际字节吻合，且含 VP8/VP8L/VP8X 图像块。
+ * 不引入图像解码库（公共依赖不动），只做结构与结束标记校验，足以挡住截断/空壳。
+ */
+function crc32(bytes: Uint8Array, start: number, end: number): number {
+  let crc = 0xffffffff
+  for (let i = start; i < end; i += 1) {
+    crc ^= bytes[i]
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (0xedb88320 & (-(crc & 1)))
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
+function pngIntegrity(bytes: Uint8Array): boolean {
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10]
+  if (bytes.length < 8 || signature.some((byte, i) => bytes[i] !== byte)) return false
+  let offset = 8
+  let sawIDAT = false
+  let sawIEND = false
+  while (offset + 12 <= bytes.length) {
+    const length = ((bytes[offset] << 24) >>> 0) + (bytes[offset + 1] << 16)
+      + (bytes[offset + 2] << 8) + bytes[offset + 3]
+    const type = ascii(bytes, offset + 4, offset + 8)
+    const dataStart = offset + 8
+    const dataEnd = dataStart + length
+    if (dataEnd + 4 > bytes.length) return false // 截断：CRC 都在界外
+    const stored = ((bytes[dataEnd] << 24) >>> 0) + (bytes[dataEnd + 1] << 16)
+      + (bytes[dataEnd + 2] << 8) + bytes[dataEnd + 3]
+    if (crc32(bytes, offset + 4, dataEnd) !== stored) return false
+    if (type === 'IDAT') sawIDAT = true
+    if (type === 'IEND') { sawIEND = true; break }
+    offset = dataEnd + 4
+  }
+  return sawIDAT && sawIEND
+}
+
+function jpegIntegrity(bytes: Uint8Array): boolean {
+  const n = bytes.length
+  if (n < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return false // SOI
+  if (bytes[n - 2] !== 0xff || bytes[n - 1] !== 0xd9) return false // EOI（截断必缺）
+  let sawSOS = false
+  let offset = 2
+  while (offset + 1 < n) {
+    if (bytes[offset] !== 0xff) { offset += 1; continue }
+    const marker = bytes[offset + 1]
+    if (marker === 0xff) { offset += 1; continue }
+    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2
+      continue
+    }
+    if (marker === 0xd9) break
+    if (offset + 4 > n) return false
+    const length = (bytes[offset + 2] << 8) | bytes[offset + 3]
+    if (length < 2 || offset + 2 + length > n) return false
+    if (marker === 0xda) sawSOS = true // 扫描数据起点
+    if (marker === 0xda) break // 之后是熵编码数据，不再按段解析
+    offset += 2 + length
+  }
+  return sawSOS
+}
+
+function webpIntegrity(bytes: Uint8Array): boolean {
+  if (bytes.length < 20 || ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 12) !== 'WEBP') {
+    return false
+  }
+  const declared = ((bytes[4] << 24) >>> 0) + (bytes[5] << 16) + (bytes[6] << 8) + bytes[7]
+  if (declared + 8 !== bytes.length) return false // 截断或尾部多余
+  const format = ascii(bytes, 12, 16)
+  if (format !== 'VP8X' && format !== 'VP8 ' && format !== 'VP8L') return false
+  const chunkLen = ((bytes[16] << 24) >>> 0) + (bytes[16 + 1] << 16)
+    + (bytes[16 + 2] << 8) + bytes[16 + 3]
+  return chunkLen > 0 && 20 + chunkLen <= bytes.length
+}
+
+export function validatePhotoIntegrity(bytes: Uint8Array, mime: PhotoMime): boolean {
+  if (mime === 'image/png') return pngIntegrity(bytes)
+  if (mime === 'image/jpeg') return jpegIntegrity(bytes)
+  if (mime === 'image/webp') return webpIntegrity(bytes)
+  return false
+}
+
 /** 完整 session 哈希作为归属前缀，随机串仍由服务端生成。 */
 export function sessionPhotoOwner(sessionId: string): string {
   return createHash('sha256').update(sessionId).digest('hex')
