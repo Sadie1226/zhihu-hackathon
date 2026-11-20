@@ -14,6 +14,7 @@ import type {
   ProfileView,
 } from '@/lib/adoption/view'
 import { api, useAppShell } from './shell'
+import { useFeedback } from './use-feedback'
 import {
   A,
   Frame,
@@ -70,6 +71,12 @@ const emptyDraft: AdoptionDraft = {
 }
 export default function AdoptPage() {
   const { session, error, refresh } = useAppShell()
+  const emitFeedback = useFeedback()
+  const traitFeedback = (i: number, value: number, release: boolean) => {
+    setFeedback({ i, value, release })
+    emitFeedback({ kind: 'personality', target: 'adoption-traits', dimension: i, value,
+      phase: release ? 'release' : 'change', strength: Math.abs(value - 50) / 50 })
+  }
   const router = useRouter()
   const [step, setStep] = useState<AdoptionStep>('auth')
   const [auth, setAuth] = useState<AuthState>('entry')
@@ -682,14 +689,10 @@ export default function AdoptPage() {
                         i === j ? (value - 50) / 25 : x,
                       ),
                     })
-                    setFeedback({ i, value, release: false })
+                    traitFeedback(i, value, false)
                   }}
                   onPointerUp={(e) =>
-                    setFeedback({
-                      i,
-                      value: Number(e.currentTarget.value),
-                      release: true,
-                    })
+                    traitFeedback(i, Number(e.currentTarget.value), true)
                   }
                   onKeyUp={(e) => {
                     if (
@@ -702,11 +705,7 @@ export default function AdoptPage() {
                         'End',
                       ].includes(e.key)
                     )
-                      setFeedback({
-                        i,
-                        value: Number(e.currentTarget.value),
-                        release: true,
-                      })
+                      traitFeedback(i, Number(e.currentTarget.value), true)
                   }}
                 />
               </div>

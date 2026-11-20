@@ -64,8 +64,9 @@ export function ProfilePanel() {
     </>
   )
 }
-export function SettingsPanel() {
-  const { reducedMotion, setReducedMotion, closePanel, refresh } = useAppShell()
+export function SettingsPanel({ active = true }: { active?: boolean }) {
+  const { session, bindings, committed, reducedMotion, setReducedMotion, closePanel, refresh } = useAppShell()
+  const Preferences = bindings.PreferencesBody
   const router = useRouter()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -93,6 +94,8 @@ export function SettingsPanel() {
         />
       </label>
       <p className="hint">当前均为静态画面；该偏好会传给后续动画接口。</p>
+      {Preferences && session?.dog && <Preferences dogId={session.dog.id} reducedMotion={reducedMotion}
+        active={active} onClose={closePanel} onCommitted={committed} />}
       <div className="settings-section">
         <h3>账号与授权</h3>
         <p>

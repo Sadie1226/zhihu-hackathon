@@ -115,7 +115,7 @@ const fs = require('node:fs')
   await page
     .getByRole('heading', { name: '它回来了，带着一些路上的见闻。' })
     .waitFor()
-  await page.getByText('归来内容读取接口尚未接入。').waitFor()
+  await page.getByText('分享读取尚未接入。').waitFor()
   await page.setViewportSize({ width: 375, height: 667 })
   assert.ok(
     (await page
@@ -134,7 +134,7 @@ const fs = require('node:fs')
   )
   for (const [status, heading] of [
     ['pending', '它正在收拾随身的小包。'],
-    ['timeout', '今天回来得晚，先坐一会儿。'],
+    ['timeout', '这趟出行暂时没能确认结果。'],
     ['failed', '这趟没能走完，已有的经历还在。'],
   ]) {
     trip.status = status
@@ -142,7 +142,7 @@ const fs = require('node:fs')
     await page.getByRole('heading', { name: heading }).waitFor()
     assert.equal(
       await page.locator('section[aria-label="归来分享与发现"]').count(),
-      status === 'pending' ? 0 : 1,
+      0,
     )
   }
   await page.route('**/api/dogs/*/trips?limit=2', r => r.fulfill({status:503,json:{code:'NETWORK',detail:'internal-only'}}))

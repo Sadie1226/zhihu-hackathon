@@ -1,0 +1,214 @@
+{
+  "date": "2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "mainBaseline": "cb656378e901348c2685cc4cede83524a10370f6",
+  "branch": "a-wiring-1120",
+  "candidateMerge": "a4b4f9a",
+  "productCommit": "865a2d2c03ea2298db768a7254cac169d30fac02",
+  "pushed": false,
+  "deployed": false,
+  "baseline": {
+    "mode": "baseline",
+    "sha": "cb656378e901348c2685cc4cede83524a10370f6",
+    "fixtureOnly": true,
+    "realOAuth": false,
+    "checks": [
+      {
+        "name": "two-independent-browser-contexts-adopt-refresh-and-isolate",
+        "dogs": [
+          "dev_73fd377e17f104bfa8b88d1c94a48d1c_86fbebba02b2450abb9d2dffcbf97a15cc2140baaa5a26797941d13d9ae46139",
+          "dev_e428748027cb621f90bb4cd9454cbf9a_85e0efe6ee417b1561760696ec4cd18169a9d807b8f8be5a3f6f2d68a446b000"
+        ],
+        "passed": true
+      },
+      {
+        "name": "lost-create-response-retry-same-dog",
+        "passed": true
+      },
+      {
+        "name": "required-name-null-or-two-interests-three-dimensions-four-keys",
+        "passed": true
+      },
+      {
+        "name": "cross-owner-dog-read-rejected",
+        "passed": true
+      },
+      {
+        "name": "server-rejects-empty-overlong-name-single-or-duplicate-interests",
+        "passed": true
+      },
+      {
+        "name": "finds-real-http-owned-foreign-missing-no-store",
+        "passed": true
+      },
+      {
+        "name": "running-no-return-content",
+        "passed": true
+      },
+      {
+        "name": "real-trip-done-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-failed-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-timeout-state",
+        "passed": true
+      },
+      {
+        "name": "baseline-empty-wiring-confirmed",
+        "passed": true
+      },
+      {
+        "name": "known-development-logout-replay-gap-reproduced",
+        "replayStatus": 200,
+        "passed": true
+      }
+    ],
+    "knownGaps": [
+      "empty wiring: chat/wish/invitations/return-read not bound",
+      "formal owner and account recovery absent",
+      "logout only clears cookie; replay remains authorized",
+      "mock profile and generator only",
+      "formal wardrobe/visual assets not bound"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "wiring": {
+    "mode": "wiring",
+    "sha": "a4b4f9afaf846f21c85d4bcfc6b3bde9b9f283ec",
+    "fixtureOnly": true,
+    "realOAuth": false,
+    "checks": [
+      {
+        "name": "two-independent-browser-contexts-adopt-refresh-and-isolate",
+        "dogs": [
+          "dev_f60d3878191ec3958dc65d07d26d6fad_c5195ef9488a6c9996bdb72a2d68803dff02db7b40dc4a4d254cb05f4bdfcef0",
+          "dev_9f596bdc965d312b40e0b20c1727c695_1da459d6b987f690ff55d79245ce60bcb568031c9b6f5237d1f041c047a16e28"
+        ],
+        "passed": true
+      },
+      {
+        "name": "lost-create-response-retry-same-dog",
+        "passed": true
+      },
+      {
+        "name": "required-name-null-or-two-interests-three-dimensions-four-keys",
+        "passed": true
+      },
+      {
+        "name": "cross-owner-dog-read-rejected",
+        "passed": true
+      },
+      {
+        "name": "server-rejects-empty-overlong-name-single-or-duplicate-interests",
+        "passed": true
+      },
+      {
+        "name": "finds-real-http-owned-foreign-missing-no-store",
+        "passed": true
+      },
+      {
+        "name": "running-no-return-content",
+        "passed": true
+      },
+      {
+        "name": "real-trip-done-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-failed-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-timeout-state",
+        "passed": true
+      },
+      {
+        "name": "trip-scoped-invitation-text-reply-durable-and-idempotent",
+        "passed": true
+      },
+      {
+        "name": "read-page-does-not-start-or-finish-trips",
+        "passed": true
+      },
+      {
+        "name": "wish-real-create-revoke-local-refresh-draft-and-focus",
+        "passed": true
+      },
+      {
+        "name": "chat-explicit-fixture-and-draft-retained",
+        "passed": true
+      },
+      {
+        "name": "find-failure-not-empty-share-unavailable-independent",
+        "passed": true
+      },
+      {
+        "name": "targeted-find-retry-source-label-and-original-link",
+        "passed": true
+      },
+      {
+        "name": "real-empty-response-is-distinct",
+        "passed": true
+      },
+      {
+        "name": "loading-and-late-find-request-does-not-fill-running-page",
+        "passed": true
+      },
+      {
+        "name": "failed-explicit-archive-view-without-success-or-invitation",
+        "passed": true
+      },
+      {
+        "name": "mobile-desktop-no-horizontal-overflow",
+        "passed": true
+      },
+      {
+        "name": "optional-slots-and-independent-message-failure-consumed",
+        "passed": true
+      },
+      {
+        "name": "feedback-reduced-motion-and-unmount-cancellation",
+        "passed": true
+      },
+      {
+        "name": "known-development-logout-replay-gap-reproduced",
+        "replayStatus": 200,
+        "passed": true
+      }
+    ],
+    "knownGaps": [
+      "B photo compression/cancel/retry/valid session/damaged bytes remain pending",
+      "Message reader, formal OAuth/owner/revocation, formal visual assets and E routes remain unbound"
+    ],
+    "errors": [],
+    "workingTreeDirty": true,
+    "passed": true
+  },
+  "browserRecordNote": "Browser audit ran on the worktree before product commit; sha is its then-current parent and workingTreeDirty is explicit. It is not a claim that main includes the wiring.",
+  "production": {
+    "productionDevelopmentLogin": 404,
+    "session": {
+      "provider": "unavailable",
+      "authenticated": false,
+      "dog": null
+    },
+    "temporaryFixtureRoute": 404,
+    "realOAuth": false
+  },
+  "checks": {
+    "branchTests": 127,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "realOAuth": false,
+    "baselineTests": 124,
+    "animationEnabled": false,
+    "checkAll": "passed",
+    "realZhihuSearch": false
+  }
+}
