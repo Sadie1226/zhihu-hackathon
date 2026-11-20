@@ -731,6 +731,21 @@ expectCode(
   'UNKNOWN_KEY',
 )
 
+// 50. 正例：find 明确没有来源 —— 两个键都写 null，键在、值为空（不是省略）
+expectOk('50 find 无来源，两键显式 null', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'find',
+  payload: {
+    kind: 'find',
+    findTitle: '路边的井盖',
+    findExcerpt: null,
+    sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
+  },
+})
+
 // ===========================================================================
 // 五、读侧：历史 payload 缺来源键怎么办（K v4 请求的「历史缺键只做读取兼容」）
 // ===========================================================================
