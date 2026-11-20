@@ -110,3 +110,49 @@ export function resolveProvenance(
 
   return { ok: true, sourceFindId: src.id, sourceMode: src.sourceMode }
 }
+
+// ===========================================================================
+// 读侧：已经落库的 payload，怎么取出它的来源
+// ===========================================================================
+
+/**
+ * 一条**已落库** payload 的来源。
+ *
+ * 为什么不复用 `rules.validate`：validate 是写入闸门，要求两个来源键**必须在**。
+ * 历史行（K v4 之前写的）根本没有这两个键，拿写入闸门去卡历史数据，会把所有旧记录
+ * 判成不合规 —— a 的请求里「历史缺键只做读取兼容」说的就是这件事。
+ *
+ * 为什么把 `legacy` 单独标出来：`{null, null}` 有两种含义 ——
+ *   - 新记录，确实没有来源（gift 在路边捡的东西送给朋友）
+ *   - 旧记录，当时还没有来源这个概念
+ * 混成一种，以后做数据回填或统计「有多少礼物有出处」时，会把旧数据算成「明确无出处」。
+ */
+export type StoredProvenance = {
+  sourceFindId: string | null
+  sourceMode: SourceMode | null
+  /** true = 至少缺一个来源键，即写下时还没有 K v4 契约。读取照常，不要回写成 null。 */
+  legacy: boolean
+}
+
+const MODES: readonly SourceMode[] = ['live', 'cache', 'fixture']
+
+export function readProvenance(payload: unknown): StoredProvenance {
+  const p =
+    payload !== null && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {}
+
+  const hasId = Object.hasOwn(p, 'sourceFindId')
+  const hasMode = Object.hasOwn(p, 'sourceMode')
+
+  // 只缺一个也算历史行：半个来源不是一个可用的出处，按「没有」对待更安全。
+  const legacy = !hasId || !hasMode
+
+  const rawId = p.sourceFindId
+  const sourceFindId = typeof rawId === 'string' && rawId.trim() !== '' ? rawId : null
+
+  const rawMode = p.sourceMode
+  const sourceMode = MODES.includes(rawMode as SourceMode) ? (rawMode as SourceMode) : null
+
+  return { sourceFindId, sourceMode, legacy }
+}

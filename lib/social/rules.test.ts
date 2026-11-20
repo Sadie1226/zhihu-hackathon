@@ -23,6 +23,7 @@
 
 import assert from 'node:assert/strict'
 import { normalize, validate, countChars } from './rules.ts'
+import { readProvenance } from './provenance.ts'
 
 let pass = 0
 let fail = 0
@@ -728,6 +729,62 @@ expectCode(
     payload: { kind: 'co_owner_message', message: '楼下的桂花开了', fromOwnerOf: 'dog_a1', sourceMode: 'live' },
   },
   'UNKNOWN_KEY',
+)
+
+// ===========================================================================
+// 五、读侧：历史 payload 缺来源键怎么办（K v4 请求的「历史缺键只做读取兼容」）
+// ===========================================================================
+//
+// 写入闸门 validate 要求两个来源键必须在；读取不能照这个标准卡历史行。
+// readProvenance 只取值、不拒绝，但要把「缺键」和「明确无来源」区分开。
+
+function expectRead(
+  name: string,
+  payload: unknown,
+  want: { sourceFindId: string | null; sourceMode: string | null; legacy: boolean },
+): void {
+  const got = readProvenance(payload)
+  const same =
+    got.sourceFindId === want.sourceFindId &&
+    got.sourceMode === (want.sourceMode as never) &&
+    got.legacy === want.legacy
+  if (same) {
+    pass++
+    console.log(`  ✅ ${name}`)
+  } else {
+    fail++
+    const msg = `${name} → 期望 ${JSON.stringify(want)}，实际 ${JSON.stringify(got)}`
+    failures.push(msg)
+    console.log(`  ❌ ${msg}`)
+  }
+}
+
+// 46. 历史行：K v4 之前写的 gift，payload 里没有这两个键
+expectRead(
+  '46 历史 gift 缺两个来源键 → 读出 null/null，标 legacy',
+  { kind: 'gift', giftName: '一小卷灰蓝色的毛线', note: null, imagePath: null },
+  { sourceFindId: null, sourceMode: null, legacy: true },
+)
+
+// 47. 新记录明确无来源：两个键在，值为 null —— 这不是历史行
+expectRead(
+  '47 新 gift 显式 null/null → 同样读出 null/null，但不标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: null, sourceMode: null },
+  { sourceFindId: null, sourceMode: null, legacy: false },
+)
+
+// 48. 半个来源（只有 id、没有 mode）→ 按历史行对待，不假装出处完整
+expectRead(
+  '48 只有 sourceFindId、没有 sourceMode → 不当成可用出处，标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: 'find_a1_1' },
+  { sourceFindId: 'find_a1_1', sourceMode: null, legacy: true },
+)
+
+// 49. scene/moment 的真实来源：id 有值、mode 本来就是 null，但这不是历史行
+expectRead(
+  '49 scene 来源（id 有值、mode 为 null）→ 不标 legacy',
+  { kind: 'gift', giftName: '一颗螺帽', note: null, imagePath: null, sourceFindId: 'find_scene_1', sourceMode: null },
+  { sourceFindId: 'find_scene_1', sourceMode: null, legacy: false },
 )
 
 // ===========================================================================
