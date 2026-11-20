@@ -1,7 +1,7 @@
 /**
  * 契约自检：schema.sql / types.ts / fixtures 三者必须互相一致。
  *
- * 这是 c 的活，不是任何人的活。跑法（Node 22+，零依赖）：
+ * 这是 c 的活，不是任何人的活。跑法（沿用项目 Node 24+，零额外依赖）：
  *   node scripts/check-contracts.mjs
  *
  * 它检查以下项目，**不通过就退出码 1**（不等于 HTTP 或全部产品规则验收）：
@@ -22,6 +22,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { checkExchangeProvenance } from '../contracts/types.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -288,6 +289,12 @@ for (const s of fx.snapshot) {
   s.recent_trips = J(s.recent_trips)
 }
 insertAll('snapshot', fx.snapshot, ['dog_id', 'version', 'personality_tags', 'interest_categories', 'recent_trips', 'waiting_for', 'created_at'])
+mustPass('Snapshot v4: NULL 夹具保留 SQL NULL，不转空数组', () => {
+  const sample = fx.snapshot.find(row => row.interest_categories === null)
+  assert.ok(sample)
+  assert.equal(db.prepare('SELECT interest_categories FROM snapshot WHERE dog_id=? AND version=?')
+    .get(sample.dog_id, sample.version).interest_categories, null)
+})
 
 insertAll('wish', fx.wish, ['id', 'dog_id', 'text', 'category', 'created_at', 'revoked_at', 'source', 'source_url'])
 mustPass('wish fixtures 的新增来源字段逐字段往返一致', () => {
@@ -313,6 +320,20 @@ insertAll('exchange', fx.exchange, ['id', 'from_dog', 'to_dog', 'kind', 'payload
 insertAll('message', fx.message, ['id', 'trip_id', 'text', 'mentions_find_id', 'created_at'])
 insertAll('invitation', fx.invitation, ['id', 'dog_id', 'text', 'based_on_find_id', 'created_at'])
 insertAll('reply', fx.reply, ['id', 'exchange_id', 'invitation_id', 'text', 'photo_url', 'created_at'])
+
+mustPass('K v4: 历史 payload 可读，新 fixture 来源引用真实存在且属于寄件狗', () => {
+  for (const row of JSON.parse(read('contracts/fixtures/exchange.json')).exchanges) {
+    assert.deepEqual(checkExchangeProvenance(row.payload,
+      { fromDog: row.from_dog, trusted: false, source: null, historical: true }), { ok: true })
+  }
+  for (const row of JSON.parse(read('contracts/fixtures/exchange.json')).provenanceCases) {
+    const source = db.prepare(`SELECT f.id,t.dog_id AS dogId,f.source_mode AS sourceMode
+      FROM find f JOIN trip t ON t.id=f.trip_id WHERE f.id=?`).get(row.payload.sourceFindId)
+    assert.deepEqual(checkExchangeProvenance(row.payload,
+      { fromDog: row.from_dog, trusted: true, source: source ?? null }), { ok: true })
+    assert.notEqual(row.payload.sourceMode, 'live', '新增 fixture 不伪装成真实搜索')
+  }
+})
 
 // relation 是十类实体之一，也必须能插（d 要用）
 // checksum：脚本自己按字典序排，fixtures 里写反了也不算错

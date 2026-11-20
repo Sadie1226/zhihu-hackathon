@@ -5,8 +5,15 @@
     {
       "dog_id": "dog_owner",
       "version": 1,
-      "personality_tags": ["好奇", "看物", "直给"],
-      "interest_categories": ["自然风景", "城市角落"],
+      "personality_tags": [
+        "好奇",
+        "看物",
+        "直给"
+      ],
+      "interest_categories": [
+        "自然风景",
+        "城市角落"
+      ],
       "recent_trips": [
         "在一条没去过的巷子里看到整面墙的爬山虎",
         "路过深夜便利店，店员在给自己煮面",
@@ -18,14 +25,39 @@
     {
       "dog_id": "dog_seed_07",
       "version": 1,
-      "personality_tags": ["看人", "婉转", "当下"],
-      "interest_categories": ["人与故事", "手作与食物", "动物与植物"],
+      "personality_tags": [
+        "看人",
+        "婉转",
+        "当下"
+      ],
+      "interest_categories": [
+        "人与故事",
+        "手作与食物",
+        "动物与植物"
+      ],
       "recent_trips": [
         "楼下修鞋的师傅今天多带了一把小凳子",
         "隔着窗户看了很久别人家阳台上的一盆多肉",
         "巷口那家面包店换了新的纸袋"
       ],
       "waiting_for": null,
+      "created_at": "2026-11-16T03:00:00Z"
+    },
+    {
+      "dog_id": "dog_owner",
+      "version": 2,
+      "personality_tags": [
+        "好奇",
+        "看物",
+        "直给"
+      ],
+      "interest_categories": null,
+      "recent_trips": [
+        "在一条没去过的巷子里看到整面墙的爬山虎",
+        "路过深夜便利店，店员在给自己煮面",
+        "城郊的一段土路上捡到一颗很圆的石头"
+      ],
+      "waiting_for": "等一条围巾的回音",
       "created_at": "2026-11-16T03:00:00Z"
     }
   ]

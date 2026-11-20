@@ -1,6 +1,7 @@
 import { EVENT_SCHEMA_V2_SQL } from './migrations/002-events.ts'
 import type { DatabaseSync } from 'node:sqlite'
 import { wishMigrationSql } from './migrations/003-wishes.ts'
+import { snapshotInterestNullMigration } from './migrations/004-snapshot-interest-null.ts'
 
 /** Infrastructure versions use PRAGMA user_version, without a separate tracking table. */
 export interface Migration {
@@ -16,4 +17,5 @@ export interface Migration {
 export const migrations: readonly Migration[] = [
   { version: 2, name: 'event pool and trip event history', sql: EVENT_SCHEMA_V2_SQL },
   { version: 3, name: 'active wishes and collection provenance', sql: wishMigrationSql },
+  { version: 4, name: 'nullable snapshot interests', sql: snapshotInterestNullMigration },
 ]

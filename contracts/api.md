@@ -509,14 +509,15 @@ POST /api/gen/image
 ```jsonc
 // find —— 发现交换
 { "kind": "find", "findTitle": "修鞋摊旁边的搪瓷缸",
-  "findExcerpt": "缸沿上磕了两个口，茶还是满的。", "sourceUrl": null }
+  "findExcerpt": "缸沿上磕了两个口，茶还是满的。", "sourceUrl": null,
+  "sourceFindId": null, "sourceMode": null }
 
 // greeting —— 问候近况
 { "kind": "greeting", "line": "这边下了两天雨，你那边呢", "weather": "雨" }
 
 // gift —— 礼物
 { "kind": "gift", "giftName": "一小卷灰蓝色的毛线", "note": "天气要冷了",
-  "imagePath": "/assets/gen/xxx.webp" }
+  "imagePath": "/assets/gen/xxx.webp", "sourceFindId": null, "sourceMode": null }
 
 // co_owner_message —— 捎话（P0 第 9 条）
 { "kind": "co_owner_message", "message": "楼下的桂花开了", "fromOwnerOf": "dog_owner" }
@@ -541,6 +542,79 @@ POST /api/gen/image
 | `waiting_for` | `chat_summary`（摘要也是原文派生的，一样串味） |
 
 **有人想在快照里加一个 `chat_summary`，答复是不行。** 这是不变量五的唯一实现方式：一段经历一个出处。
+
+### K v4：兴趣 NULL 与数据库版本 4
+
+`Snapshot.interestCategories` 现在允许 `InterestCategory[] | null`，SQL 为 `snapshot.interest_categories`。
+NULL 表示未选择兴趣限制，沿用 dog 的语义；非 NULL 必须为 JSON 数组、2–3 项、元素均为既有六个类目。
+`[]`、JSON 字符串 `"null"`、空对象、未知类目均非法。SQL NULL 不映射为 []，也不扩成六类数组。
+未选兴趣的狗可以生成快照；D 的匹配/展示读取方须显式处理 null。
+保留全部原 Snapshot 字段与隐私白名单，不加入心愿、聊天、照片或资料派生文本。
+整份 snapshot 不存在（关系响应中的 snapshot:null）和快照存在但兴趣为 null 是两个不同情况。
+
+迁移版本 4（004-snapshot-interest-null.ts）由 bootstrap 既有 BEGIN IMMEDIATE 包裹。
+旧表行在事务内暂存，按原名重建 snapshot 并回填，再恢复原表的显式索引/触发器；保留复合主键、dog 外键、
+其他列约束/默认值及全部历史版本。没有嵌套事务，不切换 foreign_keys；结束前执行 foreign_key_check。
+同名重建不改写视图或其他表触发器中的引用，测试验证这些定义及实际查询保持可用。
+新库已允许 NULL 则跳过重建。遇到未知入向外键或旧数据不符合类目约束时完整回滚，先人工核查，不能删行、
+改成 NULL 或重建应用数据库来强行升级。版本 2/3 的已部署迁移保持原样。
+
+### K v4：交换来源（仅 find / gift）
+
+类型新增可选 `sourceFindId?: string|null`、`sourceMode?: SourceMode|null`，只附加到 find/gift。
+可选是为了历史 JSON 可读；**新的服务端生成记录必须明确供应两个键**，没有来源时用 null。
+greeting/co_owner_message 不增加这些键，没有第五种 ExchangeKind，也没有新增 exchange 列。
+不加入 authorityLevel 或 voteUpCount。
+
+| sourceFindId | sourceMode | 合法条件 |
+| --- | --- | --- |
+| 两个键均缺失 | 缺失 | 仅历史读取允许；保持未知，不补 live |
+| null | null | 新内容没有 Find 来源（包括事件本身），不要编造 Find ID |
+| 真实 find.id | live / cache / fixture | 来源 Find 属于寄件狗的 trip，值严格等于该 Find 存储的 source_mode |
+| scene/moment Find 的 id | null | 保留来源 Find 的 NULL，不因有图片或 URL 改成 live |
+| 缺一个键、非法模式、悬空 ID、跨狗 ID、无 Find 却声明 live/cache/fixture | 任意 | 拒绝新写入 |
+
+sourceMode 描述原发现记录的来源；读取或交换不代表每次都重新搜过知乎，不能刷新为 live。
+sourceUrl 也不是来源证明，不能依据 URL 外形或客户端参数推断 live。
+旧 JSON 不要求补写，新字段不能静默改写历史 payload。
+
+可信写入方在其事务中先验证当前 session 对 fromDog 的写入权，再用以下查询解析 sourceFindId；
+sourceFindId 只能作为服务端核查输入，不赋予收件方查询私人 trip/find 的权限：
+
+```sql
+SELECT f.id, t.dog_id AS dogId, f.source_mode AS sourceMode
+FROM find f JOIN trip t ON t.id=f.trip_id
+WHERE f.id = :sourceFindId;
+```
+
+查不到或 dogId 不等于 fromDog 则拒绝，sourceMode 必须从查询结果取，客户端/模型不得自行指定。
+收件方只读允许交换的内容摘要和来源元数据；后续 GET trip/find 仍须按其现有主人归属检查。
+greeting/捎话不能借此夹带来源、私人内容或额外身份信息。
+
+共用 `checkExchangeProvenance(payload, {fromDog, trusted, source, historical?})` 是契约级纯函数：
+source 只能是上述可信数据库查询结果；新写入需 trusted=true、两个键俱全、存在且同狗的来源和匹配模式。
+未受信任输入不能自报来源；historical=true 仅允许缺失两个新键的旧 payload 原样读取。
+该函数只检查来源字段，不代替 D 的完整 payload 白名单、屏蔽、自寄和长度校验。
+**本轮没有将函数接入 D4/C8 的业务写入事务。exchange.payload 原 JSON 列只校验 JSON 语法，不能自动验证引用或所有权。**
+
+#### D4 激活要求（核对 origin/d4-gift@4fbcd11）
+
+1. 更新 rules.ts 的正式 find/gift 白名单并校验来源类型；保持 greeting/co_owner_message 原白名单。
+   不能只往 PENDING_KEYS 添加字段，放行键名不等于校验来源。
+2. gift.ts 现为 INCLUDE_PENDING_KEYS=false，且 send() 先 validate(payload)、后追加 heldBack 字段。
+   激活时必须调整次序：核查真实 Find/寄件狗归属并派生模式，组装最终 payload，校验完整 payload，再持久化。
+   不能仅将开关改 true，否则新增字段绕过原 validate。
+3. sourceFindId/sourceMode 仅适用于 find/gift。现有 CoOwnerMessageInput 也接收待批字段，激活时应拒绝这些来源字段，不能沿旧 PENDING_FIELDS 统一附加。
+4. 由可信调用上下文验证寄件狗的写入权，来源查验与实际插入在同一事务/一致性边界内。
+   D 内存/SQLite store 适配需有真实来源查询能力，不能从调用方伪造的 dogId/mode 构造 trusted source。
+5. 更新 gift A11/B9（原来证明 heldBack 不落库）、rules 旧来源 UNKNOWN_KEY 用例，
+   增加非法 mode/ID、跨狗、未受信任 live、scene/moment NULL、新旧 JSON 和 greeting/捎话不变的测试。
+6. 保留幂等命中返回真实存储行、原投递趟次、不覆盖历史、不提前写 delivered_at/replied_at/read_at 的行为。
+   K v4 激活不能变成重复发送或改变“收件狗当前 seq + 1”。
+
+fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenanceCases，引用寄件狗既有 find_seed1，
+其实际 kind=moment、source_mode=NULL；没有给 fixture 伪造新的 live 标签。
+本节是给 D 的精确接入契约，不表示 D4/C8 新来源写入已经完成或通过端到端验收。
 
 ---
 
