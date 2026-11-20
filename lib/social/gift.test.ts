@@ -89,7 +89,7 @@ function mockStore(opts: Parameters<typeof createMemoryStore>[0] = {}): MemorySt
   return createMemoryStore({ seqs: { [A]: 0, [B]: 0 }, ...opts })
 }
 
-check('A1 正常礼物 → 1 条，payload 键集合严格等于契约四个键', () => {
+check('A1 正常礼物 → 1 条，payload 六键（K v4 起含来源两键）', () => {
   const store = mockStore()
   const r = sendGift({
     store,
@@ -103,7 +103,14 @@ check('A1 正常礼物 → 1 条，payload 键集合严格等于契约四个键'
   })
   assert.equal(store.exchanges.length, 1)
   assert.equal(r.inserted, true)
-  assert.deepEqual(keysOf(r.exchange.payload), ['giftName', 'imagePath', 'kind', 'note'])
+  assert.deepEqual(keysOf(r.exchange.payload), [
+    'giftName',
+    'imagePath',
+    'kind',
+    'note',
+    'sourceFindId',
+    'sourceMode',
+  ])
   assert.equal(r.exchange.payload.kind, 'gift')
 })
 
@@ -166,7 +173,14 @@ check('A4 收件狗是种子狗 → 正常落库，payload 里没有任何「主
     now: T0,
   })
   assert.equal(store.exchanges.length, 1)
-  assert.deepEqual(keysOf(r.exchange.payload), ['giftName', 'imagePath', 'kind', 'note'])
+  assert.deepEqual(keysOf(r.exchange.payload), [
+    'giftName',
+    'imagePath',
+    'kind',
+    'note',
+    'sourceFindId',
+    'sourceMode',
+  ])
   // 断言「没有」要具体：不是「看着像」，是这三个键一个都不在。
   for (const k of ['message', 'reply', 'fromOwnerOf', 'ownerWords']) {
     assert.equal(k in r.exchange.payload, false, `种子狗收到的 payload 里不该有 ${k}`)
@@ -224,16 +238,28 @@ check('A9 被拉黑的一对 → BLOCKED_RELATION', () => {
   }, 'BLOCKED_RELATION')
 })
 
-check('A10 note / imagePath 不传 → 键仍在，值为 null', () => {
+check('A10 note / imagePath / 来源都不传 → 键仍在，值为 null', () => {
   const store = mockStore()
   const r = sendGift({ store, fromDog: A, toDog: B, giftName: '毛线', idempotencyKey: 'gift-null', now: T0 })
-  assert.deepEqual(keysOf(r.exchange.payload), ['giftName', 'imagePath', 'kind', 'note'])
+  assert.deepEqual(keysOf(r.exchange.payload), [
+    'giftName',
+    'imagePath',
+    'kind',
+    'note',
+    'sourceFindId',
+    'sourceMode',
+  ])
   assert.equal(r.exchange.payload.note, null)
   assert.equal(r.exchange.payload.imagePath, null)
+  // K v4：没有来源是合法的，但必须显式写成 null —— 不许省略键，也不许编个 ID
+  assert.equal(r.exchange.payload.sourceFindId, null)
+  assert.equal(r.exchange.payload.sourceMode, null)
 })
 
-check('A11 sourceFindId 传了 → 收下（heldBack 有它）但不写进 payload', () => {
-  const store = mockStore()
+check('A11 sourceFindId 指向寄件狗自己的 find → 落库，mode 取库里的值', () => {
+  const store = mockStore({
+    finds: [{ id: 'find_001', dogId: A, sourceMode: 'live' }],
+  })
   const r = sendGift({
     store,
     fromDog: A,
@@ -243,9 +269,84 @@ check('A11 sourceFindId 传了 → 收下（heldBack 有它）但不写进 paylo
     idempotencyKey: 'gift-src',
     now: T0,
   })
-  assert.deepEqual(r.heldBack, ['sourceFindId'])
-  assert.equal('sourceFindId' in r.exchange.payload, false)
-  assert.deepEqual(keysOf(r.exchange.payload), ['giftName', 'imagePath', 'kind', 'note'])
+  // heldBack 保留但恒空 —— 来源现在真落库了，没有东西被扣下
+  assert.deepEqual(r.heldBack, [])
+  assert.equal(r.exchange.payload.sourceFindId, 'find_001')
+  // 调用方没传 mode，由库派生
+  assert.equal(r.exchange.payload.sourceMode, 'live')
+})
+
+check('A11b 没有真实 find 的 id → 拒，不许凭空造出处', () => {
+  expectCode('', () => {
+    sendGift({
+      store: mockStore(),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_does_not_exist',
+      idempotencyKey: 'gift-src-bad',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+})
+
+check('A11c 来源属于别的狗 → 拒（借别人的发现当自己的出处）', () => {
+  expectCode('', () => {
+    sendGift({
+      store: mockStore({ finds: [{ id: 'find_b_1', dogId: B, sourceMode: 'cache' }] }),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_b_1',
+      idempotencyKey: 'gift-src-other',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+})
+
+check('A11d 调用方声称的 mode 与库里不符 → 拒，不静默纠正', () => {
+  expectCode('', () => {
+    sendGift({
+      store: mockStore({ finds: [{ id: 'find_a_1', dogId: A, sourceMode: 'cache' }] }),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_a_1',
+      sourceMode: 'live', // 库里是 cache，客户端想标成 live
+      idempotencyKey: 'gift-src-mode',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+})
+
+check('A11e 来源是 scene（库里 source_mode 为 null）→ payload 的 mode 也是 null，不升格成 live', () => {
+  const store = mockStore({ finds: [{ id: 'find_scene_1', dogId: A, sourceMode: null }] })
+  const r = sendGift({
+    store,
+    fromDog: A,
+    toDog: B,
+    giftName: '一颗螺帽',
+    sourceFindId: 'find_scene_1',
+    imagePath: '/assets/gen/nut.webp',
+    idempotencyKey: 'gift-scene',
+    now: T0,
+  })
+  assert.equal(r.exchange.payload.sourceFindId, 'find_scene_1')
+  assert.equal(r.exchange.payload.sourceMode, null)
+})
+
+check('A11f 捎话带来源字段 → 拒（K v4：捎话不挂来源）', () => {
+  expectCode('', () => {
+    sendCoOwnerMessage({
+      store: mockStore(),
+      fromDog: A,
+      toDog: B,
+      message: '桂花开了',
+      sourceFindId: 'find_001',
+      idempotencyKey: 'msg-src',
+      now: T0,
+    } as never)
+  }, 'UNKNOWN_KEY')
 })
 
 check('A12 fromOwnerOf 与 fromDog 不一致 → OWNER_MISMATCH', () => {
@@ -342,6 +443,31 @@ function insertTrip(db: DatabaseSync, id: string, dogId: string, seq: number): v
     `INSERT INTO trip (id, dog_id, seq, status, trigger, created_at, started_at, ended_at)
      VALUES (?, ?, ?, 'running', 'auto', ?, ?, NULL)`,
   ).run(id, dogId, seq, T0, T0)
+}
+
+/**
+ * 插一条 find。**注意 `find` 表没有 dog_id** —— 归属由 `trip_id` 决定，
+ * 这正是 K v4 要求 `JOIN trip` 的原因。
+ *
+ * schema 的 CHECK 也在这里体现：zhihu 必须有 source_url + source_mode，
+ * scene / moment 的 source_mode 必须为 NULL。
+ */
+function insertFind(
+  db: DatabaseSync,
+  opts: { id: string; tripId: string; kind: 'zhihu' | 'scene' | 'moment'; sourceMode: 'live' | 'cache' | 'fixture' | null; sourceUrl?: string },
+): void {
+  db.prepare(
+    `INSERT INTO find (id, trip_id, kind, title, excerpt, source_url, source_mode, created_at)
+     VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
+  ).run(
+    opts.id,
+    opts.tripId,
+    opts.kind,
+    `发现 ${opts.id}`,
+    opts.sourceUrl ?? null,
+    opts.sourceMode,
+    T0,
+  )
 }
 
 function blockPair(db: DatabaseSync, a: string, b: string): void {
@@ -471,7 +597,14 @@ check('B7 种子狗收礼正常（拦的只是「替主人说话」，不是「�
   })
   assert.equal(r.inserted, true)
   const payload = JSON.parse(String(exchangeRows(db)[0].payload)) as Record<string, unknown>
-  assert.deepEqual(keysOf(payload), ['giftName', 'imagePath', 'kind', 'note'])
+  assert.deepEqual(keysOf(payload), [
+    'giftName',
+    'imagePath',
+    'kind',
+    'note',
+    'sourceFindId',
+    'sourceMode',
+  ])
 })
 
 check('B8 狗不存在 → STORE_REJECTED（外键兜底，不静默写进去）', () => {
@@ -488,19 +621,127 @@ check('B8 狗不存在 → STORE_REJECTED（外键兜底，不静默写进去）
   }, 'STORE_REJECTED')
 })
 
-check('B9 sourceFindId 传了但没落库 —— 真库里也查不到这个键', () => {
+check('B9 真库：来源 find 属于寄件狗 → 落库，mode 取表里的值（不是入参）', () => {
   const db = seedDb()
-  sendGift({
+  insertTrip(db, 'trip_a_1', A, 1)
+  insertFind(db, {
+    id: 'find_a_zhihu',
+    tripId: 'trip_a_1',
+    kind: 'zhihu',
+    sourceMode: 'cache',
+    sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+  })
+  const r = sendGift({
     store: createSqliteStore(db),
     fromDog: A,
     toDog: B,
     giftName: '毛线',
-    sourceFindId: 'find_001',
+    sourceFindId: 'find_a_zhihu',
     idempotencyKey: 'gift-real-src',
     now: T0,
   })
-  const raw = String(exchangeRows(db)[0].payload)
-  assert.equal(raw.includes('sourceFindId'), false)
+  const payload = JSON.parse(String(exchangeRows(db)[0].payload)) as Record<string, unknown>
+  assert.equal(payload.sourceFindId, 'find_a_zhihu')
+  // 表里是 cache，落库就是 cache —— 这个值只可能来自 find 表
+  assert.equal(payload.sourceMode, 'cache')
+  assert.equal(r.exchange.payload.sourceMode, 'cache')
+  // K v4：不新增 exchange 列，来源只活在 payload JSON 里
+  const cols = (
+    db.prepare('PRAGMA table_info(exchange)').all() as Array<{ name: string }>
+  ).map((c) => c.name)
+  assert.equal(cols.includes('source_find_id'), false)
+  assert.equal(cols.includes('source_mode'), false)
+})
+
+check('B9b 真库：来源 find 挂在别的狗那次出行上 → 拒，一行都不落', () => {
+  const db = seedDb()
+  insertTrip(db, 'trip_b_1', B, 1)
+  insertFind(db, {
+    id: 'find_b_zhihu',
+    tripId: 'trip_b_1',
+    kind: 'zhihu',
+    sourceMode: 'live',
+    sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+  })
+  expectCode('', () => {
+    sendGift({
+      store: createSqliteStore(db),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_b_zhihu',
+      idempotencyKey: 'gift-real-cross',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+  assert.equal(exchangeRows(db).length, 0)
+})
+
+check('B9c 真库：来源是 scene（source_mode 为 NULL）→ payload 的 mode 也是 null', () => {
+  const db = seedDb()
+  insertTrip(db, 'trip_a_1', A, 1)
+  insertFind(db, { id: 'find_a_scene', tripId: 'trip_a_1', kind: 'scene', sourceMode: null })
+  sendGift({
+    store: createSqliteStore(db),
+    fromDog: A,
+    toDog: B,
+    giftName: '一颗螺帽',
+    imagePath: '/assets/gen/nut.webp',
+    sourceFindId: 'find_a_scene',
+    idempotencyKey: 'gift-real-scene',
+    now: T0,
+  })
+  const payload = JSON.parse(String(exchangeRows(db)[0].payload)) as Record<string, unknown>
+  assert.equal(payload.sourceFindId, 'find_a_scene')
+  // 带了 imagePath 也不能把档位升成 live —— 契约原话「不因有图片或 URL 改成 live」
+  assert.equal(payload.sourceMode, null)
+})
+
+check('B9d 真库：客户端自称 live 但库里是 cache → 拒', () => {
+  const db = seedDb()
+  insertTrip(db, 'trip_a_1', A, 1)
+  insertFind(db, {
+    id: 'find_a_zhihu',
+    tripId: 'trip_a_1',
+    kind: 'zhihu',
+    sourceMode: 'cache',
+    sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+  })
+  expectCode('', () => {
+    sendGift({
+      store: createSqliteStore(db),
+      fromDog: A,
+      toDog: B,
+      giftName: '毛线',
+      sourceFindId: 'find_a_zhihu',
+      sourceMode: 'live',
+      idempotencyKey: 'gift-real-lie',
+      now: T0,
+    })
+  }, 'PROVENANCE_MISMATCH')
+  assert.equal(exchangeRows(db).length, 0)
+})
+
+check('B9e 真库：重放时来源字段也返回库里那份，不返回本次入参', () => {
+  const db = seedDb()
+  insertTrip(db, 'trip_a_1', A, 1)
+  insertFind(db, {
+    id: 'find_a_zhihu',
+    tripId: 'trip_a_1',
+    kind: 'zhihu',
+    sourceMode: 'fixture',
+    sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+  })
+  const store = createSqliteStore(db)
+  const base = { store, fromDog: A, toDog: B, giftName: '毛线', idempotencyKey: 'gift-real-src-replay', now: T0 }
+  const first = sendGift({ ...base, sourceFindId: 'find_a_zhihu' })
+  // 第二次换一个不存在的来源：幂等键相同，应直接返回库里那条，不会去查新来源
+  const second = sendGift({ ...base, sourceFindId: null })
+  assert.equal(first.inserted, true)
+  assert.equal(second.inserted, false)
+  assert.equal(second.exchange.payload.sourceFindId, 'find_a_zhihu')
+  assert.equal(second.exchange.payload.sourceMode, 'fixture')
+  assert.equal(exchangeRows(db).length, 1)
 })
 
 check('B10 真库重放 → 返回库里那一行（value 取 DB 的 JSON），趟次也是第一次的', () => {

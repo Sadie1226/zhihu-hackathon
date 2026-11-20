@@ -82,6 +82,8 @@ expectOk('1 ex_gift（自带 imagePath: null）', {
     giftName: '一小卷灰蓝色的毛线',
     note: '天气要冷了',
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -95,6 +97,8 @@ expectOk('2 ex_find', {
     findTitle: '修鞋摊旁边的搪瓷缸',
     findExcerpt: '缸沿上磕了两个口，茶还是满的。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -130,6 +134,8 @@ expectOk('5 d1-1 石头→豆子 find 搪瓷缸', {
     findTitle: '修鞋摊旁边的搪瓷缸',
     findExcerpt: '缸沿上磕了两个口，茶还是满的。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -143,6 +149,8 @@ expectOk('6 d1-2 老周→小满 find 老陈没出摊', {
     findTitle: '修鞋的老陈今天没出摊',
     findExcerpt: '工具箱还在，上面压了块砖。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -156,6 +164,8 @@ expectOk('7 d1-3 慢慢→三毛 find 井盖为什么是圆的', {
     findTitle: '为什么井盖是圆的',
     findExcerpt: '因为圆的怎么转都不会掉下去。',
     sourceUrl: 'https://www.zhihu.com/question/000000000/answer/000000000',
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -169,6 +179,8 @@ expectOk('8 d1-4 秋秋→团子 find 河面上的雾', {
     findTitle: '河面上的雾',
     findExcerpt: '七点还没散，对岸的楼只剩轮廓。',
     sourceUrl: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -198,6 +210,8 @@ expectOk('11 d1-7 年糕→麦子 gift 毛线', {
     giftName: '一小卷灰蓝色的毛线',
     note: '天气要冷了',
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -211,6 +225,8 @@ expectOk('12 d1-8 铁蛋→冒冒 gift 石头 note:null', {
     giftName: '一块被水冲圆的石头',
     note: null,
     imagePath: null,
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -244,6 +260,8 @@ expectOk('15 gift 带 imagePath', {
     giftName: '一小卷灰蓝色的毛线',
     note: null,
     imagePath: '/assets/gen/gift-niangao-01.webp',
+    sourceFindId: null,
+    sourceMode: null,
   },
 })
 
@@ -411,7 +429,7 @@ expectCode(
     fromDog: 'dog_a1',
     toDog: 'dog_b1',
     kind: 'gift',
-    payload: { kind: 'gift', giftName: '   ', note: null, imagePath: null },
+    payload: { kind: 'gift', giftName: '   ', note: null, imagePath: null, sourceFindId: null, sourceMode: null },
   },
   'EMPTY_STRING',
 )
@@ -428,7 +446,8 @@ expectCode(
   'WRONG_TYPE',
 )
 
-// 26. sourceUrl 不是知乎 —— 原方案（sourceMode live + sourceUrl null）要等 c 批
+// 26. sourceUrl 不是知乎 —— 11-20：K v4 明确「sourceUrl 不是来源证明」，
+//     所以它只管格式（必须是指向知乎的 https），不参与 sourceMode 推断。
 expectCode(
   '26 sourceUrl 不是知乎域名',
   {
@@ -440,6 +459,8 @@ expectCode(
       findTitle: '一条不该有的链接',
       findExcerpt: null,
       sourceUrl: 'https://example.com/something',
+      sourceFindId: null,
+      sourceMode: null,
     },
   },
   'WRONG_TYPE',
@@ -508,6 +529,206 @@ console.log('\n【normalize】形状转换（不做校验）')
   pass++
   console.log('  ✅ countChars 只去空白，标点算一个字')
 }
+
+// ===========================================================================
+// 【K v4】来源字段的形状（find / gift）
+// ===========================================================================
+//
+// 只测**形状**。归属（这条 find 是不是寄件狗的）、以及「声称的 mode 是否等于
+// 库里那一行」，要查库才知道，纯函数做不了 —— 那些在 gift.test.ts / meet.test.ts
+// 里用真 schema 建库测。
+//
+// 契约出处：contracts/api.md「K v4：交换来源（仅 find / gift）」那张表。
+
+console.log('\n【K v4】来源字段的形状')
+
+const ZHIHU_URL = 'https://www.zhihu.com/question/000000000/answer/000000000'
+
+// 35. 正例：指向一条真实发现，档位 live
+expectOk('35 find 有来源 + live', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'find',
+  payload: {
+    kind: 'find',
+    findTitle: '为什么井盖是圆的',
+    findExcerpt: '因为圆的怎么转都不会掉下去。',
+    sourceUrl: ZHIHU_URL,
+    sourceFindId: 'find_a1_1',
+    sourceMode: 'live',
+  },
+})
+
+// 36. 正例：来源是自己捡到的一个场景 —— scene/moment 的档位**必须**是 null，
+//     不能因为带了图或链接就标成 live（契约原话）。
+expectOk('36 gift 来源是 scene → mode 为 null', {
+  fromDog: 'dog_a1',
+  toDog: 'dog_b1',
+  kind: 'gift',
+  payload: {
+    kind: 'gift',
+    giftName: '一块被水冲圆的石头',
+    note: null,
+    imagePath: '/assets/gen/stone.webp',
+    sourceFindId: 'find_a1_2',
+    sourceMode: null,
+  },
+})
+
+// 37. 反例：没有来源却声称 live —— 凭空造出处，正是不变量四要拦的
+expectCode(
+  '37 无来源却声明 live',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '一小卷毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: null,
+      sourceMode: 'live',
+    },
+  },
+  'PROVENANCE_MISMATCH',
+)
+
+// 38. 反例：档位不在三值里
+expectCode(
+  '38 sourceMode 非法值',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceFindId: 'find_a1_1',
+      sourceMode: 'realtime',
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 39. 反例：空串 id —— 要么给真 id，要么给 null，别给 ''
+expectCode(
+  '39 sourceFindId 空串',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: '',
+      sourceMode: null,
+    },
+  },
+  'EMPTY_STRING',
+)
+
+// 40. 反例：带首尾空格 —— 会被当成另一个 id，查库查不到，不如当场拒
+expectCode(
+  '40 sourceFindId 带前导空格',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: ' find_a1_1',
+      sourceMode: null,
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 41. 反例：类型不对
+expectCode(
+  '41 sourceFindId 是数字',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'gift',
+    payload: {
+      kind: 'gift',
+      giftName: '毛线',
+      note: null,
+      imagePath: null,
+      sourceFindId: 123,
+      sourceMode: null,
+    },
+  },
+  'WRONG_TYPE',
+)
+
+// 42. 反例：只给 id 不给 mode —— 「新 payload 必须两键俱全」
+expectCode(
+  '42 只有 sourceFindId，缺 sourceMode',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceFindId: 'find_a1_1',
+    },
+  },
+  'MISSING_FIELD',
+)
+
+// 43. 反例：只给 mode 不给 id
+expectCode(
+  '43 只有 sourceMode，缺 sourceFindId',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'find',
+    payload: {
+      kind: 'find',
+      findTitle: '井盖',
+      findExcerpt: null,
+      sourceUrl: null,
+      sourceMode: null,
+    },
+  },
+  'MISSING_FIELD',
+)
+
+// 44/45. 反例：greeting 和捎话都不许挂来源（契约原话：
+//   「greeting/捎话不能借此夹带来源、私人内容或额外身份信息」）
+expectCode(
+  '44 greeting 带 sourceFindId',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'greeting',
+    payload: { kind: 'greeting', line: '我这边晴。', weather: '晴', sourceFindId: 'find_a1_1' },
+  },
+  'UNKNOWN_KEY',
+)
+
+expectCode(
+  '45 捎话带 sourceMode',
+  {
+    fromDog: 'dog_a1',
+    toDog: 'dog_b1',
+    kind: 'co_owner_message',
+    payload: { kind: 'co_owner_message', message: '楼下的桂花开了', fromOwnerOf: 'dog_a1', sourceMode: 'live' },
+  },
+  'UNKNOWN_KEY',
+)
 
 // ===========================================================================
 // 汇总

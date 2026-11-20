@@ -61,6 +61,24 @@ export interface TripRow {
   seq: number
 }
 
+/**
+ * 一条发现的**可信来源**视图。K v4 的 `sourceFindId` / `sourceMode` 只能由它派生。
+ *
+ * 注意 `dogId` 不是 `find` 表的列 —— `find` 只挂 `trip_id`，归属要
+ * `JOIN trip ON t.id = f.trip_id` 才拿得到。api.md K v4 那节给的就是这句 JOIN，
+ * 适配器必须照它实现，**不能由调用方传 dogId 进来**，否则「来源属于寄件狗」就成了
+ * 一句由客户端自证的废话。
+ */
+export interface FindSource {
+  id: string
+  /** 来源 Find 所属的狗（经 trip 反查）。 */
+  dogId: string
+  /** `find.source_mode`：`live` / `cache` / `fixture`，scene/moment 必为 null。 */
+  sourceMode: SourceMode | null
+}
+
+export type SourceMode = 'live' | 'cache' | 'fixture'
+
 export interface SocialStore {
   /** 写一条 exchange。同 id 再来返回 'duplicate'，不覆盖、不报错 —— 幂等。 */
   insertExchange(row: ExchangeRow): 'inserted' | 'duplicate'
@@ -124,6 +142,19 @@ export interface SocialStore {
   getTrip(tripId: string): TripRow | null
 
   /**
+   * 按 id 读一条发现的来源（含归属与 `source_mode`）。不存在返回 null。
+   *
+   * **这是 K v4 唯一允许的来源入口。** c 的 api.md 写死了两句：
+   *   「sourceMode 必须从查询结果取，客户端/模型不得自行指定」
+   *   「查不到或 dogId 不等于 fromDog 则拒绝」
+   * 所以 `gift.ts` / `meet.ts` 不许从入参拿 `dogId` 或 `sourceMode` 拼一个有模有样的
+   * source 去自证清白 —— 只认这里读出来的。
+   *
+   * 只读，不写状态，Mock 不会因此获得投递权。
+   */
+  getFindSource(findId: string): FindSource | null
+
+  /**
    * 把一段写操作包进一个事务。抛错则整体回滚。
    *
    * 为什么这条必须由 store 提供：`meet()` 的语义是「关系 + 交换要么都成、要么都不成」。
@@ -173,6 +204,13 @@ export interface MemoryStoreOptions {
   dogs?: string[]
   /** 预置的出行。相遇校验要用（存在 / 归属 / 状态）。 */
   trips?: Array<{ id: string; dogId: string; seq: number; status: string }>
+  /**
+   * 预置的发现来源。K v4 的来源校验要用。
+   *
+   * 内存版里 `dogId` 是**给 Mock 省一次 JOIN** 的，真库里它由 `find⋈trip` 算出。
+   * 两者语义必须一致：都是「这条 find 属于哪只狗」，不是调用方声明的。
+   */
+  finds?: Array<{ id: string; dogId: string; sourceMode: SourceMode | null }>
 }
 
 export interface MemoryStore extends SocialStore {
@@ -188,6 +226,7 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
   const samples = new Set(opts.samples ?? [])
   const dogs = opts.dogs ? new Set(opts.dogs) : null
   const trips = new Map((opts.trips ?? []).map((t) => [t.id, { ...t }]))
+  const finds = new Map((opts.finds ?? []).map((f) => [f.id, { ...f }]))
 
   /** 事务回滚用的快照。只存会被写坏的两张「表」。 */
   const snapshot = () => ({
@@ -265,6 +304,11 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
 
     getTrip(tripId) {
       const hit = trips.get(tripId)
+      return hit ? { ...hit } : null
+    },
+
+    getFindSource(findId) {
+      const hit = finds.get(findId)
       return hit ? { ...hit } : null
     },
 

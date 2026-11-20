@@ -15,7 +15,13 @@
 
 import type { DatabaseSync } from 'node:sqlite'
 import { pairKey, relationId } from './store.ts'
-import type { ExchangeRow, RelationRow, RelationUpsertResult, SocialStore } from './store.ts'
+import type {
+  ExchangeRow,
+  FindSource,
+  RelationRow,
+  RelationUpsertResult,
+  SocialStore,
+} from './store.ts'
 
 export function createSqliteStore(db: DatabaseSync): SocialStore {
   return {
@@ -144,6 +150,32 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
         dogId: String(row.dog_id),
         status: String(row.status),
         seq: Number(row.seq),
+      }
+    },
+
+    /**
+     * 来源查询 —— 逐字用 api.md K v4 那节给的 SQL：
+     *
+     *   SELECT f.id, t.dog_id AS dogId, f.source_mode AS sourceMode
+     *   FROM find f JOIN trip t ON t.id = f.trip_id
+     *   WHERE f.id = :sourceFindId;
+     *
+     * `find` 表没有 dog_id，「来源属于谁」只能经 trip 反查。**不要**把 dogId 当入参，
+     * 那就是让客户端自己声明归属。
+     */
+    getFindSource(findId) {
+      const row = db
+        .prepare(
+          `SELECT f.id AS id, t.dog_id AS dogId, f.source_mode AS sourceMode
+             FROM find f JOIN trip t ON t.id = f.trip_id
+            WHERE f.id = ?`,
+        )
+        .get(findId) as { id: string; dogId: string; sourceMode: string | null } | undefined
+      if (!row) return null
+      return {
+        id: String(row.id),
+        dogId: String(row.dogId),
+        sourceMode: row.sourceMode === null ? null : (String(row.sourceMode) as FindSource['sourceMode']),
       }
     },
 

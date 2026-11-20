@@ -191,6 +191,48 @@ try {
 }
 
 // ===========================================================================
+step('7c｜K v4 来源：真 find 落库 / 假来源 / 跨狗 / 谎报档位 全部分开验')
+
+// 一条真 find，挂在 dog_a 的 trip_a1 上（find 表没有 dog_id，归属靠 trip 反查）
+db.prepare(
+  `INSERT INTO find (id,trip_id,kind,title,excerpt,source_url,source_mode,created_at)
+   VALUES ('find_a_zhihu','trip_a1','zhihu','雨天为什么有土腥味','放线菌','https://www.zhihu.com/question/1','live',?)`,
+).run(T1)
+// dog_b 也有一条，用来验「借别人的发现当自己的出处」
+db.prepare(
+  `INSERT INTO find (id,trip_id,kind,title,excerpt,source_url,source_mode,created_at)
+   VALUES ('find_b_zhihu','trip_b1','zhihu','井盖为什么是圆的','因为不会掉下去','https://www.zhihu.com/question/2','cache',?)`,
+).run(T1)
+
+const g3 = sendGift({
+  store, fromDog: 'dog_a', toDog: 'dog_b',
+  idempotencyKey: 'gift-src-real',
+  giftName: '一小卷灰蓝色的毛线',
+  sourceFindId: 'find_a_zhihu',
+  now: T1,
+})
+const src = JSON.parse(one<{ payload: string }>('SELECT payload FROM exchange WHERE id=?', g3.id).payload)
+console.log('真来源   sourceFindId =', src.sourceFindId, ' sourceMode =', src.sourceMode, '← 库里是 live，调用方没传 mode，由库派生')
+
+const tryGift = (label: string, extra: Record<string, unknown>) => {
+  try {
+    sendGift({ store, fromDog: 'dog_a', toDog: 'dog_b', giftName: '毛线', now: T1, ...(extra as never) })
+    console.log(label, '居然写进去了（错）')
+  } catch (e: unknown) {
+    console.log(label, '被拒：', (e as { code?: string }).code)
+  }
+}
+tryGift('假来源   ', { sourceFindId: 'find_ghost', idempotencyKey: 'gift-src-ghost' })
+tryGift('跨狗     ', { sourceFindId: 'find_b_zhihu', idempotencyKey: 'gift-src-cross' })
+tryGift('谎报档位 ', { sourceFindId: 'find_a_zhihu', sourceMode: 'cache', idempotencyKey: 'gift-src-lie' })
+
+// step 4 那条 incoming find 没给来源 —— 键必须仍在，值为 null
+const noSrc = JSON.parse(
+  one<{ payload: string }>(`SELECT payload FROM exchange WHERE kind='find' LIMIT 1`).payload,
+)
+console.log('无来源 find 的两键 =', JSON.stringify(noSrc.sourceFindId), '/', JSON.stringify(noSrc.sourceMode), '← 键必须在，值必须是 null')
+
+// ===========================================================================
 step('8｜最后的表里到底有什么')
 console.log('\n[exchange]')
 const rows = db

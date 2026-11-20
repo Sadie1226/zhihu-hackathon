@@ -93,10 +93,33 @@ function insertTrip(
   ).run(id, dogId, seq, opts.status ?? 'running', T0, T0, opts.endedAt ?? null)
 }
 
+function insertFind(
+  db: DatabaseSync,
+  opts: {
+    id: string
+    tripId: string
+    kind: 'zhihu' | 'scene' | 'moment'
+    sourceMode: 'live' | 'cache' | 'fixture' | null
+  },
+): void {
+  // find 表没有 dog_id：归属由 trip_id 决定，这就是 K v4 要 JOIN 的原因
+  db.prepare(
+    `INSERT INTO find (id, trip_id, kind, title, excerpt, source_url, source_mode, created_at)
+     VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`,
+  ).run(
+    opts.id,
+    opts.tripId,
+    opts.kind,
+    `发现 ${opts.id}`,
+    opts.kind === 'zhihu' ? 'https://www.zhihu.com/question/000000000/answer/000000000' : null,
+    opts.sourceMode,
+    T0,
+  )
+}
+
 function one(db: DatabaseSync, sql: string, ...params: unknown[]): number {
   const row = db.prepare(sql).get(...(params as never[])) as { n?: number; c?: number } | undefined
-  return Number(row?.n ?? row?.c ?? 0)
-}
+  return Number(row?.n ?? row?.c ?? 0)}
 
 function countRows(db: DatabaseSync, table: string): number {
   return one(db, `SELECT COUNT(*) AS n FROM ${table}`)
@@ -295,7 +318,14 @@ check('同一幂等键写两次 → 库里仍 1 条，第二次 inserted=false',
     fromDog: 'dog_a',
     toDog: 'dog_b',
     kind: 'gift' as const,
-    payload: { kind: 'gift', giftName: '一小卷灰蓝色的毛线', note: '天气要冷了', imagePath: null },
+    payload: {
+      kind: 'gift',
+      giftName: '一小卷灰蓝色的毛线',
+      note: '天气要冷了',
+      imagePath: null,
+      sourceFindId: null,
+      sourceMode: null,
+    },
   }
   const first = recordExchange(storeOf(db), draft, { idempotencyKey: 'gift-1', createdAt: T0 })
   const second = recordExchange(storeOf(db), draft, { idempotencyKey: 'gift-1', createdAt: T0 })
@@ -350,7 +380,7 @@ check('重放返回库里的事实，不返回本次 draft —— 同一个键�
   db.close()
 })
 
-check('payload 带未批字段 sourceFindId → UNKNOWN_KEY，写不进去', () => {
+check('find 指向一个不存在的来源 → PROVENANCE_MISMATCH，写不进去', () => {
   const db = freshDb()
   insertDog(db, 'dog_a')
   insertDog(db, 'dog_b')
@@ -368,13 +398,102 @@ check('payload 带未批字段 sourceFindId → UNKNOWN_KEY，写不进去', () 
             findTitle: '修鞋摊旁边的搪瓷缸',
             findExcerpt: '缸沿上磕了两个口。',
             sourceUrl: null,
-            sourceFindId: 'ex_gift',
+            // K v4 之前这里是 UNKNOWN_KEY（字段未批）；现在字段合法，但出处必须真实
+            sourceFindId: 'find_ghost',
+            sourceMode: null,
           },
         },
         { idempotencyKey: 'k' },
       ),
-    'UNKNOWN_KEY',
+    'PROVENANCE_MISMATCH',
   )
+  assert.equal(countRows(db, 'exchange'), 0)
+  db.close()
+})
+
+check('outgoing find 指向自己的真实发现 → 落库，mode 取表里的值', () => {
+  const db = seedTwoDogs()
+  insertFind(db, { id: 'find_owner_1', tripId: 'trip_owner_1', kind: 'zhihu', sourceMode: 'live' })
+  const r = meet({
+    store: storeOf(db),
+    dogId: 'dog_owner',
+    otherDogId: 'dog_seed_07',
+    tripId: 'trip_owner_1',
+    now: T0,
+    outgoing: {
+      kind: 'find',
+      payload: {
+        kind: 'find',
+        findTitle: '搪瓷缸',
+        findExcerpt: '茶还是满的。',
+        sourceUrl: null,
+        sourceFindId: 'find_owner_1',
+        sourceMode: null,
+      },
+    },
+  })
+  assert.equal(r.exchanges.length, 1)
+  assert.equal(r.exchanges[0].exchange.payload.sourceFindId, 'find_owner_1')
+  assert.equal(r.exchanges[0].exchange.payload.sourceMode, 'live')
+  assert.equal(countRows(db, 'exchange'), 1)
+  db.close()
+})
+
+check('incoming find 的来源属于对方 → 通过（归属按 fromDog=otherDogId 判）', () => {
+  const db = seedTwoDogs()
+  insertFind(db, { id: 'find_seed_1', tripId: 'trip_seed_1', kind: 'moment', sourceMode: null })
+  const r = meet({
+    store: storeOf(db),
+    dogId: 'dog_owner',
+    otherDogId: 'dog_seed_07',
+    tripId: 'trip_owner_1',
+    now: T0,
+    incoming: {
+      kind: 'find',
+      payload: {
+        kind: 'find',
+        findTitle: '河边的一块玻璃',
+        findExcerpt: null,
+        sourceUrl: null,
+        sourceFindId: 'find_seed_1',
+        sourceMode: null,
+      },
+    },
+  })
+  assert.equal(r.exchanges.length, 1)
+  assert.equal(r.exchanges[0].exchange.fromDog, 'dog_seed_07')
+  assert.equal(r.exchanges[0].exchange.payload.sourceFindId, 'find_seed_1')
+  db.close()
+})
+
+check('incoming find 却拿发起狗的发现当来源 → 拒，且关系一起回滚', () => {
+  const db = seedTwoDogs()
+  // find_owner_1 挂在 dog_owner 的 trip 上，但这条是「对方带给我的东西」
+  insertFind(db, { id: 'find_owner_1', tripId: 'trip_owner_1', kind: 'zhihu', sourceMode: 'live' })
+  expectCode(
+    '',
+    () =>
+      meet({
+        store: storeOf(db),
+        dogId: 'dog_owner',
+        otherDogId: 'dog_seed_07',
+        tripId: 'trip_owner_1',
+        now: T0,
+        incoming: {
+          kind: 'find',
+          payload: {
+            kind: 'find',
+            findTitle: '搪瓷缸',
+            findExcerpt: null,
+            sourceUrl: null,
+            sourceFindId: 'find_owner_1',
+            sourceMode: null,
+          },
+        },
+      }),
+    'PROVENANCE_MISMATCH',
+  )
+  assert.equal(countRows(db, 'relation'), 0)
   assert.equal(countRows(db, 'exchange'), 0)
   db.close()
 })
@@ -605,7 +724,7 @@ check('相遇带 gift → KIND_NOT_IN_MEET（礼物归 gift.ts）', () => {
   db.close()
 })
 
-check('事务性：incoming 非法 → relation 也不留（全回滚）', () => {
+check('事务性：incoming 来源查不到 → relation 也不留（全回滚）', () => {
   const db = seedTwoDogs()
   expectCode(
     '',
@@ -617,7 +736,7 @@ check('事务性：incoming 非法 → relation 也不留（全回滚）', () =>
         tripId: 'trip_owner_1',
         now: T0,
         outgoing: { kind: 'greeting', payload: { kind: 'greeting', line: '我这边晴。', weather: '晴' } },
-        // sourceFindId 未批，会被 UNKNOWN_KEY 拒
+        // 来源 id 不存在 → PROVENANCE_MISMATCH。outgoing 合法，但整段必须回滚
         incoming: {
           kind: 'find',
           payload: {
@@ -625,11 +744,12 @@ check('事务性：incoming 非法 → relation 也不留（全回滚）', () =>
             findTitle: '搪瓷缸',
             findExcerpt: '茶还是满的。',
             sourceUrl: null,
-            sourceFindId: 'x',
+            sourceFindId: 'find_ghost',
+            sourceMode: null,
           },
         },
       }),
-    'UNKNOWN_KEY',
+    'PROVENANCE_MISMATCH',
   )
   assert.equal(countRows(db, 'relation'), 0, '关系被留下了 —— 事务没回滚')
   assert.equal(countRows(db, 'exchange'), 0, '交换被留下了 —— 事务没回滚')

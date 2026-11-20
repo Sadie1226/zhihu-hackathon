@@ -29,9 +29,10 @@
  */
 
 import { createHash } from 'node:crypto'
+import { resolveProvenance } from './provenance.ts'
 import { validate } from './rules.ts'
 import type { ExchangeDraft, ExchangeKind, NormalizedExchange, RuleCode } from './rules.ts'
-import type { RelationRow, SocialStore } from './store.ts'
+import type { RelationRow, SocialStore, SourceMode } from './store.ts'
 
 // ===========================================================================
 // 一、错误
@@ -170,14 +171,45 @@ export function deriveExchangeId(
 }
 
 /**
+ * K v4：把来源声明换成库证明过的值，**在写入边界上做**。
+ *
+ * 为什么不放在 `meet()` 的组装层：`recordExchange` 是独立导出的写入入口，
+ * 只要它自己不查，任何直接调用都能带着假来源落库 —— 11-20 写测试时就是这样
+ * 被抓到的（`meet` 里查了，`recordExchange` 没查，一条用例直接穿过去）。
+ *
+ * 只处理 find / gift。greeting 原样返回：它没有来源字段，K v4 也不许它有。
+ */
+function withResolvedProvenance(store: SocialStore, draft: ExchangeDraft): unknown {
+  const raw = draft.payload
+  if (draft.kind !== 'find' && draft.kind !== 'gift') return raw
+  // 不是对象就原样交给 `rules.ts` 去报 WRONG_TYPE / MISSING_FIELD。
+  // 在这里顺手造一个 {} 会让错误码变成「缺字段」，掩盖真正的问题（payload 根本不是对象）。
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return raw
+
+  const payload = raw as Record<string, unknown>
+  const r = resolveProvenance(
+    store,
+    draft.fromDog,
+    payload.sourceFindId as string | null | undefined,
+    payload.sourceMode as SourceMode | null | undefined,
+  )
+  if (!r.ok) throw new SocialWriteError(r.code, r.reason, r.path)
+
+  return { ...payload, sourceFindId: r.sourceFindId, sourceMode: r.sourceMode }
+}
+
+/**
  * 写一条 exchange。合法性由 `rules.ts` 全权判断，本函数不重复实现白名单。
+ *
+ * 只有一处例外：**来源两键必须先查库补齐，再交给 `rules.ts` 校验**（K v4 的次序要求）。
+ * 见 `withResolvedProvenance`。
  */
 export function recordExchange(
   store: SocialStore,
   draft: ExchangeDraft,
   opts: RecordOptions = {},
 ): RecordResult {
-  const verdict = validate(draft)
+  const verdict = validate({ ...draft, payload: withResolvedProvenance(store, draft) })
   if (!verdict.ok) {
     throw new SocialWriteError(verdict.code, verdict.reason, verdict.path)
   }
@@ -487,7 +519,13 @@ export function meet(input: MeetInput): MeetResult {
       exchanges.push(
         recordExchange(
           store,
-          { fromDog: dogId, toDog: otherDogId, kind: input.outgoing.kind, payload: input.outgoing.payload },
+          {
+            fromDog: dogId,
+            toDog: otherDogId,
+            kind: input.outgoing.kind,
+            // 来源核查在 recordExchange 里做（写入边界），这里只透传。
+            payload: input.outgoing.payload,
+          },
           { idempotencyKey: `${tripId}:out`, createdAt: when },
         ),
       )
@@ -496,7 +534,14 @@ export function meet(input: MeetInput): MeetResult {
       exchanges.push(
         recordExchange(
           store,
-          { fromDog: otherDogId, toDog: dogId, kind: input.incoming.kind, payload: input.incoming.payload },
+          {
+            fromDog: otherDogId,
+            toDog: dogId,
+            kind: input.incoming.kind,
+            // 对方带来的东西，`fromDog` 是对方 —— recordExchange 按它查归属，
+            // 所以「别人的发现冒充自己的出处」在这里就被拦住了。
+            payload: input.incoming.payload,
+          },
           { idempotencyKey: `${tripId}:in`, createdAt: when },
         ),
       )
@@ -507,23 +552,10 @@ export function meet(input: MeetInput): MeetResult {
 }
 
 // ===========================================================================
-// 八、TODO —— 等 c 答复的两处，别在别处临时绕
+// 八、TODO —— 还悬着的一处
 // ===========================================================================
 
-/**
- * TODO(等契约合并) `find.payload.sourceFindId` + `sourceMode`
- *
- * 11-19 晚 c 已正式批准：`sourceFindId` 进 `find`、`gift` 两种 payload，同时同步
- * `sourceMode`（非知乎发现允许 null）；`fromDog` 是发送狗、`sourceFindId` 是关联的旅途发现，
- * 两者不能混淆。
- *
- * 但 c 同时说「**D 今天先按现有字段写业务，不要自行修改 K**」——契约增补由 c 改
- * `types.ts` / `api.md` / `fixtures`，合并之后 d 才动 `rules.ts` 的白名单。
- *
- * 所以本文件现在仍然：**不硬编码、也不偷偷塞键**。带 `sourceFindId` 的 payload 会被
- * `rules.ts` 的 `UNKNOWN_KEY` 拒 —— 这是对的。c 的增补合并后，只需把
- * `rules.ts` 的 `PENDING_KEYS.find` 挪到 `PAYLOAD_KEYS.find`，这里一个字都不用改。
- */
+/** `find.payload` 的 `sourceFindId` / `sourceMode` 已于 11-20 激活，见 `withResolvedProvenance`。 */
 
 /**
  * TODO(等 c) owner 归属
