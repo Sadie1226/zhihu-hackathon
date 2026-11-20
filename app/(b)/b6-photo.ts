@@ -177,13 +177,32 @@ function webpIntegrity(bytes: Uint8Array): boolean {
   if (bytes.length < 20 || ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 12) !== 'WEBP') {
     return false
   }
-  const declared = ((bytes[4] << 24) >>> 0) + (bytes[5] << 16) + (bytes[6] << 8) + bytes[7]
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  // RIFF and every WebP chunk length are little-endian, unlike PNG chunk lengths.
+  const declared = view.getUint32(4, true)
   if (declared + 8 !== bytes.length) return false // 截断或尾部多余
-  const format = ascii(bytes, 12, 16)
-  if (format !== 'VP8X' && format !== 'VP8 ' && format !== 'VP8L') return false
-  const chunkLen = ((bytes[16] << 24) >>> 0) + (bytes[16 + 1] << 16)
-    + (bytes[16 + 2] << 8) + bytes[16 + 3]
-  return chunkLen > 0 && 20 + chunkLen <= bytes.length
+  let offset = 12
+  let image = false
+  while (offset + 8 <= bytes.length) {
+    const format = ascii(bytes, offset, offset + 4)
+    const chunkLen = view.getUint32(offset + 4, true)
+    const end = offset + 8 + chunkLen
+    const paddedEnd = end + (chunkLen % 2)
+    if (end > bytes.length || paddedEnd > bytes.length) return false
+    if (format === 'VP8X' && chunkLen !== 10) return false
+    if (format === 'VP8 ') {
+      if (chunkLen < 10 || bytes[offset + 11] !== 0x9d ||
+          bytes[offset + 12] !== 0x01 || bytes[offset + 13] !== 0x2a) return false
+      image = true
+    }
+    if (format === 'VP8L') {
+      if (chunkLen < 5 || bytes[offset + 8] !== 0x2f) return false
+      image = true
+    }
+    offset = paddedEnd
+  }
+  // VP8X describes a canvas; it cannot stand in for an actual encoded image.
+  return image && offset === bytes.length
 }
 
 export function validatePhotoIntegrity(bytes: Uint8Array, mime: PhotoMime): boolean {

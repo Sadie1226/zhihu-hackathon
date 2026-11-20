@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { spawn, execFileSync } from 'node:child_process'
-import { mkdirSync, appendFileSync, writeFileSync, existsSync, unlinkSync, rmdirSync, renameSync } from 'node:fs'
+import { mkdirSync, appendFileSync, writeFileSync, existsSync, unlinkSync, rmdirSync, renameSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { openDatabase } from '../../lib/db/bootstrap.ts'
 import { createFindStore } from '../../lib/trips/finds.ts'
 import { checkPersonalityTags } from '../../contracts/types.ts'
+import { inspectPhoto } from '../../app/(b)/b6-photo.ts'
 const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
 const mode = process.env.AUDIT_MODE || 'wiring'
@@ -140,13 +141,73 @@ try {
     assert.equal(await page.getByText('未关联本次旅途的旧邀请',{exact:true}).count(),0)
     await page.getByRole('textbox',{name:'回一句（≤200 字）'}).fill('我看到了，先记在这里。')
     await page.getByRole('button',{name:'回一句',exact:true}).click()
-    await page.getByText('这趟没有待回应的邀请，已有经历仍会留着。',{exact:true}).waitFor()
+    await page.getByText('这一条已经回过了，这里暂时没有别的邀请。',{exact:true}).waitFor()
     const saved=db.prepare('SELECT id FROM reply WHERE invitation_id=?').get('audit-current')
     assert.ok(saved)
     const repeat=await contexts[0].request.post(base+'/api/replies',{data:{invitationId:'audit-current',text:'重复点击'}})
     assert.equal(repeat.status(),200);assert.equal((await repeat.json()).reply.id,saved.id)
     assert.equal(db.prepare('SELECT count(*) n FROM reply WHERE invitation_id=?').get('audit-current').n,1)
     mark('trip-scoped-invitation-text-reply-durable-and-idempotent')
+    // Exercise the actual browser compressor and actual upload/reply handlers.
+    db.prepare('INSERT INTO invitation(id,dog_id,text,based_on_find_id,created_at) VALUES(?,?,?,?,?)')
+      .run('audit-photo',dogs[0].id,'显式照片联调：愿意的话留一张图，不拍也没关系。',find.id,now)
+    await page.reload()
+    await page.getByText('显式照片联调：愿意的话留一张图，不拍也没关系。',{exact:true}).waitFor()
+    const photo=Buffer.from(await page.evaluate(()=>{
+      const canvas=document.createElement('canvas');canvas.width=3000;canvas.height=2000
+      const context=canvas.getContext('2d');context.fillStyle='#75a66c';context.fillRect(0,0,3000,2000)
+      return canvas.toDataURL('image/png').split(',')[1]
+    }),'base64')
+    await page.locator('input[type="file"]').setInputFiles({name:'synthetic-large.png',mimeType:'image/png',buffer:photo})
+    await page.getByRole('textbox',{name:'回一句（≤200 字）'}).fill('显式测试照片，保留这段文字。')
+    let releaseUpload, uploadSeen
+    const waitingUpload=new Promise(resolve=>{uploadSeen=resolve})
+    await page.route('**/api/uploads/photo',async route=>{
+      uploadSeen();await new Promise(resolve=>{releaseUpload=resolve});await route.abort().catch(()=>{})
+    },{times:1})
+    await page.getByRole('button',{name:'回一句',exact:true}).click()
+    await waitingUpload
+    await page.getByRole('button',{name:'取消上传',exact:true}).click()
+    releaseUpload()
+    await page.getByRole('button',{name:'回一句',exact:true}).waitFor()
+    assert.equal(db.prepare('SELECT count(*) n FROM reply WHERE invitation_id=?').get('audit-photo').n,0)
+    assert.equal(await page.getByRole('textbox',{name:'回一句（≤200 字）'}).inputValue(),'显式测试照片，保留这段文字。')
+    mark('photo-upload-cancel-preserves-text-without-reply')
+    let uploadCount=0
+    page.on('request',request=>{if(request.url()===base+'/api/uploads/photo') uploadCount++})
+    await page.route('**/api/replies',route=>route.fulfill({status:503,json:{code:'NETWORK'}}),{times:1})
+    await page.getByRole('button',{name:'回一句',exact:true}).click()
+    await page.getByRole('alert').filter({hasText:'这次没回应成功，文字和图都还在，可以再试一次。'}).waitFor()
+    assert.equal(uploadCount,1)
+    assert.equal(db.prepare('SELECT count(*) n FROM reply WHERE invitation_id=?').get('audit-photo').n,0)
+    await page.getByRole('button',{name:'重试',exact:true}).click()
+    await page.getByText('这一条已经回过了，这里暂时没有别的邀请。',{exact:true}).waitFor()
+    assert.equal(uploadCount,1,'reply retry must reuse its already uploaded photo')
+    const photoReply=db.prepare('SELECT * FROM reply WHERE invitation_id=?').get('audit-photo')
+    assert.ok(photoReply);assert.equal(photoReply.kind,'both')
+    const storedPhoto=readFileSync(path.join(out,'uploads',photoReply.photo_url.replace(/^\/uploads\//,'')))
+    const info=inspectPhoto(storedPhoto)
+    assert.equal(info.mime,'image/webp');assert.equal(info.width,1600);assert.ok(info.height<=1600)
+    const repeatPhoto=await contexts[0].request.post(base+'/api/replies',{data:{invitationId:'audit-photo',text:'再次重放'}})
+    assert.equal(repeatPhoto.status(),200);assert.equal((await repeatPhoto.json()).reply.id,photoReply.id)
+    assert.equal((await contexts[1].request.post(base+'/api/replies',{data:{invitationId:'audit-photo',text:'越权'}})).status(),404)
+    mark('browser-photo-compression-upload-reply-retry-idempotent-and-owned',{width:info.width,mime:info.mime})
+    const fileCount=readdirSync(path.join(out,'uploads')).length
+    const small=Buffer.from(await page.evaluate(()=>{
+      const canvas=document.createElement('canvas');canvas.width=20;canvas.height=20
+      canvas.getContext('2d').fillRect(0,0,20,20);return canvas.toDataURL('image/png').split(',')[1]
+    }),'base64')
+    for(const [label,bytes,cookie,expected] of [
+      ['forged',small,'zhihu_session='+ 'z'.repeat(43),401],
+      ['truncated',small.subarray(0,24),null,415],
+    ]) {
+      const options={multipart:{file:{name:'fixture.png',mimeType:'image/png',buffer:bytes}}}
+      if(cookie)options.headers={cookie}
+      const upload=await contexts[0].request.post(base+'/api/uploads/photo',options)
+      assert.equal(upload.status(),expected,label)
+    }
+    assert.equal(readdirSync(path.join(out,'uploads')).length,fileCount)
+    mark('invalid-upload-session-and-truncated-image-rejected-without-files')
     const after=db.prepare('SELECT status FROM trip WHERE id=?').get(tripId)
     assert.equal(after.status,'done')
     mark('read-page-does-not-start-or-finish-trips')
@@ -182,8 +243,8 @@ try {
     await page.goto(base+'/trip')
     await page.getByRole('button',{name:'重读发现',exact:true}).waitFor()
     assert.equal(await page.getByText('这次没有可展示的发现。',{exact:true}).count(),0)
-    await page.getByText('分享读取尚未接入。',{exact:true}).waitFor()
-    mark('find-failure-not-empty-share-unavailable-independent')
+    await page.getByText('这次还没有留下分享。',{exact:true}).waitFor()
+    mark('find-failure-not-empty-share-true-null-independent')
     await page.unroute('**/api/trips/audit_trip/finds')
     await page.getByRole('button',{name:'重读发现',exact:true}).click()
     await page.getByRole('heading',{name:'显式联调示例',exact:true}).waitFor()
@@ -246,7 +307,7 @@ try {
     await page.getByRole('button',{name:'卸载角色夹具',exact:true}).click()
     assert.equal(await page.evaluate(()=>window.portEvents.some(item=>item.event.kind==='actor'&&item.aborted)),true)
     mark('feedback-reduced-motion-and-unmount-cancellation')
-    result.knownGaps.push('B photo compression/cancel/retry/valid session/damaged bytes remain pending','Message reader, formal OAuth/owner/revocation, formal visual assets and E routes remain unbound')
+    result.knownGaps.push('formal OAuth/owner/revocation, formal visual assets and E routes remain unbound; chat is an explicit local fixture')
   }
   const before=await contexts[0].cookies()
   await contexts[0].request.post(base+'/api/auth/logout',{data:{}})

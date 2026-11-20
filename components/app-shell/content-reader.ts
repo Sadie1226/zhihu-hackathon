@@ -1,4 +1,4 @@
-import type { Find } from '../../contracts/types.ts'
+import type { Find, Message } from '../../contracts/types.ts'
 
 export class ContentReadError extends Error {
   status: number
@@ -18,6 +18,18 @@ export async function readFinds(tripId: string, signal: AbortSignal): Promise<Fi
   if (!Array.isArray(value.finds) || value.finds.some(row => row.tripId !== tripId))
     throw new ContentReadError(503)
   return value.finds
+}
+
+export async function readMessage(tripId: string, signal: AbortSignal): Promise<Message | null> {
+  const response = await fetch(`/api/trips/${encodeURIComponent(tripId)}/message`, {
+    method: 'GET', credentials: 'same-origin', cache: 'no-store', signal,
+  })
+  if (!response.ok) throw new ContentReadError(response.status)
+  const value = await response.json() as { message?: Message | null }
+  if (value.message === null) return null
+  if (!value.message || value.message.tripId !== tripId || typeof value.message.text !== 'string')
+    throw new ContentReadError(503)
+  return value.message
 }
 
 /** Retain source order except for the valid representative; deduplicate by identity. */

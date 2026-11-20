@@ -6,13 +6,13 @@ import type { ShellBindings } from './ports'
 import { ChatPanel } from '@/app/(b)/b4-chat-panel'
 import { WishPanel } from '@/app/(b)/b4-wish-panel'
 import { Invitations } from '@/app/(b)/b4-invitations'
-import { readFinds } from './content-reader'
+import { readFinds, readMessage } from './content-reader'
 import { FeedbackSurface } from './feedback-surface'
 
 /** A is the only editor of this composition point. B/E export bodies; never another home/nav. */
 const bindings: ShellBindings = {
-  ChatPanel, WishPanel, Invitations, readFinds,
-  // Message GET, shared ReplyBody, formal Dog/scenes and E routes await their owners.
+  ChatPanel, WishPanel, Invitations, readFinds, readMessage,
+  // Shared ReplyBody, formal Dog/scenes and E routes await their owners.
   // Missing bindings remain explicit; do not synthesize a successful empty response.
   routes: { mailbox: false, journal: false },
 }
