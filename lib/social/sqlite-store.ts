@@ -36,8 +36,14 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
    *
    * **不要吞内层错误**：内层若被外层 try/catch 吃掉，外层会照常提交它自己的写 ——
    * 那不是"什么都没发生"，是"一半发生"。
+   *
+   * **11-21 A 复核指出：成功路径漏了 `RELEASE`。** 原实现只在失败分支 RELEASE，
+   * 内层成功就一直把 savepoint 挂在栈上，名字还每次都叫 `sp_d4_1`（同名会栈式叠加）。
+   * 现在成功路径也 RELEASE，名字用单调计数器 `sp_d4_<n>` —— 连续两次内层不会再撞名。
    */
   let depth = 0
+  /** savepoint 名的单调计数器；只增不减，保证同一个事务里连续多次内层各得其所。 */
+  let spSeq = 0
 
   return {
     insertExchange(row: ExchangeRow): 'inserted' | 'duplicate' {
@@ -208,25 +214,34 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
       if (depth === 0) {
         db.exec('BEGIN IMMEDIATE')
         depth = 1
+        let committed = false
         try {
           const value = fn()
           db.exec('COMMIT')
+          committed = true
           return value
-        } catch (err) {
-          db.exec('ROLLBACK')
-          throw err
         } finally {
           depth = 0
+          // `fn` 抛错、或 COMMIT 本身失败（例如 SQLITE_BUSY 时事务仍开着），都要回滚。
+          // 事务可能已被 SQLite 自己撤掉，此时 ROLLBACK 会报「no transaction is active」——
+          // 那说明已经干净了，吞掉；但绝不能因为吞掉而让一个还开着的事务留下。
+          if (!committed) rollbackQuietly(db)
         }
       }
 
       // ---- 内层：加入外层事务，用 savepoint 保证「内层失败只撤内层」 ----
-      const sp = `sp_d4_${depth}`
+      const sp = `sp_d4_${++spSeq}`
       depth += 1
       db.exec(`SAVEPOINT ${sp}`)
       try {
-        return fn()
+        const value = fn()
+        // 成功也要释放：不释放，savepoint 会一直挂到外层 COMMIT，
+        // 期间同名/多层嵌套的语义都会变形（A 11-21 实测只走到 COMMIT，没看到 RELEASE）。
+        db.exec(`RELEASE ${sp}`)
+        return value
       } catch (err) {
+        // 内层失败：先撤到本层，再释放。两步都让它抛 ——
+        // 撤不干净比"报错"更危险：外层会照常提交一半的写。
         db.exec(`ROLLBACK TO ${sp}`)
         db.exec(`RELEASE ${sp}`)
         throw err
@@ -234,5 +249,20 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
         depth -= 1
       }
     },
+  }
+}
+
+/**
+ * 回滚，但把「本来就没有事务」当成正常。
+ *
+ * 只对「事务已经由 SQLite 撤销」这一种情况宽恕；其它错误（磁盘、语法）仍然上抛，
+ * 不能把失败悄悄咽掉。
+ */
+function rollbackQuietly(db: DatabaseSync): void {
+  try {
+    db.exec('ROLLBACK')
+  } catch (err) {
+    const msg = String((err as Error)?.message ?? err)
+    if (!/no transaction is active|no transaction/i.test(msg)) throw err
   }
 }

@@ -79,6 +79,59 @@ export class SocialWriteError extends Error {
  */
 export const MEETABLE_TRIP_STATUS = 'running'
 
+// ---------------------------------------------------------------------------
+// 相遇的三道闸门 —— 事务外先拒一次，事务内重验一次
+// ---------------------------------------------------------------------------
+//
+// 抽成函数不是为了复用几行，是为了让「外层」和「事务内」跑的是**同一段判断**。
+// 两处各写一份，改了外层忘改内层，重验就成了摆设。
+
+/** 出行必须存在、属于发起狗、且处于 running。只认 running：pending 还没出门，done/failed/timeout 已经结束。 */
+function assertTripOpen(store: SocialStore, dogId: string, tripId: string): void {
+  const trip = store.getTrip(tripId)
+  if (!trip) {
+    throw new SocialWriteError('TRIP_NOT_FOUND', `出行不存在：${tripId}`, 'tripId')
+  }
+  if (trip.dogId !== dogId) {
+    throw new SocialWriteError(
+      'TRIP_NOT_OWNED',
+      `出行 ${tripId} 属于 ${trip.dogId}，不是 ${dogId}`,
+      'tripId',
+    )
+  }
+  if (trip.status !== MEETABLE_TRIP_STATUS) {
+    throw new SocialWriteError(
+      'TRIP_NOT_OPEN',
+      `出行 ${tripId} 状态为 ${trip.status}，只有 ${MEETABLE_TRIP_STATUS} 能相遇`,
+      'tripId',
+    )
+  }
+}
+
+/** 拉黑双向排除：关系表一对只存一条（dog_a < dog_b），store 内部查一次等于查两个方向。 */
+function assertNotBlocked(store: SocialStore, dogId: string, otherDogId: string): void {
+  if (store.isBlocked(dogId, otherDogId)) {
+    throw new SocialWriteError('BLOCKED_RELATION', '这一对已被拉黑，不再相遇', 'relation')
+  }
+}
+
+/**
+ * 外部闸门（匹配规则、同 owner 排除等）。
+ *
+ * **会被调用两次**：事务外一次快速拒，事务内一次重验。因此必须无副作用 ——
+ * 只读库、只返回结论，不要在里面计数、打点、改状态。
+ */
+function runGate(
+  input: Pick<MeetInput, 'gate'>,
+  store: SocialStore,
+  dogId: string,
+  otherDogId: string,
+): void {
+  if (!input.gate) return
+  const g = input.gate({ store, selfDogId: dogId, otherDogId })
+  if (!g.ok) throw new SocialWriteError(g.code as MeetErrorCode, g.reason, 'gate')
+}
+
 /** 契约要求 `2026-11-16T12:00:00Z` 这种秒级 UTC，`toISOString()` 多三位毫秒，去掉。 */
 export function nowIso(now?: string | Date): string {
   if (typeof now === 'string') return now
@@ -203,11 +256,29 @@ function withResolvedProvenance(store: SocialStore, draft: ExchangeDraft): unkno
  *
  * 只有一处例外：**来源两键必须先查库补齐，再交给 `rules.ts` 校验**（K v4 的次序要求）。
  * 见 `withResolvedProvenance`。
+ *
+ * **11-21：整段进事务（A 复核第 1 项）。** 原实现在事务外查来源、在事务外算趟次、
+ * 再单独插行。另一连接可以在「查来源」和「插行」之间把 `find.source_mode` 从 fixture
+ * 改成 cache —— 更新成功，而 exchange 的 payload 已经按 fixture 写下去了，
+ * 库里于是出现「出处说是 fixture、实际来源是 cache」。分成三次碰库就有三个窗口。
+ * 这个入口是独立导出的，不能指望调用方（`meet` / `gift.send`）替它包事务。
+ *
+ * 自带事务后可以安全地被外层包着调（`store.transaction` 支持嵌套，内层用 SAVEPOINT），
+ * `meet()` 与将来 C8 的「外层验权 + 内层写入」都不受影响。
  */
 export function recordExchange(
   store: SocialStore,
   draft: ExchangeDraft,
   opts: RecordOptions = {},
+): RecordResult {
+  return store.transaction(() => recordExchangeInTx(store, draft, opts))
+}
+
+/** 事务内实际做的事。**不要单独导出**：去掉外层事务它就退回到「三次分开碰库」。 */
+function recordExchangeInTx(
+  store: SocialStore,
+  draft: ExchangeDraft,
+  opts: RecordOptions,
 ): RecordResult {
   const verdict = validate({ ...draft, payload: withResolvedProvenance(store, draft) })
   if (!verdict.ok) {
@@ -445,26 +516,7 @@ export function meet(input: MeetInput): MeetResult {
   // 之前只把 tripId 当字符串拼进幂等键，随便传 `does_not_exist` 也能写进关系，
   // 还能凭空把 tripId 属于别的狗的情况当成有效相遇。三种都拒，且都在事务之前拒 ——
   // 拒绝时不留下任何关系或交换。
-  const trip = store.getTrip(tripId)
-  if (!trip) {
-    throw new SocialWriteError('TRIP_NOT_FOUND', `出行不存在：${tripId}`, 'tripId')
-  }
-  if (trip.dogId !== dogId) {
-    throw new SocialWriteError(
-      'TRIP_NOT_OWNED',
-      `出行 ${tripId} 属于 ${trip.dogId}，不是 ${dogId}`,
-      'tripId',
-    )
-  }
-  // 只认 running：pending 还没出门、done/failed/timeout 已经结束。
-  // 相遇只发生在路上，收件狗那趟出行是另一条记录，与这里无关。
-  if (trip.status !== MEETABLE_TRIP_STATUS) {
-    throw new SocialWriteError(
-      'TRIP_NOT_OPEN',
-      `出行 ${tripId} 状态为 ${trip.status}，只有 ${MEETABLE_TRIP_STATUS} 能相遇`,
-      'tripId',
-    )
-  }
+  assertTripOpen(store, dogId, tripId)
 
   // ---- 要么带东西，要么别调用 ----
   //
@@ -482,17 +534,27 @@ export function meet(input: MeetInput): MeetResult {
     )
   }
 
-  // 拉黑双向排除：关系表一对只存一条（dog_a < dog_b），store 内部查一次等于查两个方向。
-  if (store.isBlocked(dogId, otherDogId)) {
-    throw new SocialWriteError('BLOCKED_RELATION', '这一对已被拉黑，不再相遇', 'relation')
-  }
-
-  if (input.gate) {
-    const g = input.gate({ store, selfDogId: dogId, otherDogId })
-    if (!g.ok) throw new SocialWriteError(g.code as MeetErrorCode, g.reason, 'gate')
-  }
+  assertNotBlocked(store, dogId, otherDogId)
+  runGate(input, store, dogId, otherDogId)
 
   return store.transaction(() => {
+    // ---- 事务内重验（A 11-21 第 2 项）----
+    //
+    // 上面那几关都在 `BEGIN` 之前读的。首次检查之后、事务开始之前，另一连接可以把
+    // trip 从 running 改成 done，也能把这对狗拉黑 —— 那样「检查通过」与「真正写入」
+    // 之间有一个窗口，写下去的是已经失效的前提（A 实测：改成 done 之后仍写了 1 条
+    // exchange、关系 met_count +1）。
+    //
+    // 外层那几次不是多余的：错误码优先级不变，能拒的尽早拒，不进事务。进事务后
+    // `BEGIN IMMEDIATE` 已经拿了写锁，此时再读一遍就是「写入那一刻的事实」，
+    // 另一连接在事务期间没法把这些行改掉（会 SQLITE_BUSY）。
+    //
+    // 三项都必须重验：状态决定能不能写、拉黑决定该不该写、gate 是外部判断（可能读库）。
+    // `gate` 因此会被调用两次，约定它必须无副作用（纯判断）。
+    assertTripOpen(store, dogId, tripId)
+    assertNotBlocked(store, dogId, otherDogId)
+    runGate(input, store, dogId, otherDogId)
+
     // ---- 重放判定：同一次出行已经写过交换，就只读不写 ----
     const probeId = input.outgoing
       ? deriveExchangeId(dogId, otherDogId, input.outgoing.kind, `${tripId}:out`)
