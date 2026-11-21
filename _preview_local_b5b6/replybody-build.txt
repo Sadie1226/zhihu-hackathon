@@ -1,0 +1,80 @@
+
+> zhihu-hackathon@0.1.0 build
+> next build
+
+▲ Next.js 16.4.6 (Turbopack)
+✓ Running next.config.ts took 49ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.2s
+  Running TypeScript ...
+  Finished TypeScript in 4.3s ...
+  Collecting page data using 17 workers ...
+(node:19704) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24248) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17344) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13764) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23700) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6504) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4196) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24056) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4392) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3876) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17968) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4168) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24508) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1988) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Generating static pages using 17 workers (0/6) ...
+  Generating static pages using 17 workers (1/6) 
+  Generating static pages using 17 workers (2/6) 
+  Generating static pages using 17 workers (4/6) 
+✓ Generating static pages using 17 workers (6/6) in 421ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /adopt
+├ ƒ /api/adoption/personality
+├ ƒ /api/adoption/profile
+├ ƒ /api/auth/development
+├ ƒ /api/auth/logout
+├ ƒ /api/dogs
+├ ƒ /api/dogs/[id]
+├ ƒ /api/dogs/[id]/invitations
+├ ƒ /api/dogs/[id]/name
+├ ƒ /api/dogs/[id]/trips
+├ ƒ /api/dogs/[id]/wishes
+├ ƒ /api/health
+├ ƒ /api/replies
+├ ƒ /api/session
+├ ƒ /api/trips/[id]
+├ ƒ /api/trips/[id]/content
+├ ƒ /api/trips/[id]/finds
+├ ƒ /api/trips/[id]/finish
+├ ƒ /api/trips/[id]/message
+├ ƒ /api/trips/[id]/start
+├ ƒ /api/uploads/photo
+├ ƒ /api/wishes/[id]/revoke
+├ ○ /home
+├ ○ /trip
+└ ƒ /uploads/[name]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

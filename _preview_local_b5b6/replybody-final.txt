@@ -1,0 +1,14 @@
+=== ReplyBody 可复用导出 最终验证（main v7 基线 + 无隔离）===
+
+[typecheck] EXIT=0
+[lint] EXIT=0
+[test] 173/173 (167 基线 + 6 ReplyBody 新单测), EXIT=0
+[check-all] 五道全绿 (契约/投递/密钥/禁词/社交170), EXIT=0
+[build] Compiled successfully in 3.2s, EXIT=0
+
+=== 新增/修改文件 ===
+app/(b)/b4-ports.ts           [改: A v7 同形类型 + ReplyBodyProps
+app/(b)/b4-reply-body.tsx      [新: 可复用回应正文]
+app/(b)/b4-reply-body-utils.ts [新: target映射/错误文案纯逻辑]
+tests/reply-body.typecheck.tsx [新: 编译期绑定示例+二选一约束]
+tests/reply-body.test.mjs      [新: 6 项行为单测]
