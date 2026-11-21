@@ -2,44 +2,22 @@
 // POST /api/replies：写入前查来源归属与交换送达；幂等重放返回库中真实记录。
 import { statSync } from 'node:fs'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
 import { getDatabase } from '@/lib/db/index'
 import { readSessionId } from '@/lib/auth/session'
+import { writeReply } from '@/lib/replies/idempotency'
 import { parseOwnPhotoUrl, uploadDir } from '../../b6-photo'
-import type { Reply } from '@/contracts/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 type Body = { exchangeId?: string; invitationId?: string; text?: string; photoUrl?: string }
 type Source = { kind: 'exchange' | 'invitation'; id: string }
-type ReplyRow = {
-  id: string
-  exchange_id: string | null
-  invitation_id: string | null
-  text: string | null
-  photo_url: string | null
-  kind: Reply['kind']
-  created_at: string
-}
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 }
 const conflict = (detail: string) => json({ code: 'CONFLICT', detail }, 409)
 const missing = (detail: string) => json({ code: 'NOT_FOUND', detail }, 404)
-
-function replyDto(row: ReplyRow): Reply {
-  return {
-    id: row.id,
-    exchangeId: row.exchange_id,
-    invitationId: row.invitation_id,
-    text: row.text,
-    photoUrl: row.photo_url,
-    kind: row.kind,
-    createdAt: row.created_at,
-  }
-}
 
 function sourceProblem(
   db: ReturnType<typeof getDatabase>,
@@ -113,41 +91,10 @@ export async function POST(request: Request) {
   const problem = sourceProblem(db, source, sessionId)
   if (problem) return problem
 
-  const id = `r_${randomUUID().replace(/-/g, '')}`
-  const createdAt = new Date().toISOString()
-  db.exec('BEGIN IMMEDIATE')
-  try {
-    db.prepare(
-      `INSERT INTO reply (id, exchange_id, invitation_id, text, photo_url, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(
-      id,
-      source.kind === 'exchange' ? source.id : null,
-      source.kind === 'invitation' ? source.id : null,
-      text,
-      photoUrl,
-      createdAt,
-    )
-    // 回应 exchange 的同时记 replied_at；WHERE 保留首次时间。
-    if (source.kind === 'exchange') {
-      db.prepare('UPDATE exchange SET replied_at = ? WHERE id = ? AND replied_at IS NULL')
-        .run(createdAt, source.id)
-    }
-    db.exec('COMMIT')
-    const row = db.prepare('SELECT * FROM reply WHERE id = ?').get(id) as ReplyRow
-    return json({ reply: replyDto(row) })
-  } catch (error) {
-    db.exec('ROLLBACK')
-    const code = String((error as { code?: string })?.code ?? '')
-    const looksUnique = code.includes('CONSTRAINT') ||
-      String(error).toLowerCase().includes('unique')
-    if (looksUnique) {
-      // 只把目标来源的唯一约束当幂等重放；其它约束失败一律不当成功。
-      const column = source.kind === 'exchange' ? 'exchange_id' : 'invitation_id'
-      const existing = db.prepare(`SELECT * FROM reply WHERE ${column} = ?`).get(source.id) as
-        ReplyRow | undefined
-      if (existing) return json({ reply: replyDto(existing), duplicate: true })
-    }
-    return conflict('回应未能写入')
-  }
+  // 幂等写入核心抽到 lib/replies/idempotency，便于直接单测；行为与内联版严格等价：
+  //   首次 200 + 真实 reply；同一来源重复 200 + 原 reply + duplicate；库里 1 行。
+  const result = writeReply(db, { source, text, photoUrl })
+  if (result.kind === 'failed') return conflict('回应未能写入')
+  if (result.kind === 'duplicate') return json({ reply: result.reply, duplicate: true })
+  return json({ reply: result.reply })
 }
