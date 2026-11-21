@@ -6,11 +6,11 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { uploadDir } from '../../b6-photo'
+import { classifyPhotoName, PHOTO_READ_CACHE_CONTROL } from '../../b4-photo-visibility'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const NAME_RE = /^s_([0-9a-f]{64})_([0-9a-f]{16})\.(jpg|png|webp)$/
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg',
   png: 'image/png',
@@ -26,16 +26,18 @@ function notFound() {
 export async function GET(_request: Request, context: Context) {
   const { name } = await context.params
   // 只接受本接口产出的文件名，挡住 ../ 穿越与任意路径读取。
-  if (!NAME_RE.test(name)) return notFound()
+  // 形状/穿越判定与 capability 语义统一走 b4-photo-visibility 契约，避免三处正则漂移。
+  // 这里按 capability 读取（持有链接即可读），不按 session 拦截——合法收件人必须能看图。
+  const decision = classifyPhotoName(name)
+  if (!decision.ok) return notFound()
   try {
     const bytes = await readFile(path.join(uploadDir(), name))
-    const ext = name.slice(name.lastIndexOf('.') + 1)
     return new Response(new Uint8Array(bytes), {
       status: 200,
       headers: {
-        'Content-Type': MIME[ext],
+        'Content-Type': MIME[decision.ext],
         'Content-Length': String(bytes.byteLength),
-        'Cache-Control': 'private, max-age=3600',
+        'Cache-Control': PHOTO_READ_CACHE_CONTROL,
       },
     })
   } catch {
