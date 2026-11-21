@@ -43,6 +43,7 @@ export type RuleCode =
   | 'SELF_EXCHANGE'   // 狗给自己寄东西
   | 'FORBIDDEN_KEY'   // 命中内容层黑名单，或越权写别人的列
   | 'BLOCKED_TOPIC'   // 命中 blockedTopics
+  | 'PROVENANCE_MISMATCH' // 来源字段自相矛盾：无来源却声明 mode、跨狗、mode 与库不符
 
 /** 进校验器的形状。只有四个键 —— 故意用 unknown，进来先验形状。 */
 export interface ExchangeDraft {
@@ -73,19 +74,23 @@ export type Verdict =
  * 它是必填键、值可 null —— 「可空」不等于「可以没有这个键」。
  */
 const PAYLOAD_KEYS: Record<ExchangeKind, readonly string[]> = {
-  find: ['kind', 'findTitle', 'findExcerpt', 'sourceUrl'],
+  // K v4（11-19 交付，11-20 已入 main）：find / gift 各加两键，**是必需键**。
+  // 没有来源时两个都写 null —— 「键必须在」早就是本文件的规矩（值可为 null）。
+  find: ['kind', 'findTitle', 'findExcerpt', 'sourceUrl', 'sourceFindId', 'sourceMode'],
   greeting: ['kind', 'line', 'weather'],
-  gift: ['kind', 'giftName', 'note', 'imagePath'],
+  gift: ['kind', 'giftName', 'note', 'imagePath', 'sourceFindId', 'sourceMode'],
+  // 捎话不挂来源。K v4 原话：「greeting/捎话不能借此夹带来源、私人内容或额外身份信息」。
   co_owner_message: ['kind', 'message', 'fromOwnerOf'],
 }
 
 /**
- * 已申请但 c 未批的字段，**批了之后在这里加，别在别处加**（d0b B1）。
- * 现在是空的，所以带了这些键的 payload 会被 UNKNOWN_KEY 拒 —— 这是对的，
- * 没批就不能自己加（禁区三）。
+ * 已申请但 c 未批的字段 —— **现在是空的**。
  *
- *   find: sourceMode（不变量四要的降级标注）、sourceFindId（出处）
- *   gift: sourceFindId
+ * 11-19 这里曾列着 find/gift 的 sourceFindId、sourceMode。c 在 K v4 里批了，
+ * 两键已进入上面的 `PAYLOAD_KEYS`（正式白名单），所以这里清空。
+ *
+ * 别再把它们放回来：`PENDING_KEYS` 的语义是「放行键名、不校验」，而 K v4 的要求是
+ * 「放行键名不等于校验来源」—— 靠这个集合放行，来源就没人验了。
  */
 const PENDING_KEYS: Record<ExchangeKind, readonly string[]> = {
   find: [],
@@ -441,10 +446,7 @@ function validateFind(p: Record<string, unknown>): Verdict | null {
     checkRequiredString(p, 'findTitle') ??
     checkNullableString(p, 'findExcerpt') ??
     checkSourceUrl(p) ??
-    // sourceMode 未批，若有人传了会在键集合那步被 UNKNOWN_KEY 拒。
-    // c 批下来后：把 'sourceMode' 加进 PENDING_KEYS.find，并在这里补
-    //   「sourceUrl 非 null 时 sourceMode 必须非 null」
-    //   「sourceMode === 'live' 时 sourceUrl 不能为 null」
+    validateProvenance(p) ??
     null
   )
 }
@@ -475,7 +477,8 @@ function validateGift(p: Record<string, unknown>): Verdict | null {
     // note: null 必须合法（d1 第八节验收第 5 条）。直给的狗不写解释，
     // 界面不许因为 note 空就补一句「它好像还想说什么」。
     checkNullableString(p, 'note') ??
-    checkNullableString(p, 'imagePath')
+    checkNullableString(p, 'imagePath') ??
+    validateProvenance(p)
   if (err) return err
 
   // imagePath 是路径不是二进制，存的是 /assets/gen/xxx.webp 这种
@@ -483,6 +486,64 @@ function validateGift(p: Record<string, unknown>): Verdict | null {
   if (typeof img === 'string' && img.trim() !== '' && !img.startsWith('/')) {
     return fail('WRONG_TYPE', '/payload/imagePath', 'imagePath 必须是 / 开头的站内路径')
   }
+  return null
+}
+
+// ---- 来源（K v4，只用于 find / gift）----
+const SOURCE_MODES: readonly string[] = ['live', 'cache', 'fixture']
+
+/**
+ * `sourceFindId` / `sourceMode` 的**形状**校验。
+ *
+ * 这里只回答「这两个键写得对不对」，不回答「这个 Find 存不存在、是不是你的」——
+ * 那需要查库，纯函数做不了，由 `gift.ts` / `meet.ts` 在写事务里调
+ * `store.getFindSource()` 后再核对（K v4 的 `checkExchangeProvenance` 也是这么分工的）。
+ *
+ * 三个**不许写**的推断，都是 K v4 明确否掉的：
+ *   1. 不许由 `sourceUrl` 推断 `sourceMode`。原话：「sourceUrl 也不是来源证明，
+ *      不能依据 URL 外形或客户端参数推断 live」。11-19 我在旧注释里猜过这条，是错的。
+ *   2. 不许把 `sourceMode` 缺失补成 `live`。原话：「保持未知，不补 live」。
+ *   3. 不许把 scene/moment 的 NULL 改成 live。原话：「保留来源 Find 的 NULL，
+ *      不因有图片或 URL 改成 live」。
+ */
+function validateProvenance(p: Record<string, unknown>): Verdict | null {
+  const id = p.sourceFindId
+  const mode = p.sourceMode
+
+  // 键缺失由上游 MISSING_FIELD 拦（两键在 PAYLOAD_KEYS 里）。这里防直接调用。
+  if (id === undefined || mode === undefined) {
+    return fail('MISSING_FIELD', '/payload/sourceFindId', 'find/gift 必须同时给出 sourceFindId 与 sourceMode（没有来源时都写 null）')
+  }
+
+  if (id !== null && typeof id !== 'string') {
+    return fail('WRONG_TYPE', '/payload/sourceFindId', 'sourceFindId 必须是字符串或 null')
+  }
+  if (typeof id === 'string') {
+    if (id.trim() === '') {
+      return fail('EMPTY_STRING', '/payload/sourceFindId', 'sourceFindId 不能是空白字符串，没有来源请写 null')
+    }
+    if (id !== id.trim()) {
+      return fail('WRONG_TYPE', '/payload/sourceFindId', 'sourceFindId 不许带首尾空格')
+    }
+  }
+
+  if (mode !== null && (typeof mode !== 'string' || !SOURCE_MODES.includes(mode))) {
+    return fail(
+      'WRONG_TYPE',
+      '/payload/sourceMode',
+      `sourceMode 只能是 ${SOURCE_MODES.join(' / ')} 或 null，收到 ${JSON.stringify(mode)}`,
+    )
+  }
+
+  // 没有 Find 却声明来源档位 = 编造出处（不变量四：不是经历里的东西不算经历）
+  if (id === null && mode !== null) {
+    return fail(
+      'PROVENANCE_MISMATCH',
+      '/payload/sourceMode',
+      'sourceFindId 为 null 时 sourceMode 必须也是 null —— 没有来源就不能声明 live/cache/fixture',
+    )
+  }
+
   return null
 }
 
