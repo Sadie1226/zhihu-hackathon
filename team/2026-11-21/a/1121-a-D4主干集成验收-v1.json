@@ -1,0 +1,167 @@
+{
+  "checkedAt": "2026-11-21T07:47:58.556071+00:00",
+  "release": "v7-1121",
+  "baseMain": "349738ee8d9814fc6c4bc10317450191270622f3",
+  "DSource": "c0d1586eb265e3e5540318bfe94ac8abeb077110",
+  "reviewSource": "cafda3c6cd25323a05d9086d7a600f0558d2d3fe",
+  "mergeCommits": [
+    "0193b47",
+    "bca3e51"
+  ],
+  "integrationCodeCommit": "8ec9de52ec9a595cc387312d6fbbcaf77acc10a0",
+  "fixtureOnly": true,
+  "realOAuth": false,
+  "publicDeployment": false,
+  "checks": {
+    "npmTest": {
+      "tests": 157,
+      "pass": 157,
+      "fail": 0,
+      "exitCode": 0,
+      "socialNotIncluded": true
+    },
+    "social": {
+      "total": 170,
+      "rules": 50,
+      "meet": 35,
+      "gift": 41,
+      "storeContract": 32,
+      "txConcurrency": 12
+    },
+    "typecheck": 0,
+    "expandedLint": 0,
+    "defaultBuild": 0,
+    "checkAll": {
+      "exitCode": 0,
+      "gateCount": 5,
+      "socialIncluded": true
+    },
+    "e2e": {
+      "assertions": 28,
+      "exitCode": 0,
+      "tempCleaned": true
+    },
+    "gateMutation": {
+      "passed": true,
+      "finalIntegrationGateCopied": true,
+      "reports": [
+        {
+          "scenario": "gate-proof",
+          "socialExit": 0,
+          "allExit": 0
+        },
+        {
+          "scenario": "whitelist-weakened",
+          "socialExit": 1,
+          "allExit": 1
+        },
+        {
+          "scenario": "recipient-foreign-key-removed",
+          "socialExit": 1,
+          "allExit": 1
+        }
+      ]
+    },
+    "productionMessageAndC4Delivery": {
+      "fixtureOnly": true,
+      "realApiCalled": false,
+      "http": [
+        {
+          "scenario": "done",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "failed",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "timeout",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "pending",
+          "status": 200,
+          "realNull": true,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "no-cookie",
+          "status": 404
+        },
+        {
+          "scenario": "foreign-cookie",
+          "status": 404
+        },
+        {
+          "scenario": "post",
+          "status": 405
+        },
+        {
+          "scenario": "query-override",
+          "status": 404
+        }
+      ],
+      "delivery": [
+        {
+          "scenario": "0->1",
+          "threshold": 1,
+          "pendingDoesNotDeliver": true,
+          "actualStartDelivers": true,
+          "replayPreservesTimestamp": true,
+          "duplicateGiftPreservesThreshold": true,
+          "controlledFixtureSessionOnly": true
+        },
+        {
+          "scenario": "1->2",
+          "threshold": 2,
+          "pendingDoesNotDeliver": true,
+          "actualStartDelivers": true,
+          "replayPreservesTimestamp": true,
+          "duplicateGiftPreservesThreshold": true,
+          "controlledFixtureSessionOnly": true
+        }
+      ],
+      "errors": []
+    }
+  },
+  "closed": [
+    "recordExchange provenance race",
+    "meet transaction precondition race",
+    "success savepoint release",
+    "seven TypeScript errors",
+    "Windows E2E fixed path",
+    "four gift.test lint errors and social lint coverage"
+  ],
+  "remaining": [
+    "trusted C8 identity/owner/real HTTP and seed scheduling",
+    "formal OAuth/session revocation/same-owner matching",
+    "E2E initialization cleanup and final summary assertions (nonblocking)",
+    "prior B/C interfaces and full generation/execution/visual/deployment/P0 work"
+  ],
+  "testedCodeBlobs": {
+    "scripts/check-all.sh": "08d822ff473ef0d4e9b7f973e9b883c3396e560d",
+    "scripts/check-social.sh": "8a71ca4c64035c694e97cadee4216a3ccd5e065a",
+    "lib/social/gift.test.ts": "4c7e031214e63d2cb6af5686a076c509c1f8cf7d",
+    "scripts/e2e-d4.ts": "3edae31a8d278a40acd24bfe7c870e941c99c3e7",
+    "package.json": "df32febc2d20bba2ae5a3205fa6867ad8c0677c1"
+  },
+  "logSha256": {
+    "test.log": "4bc79e95d295f17102331dfbee269e5189ec5b63dce1ddbcbbe6302cdbf568cb",
+    "typecheck.log": "a911dc6ac106b9d24bb83aeeced674d3b57c15f2585631f4cf612b534c06f2dc",
+    "lint.log": "f4d542281a87933b410a8b8c5762f8f38ffc10b0a5ce73dd7f2cbd59f162ae6c",
+    "build.log": "01154bffd916de6810f4669239614daff13168031a460d33863dfe46ca55caab",
+    "check-all.log": "2c0b71d5e7297ada4d4276811b2cf6ff5d60d76d644c721c96ded1978e01375b",
+    "e2e.log": "38ff99490654196dbf550c28e9a185b55afb99c10cdc0ed541342cdb26a90e4a",
+    "message-delivery.log": "165269a75e070b4850823abcb39ef71bd814b0c84211d0fae46886ffcfaab2c6"
+  }
+}
