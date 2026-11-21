@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B4 评审v2 · 状态预览（本地静态，非真实数据）</title>
+<style>
+  :root{
+    --bg:#FBF7F0; --paper:#FFFDF8; --ink:#293443; --muted:#626B73;
+    --line:#DED6C8; --brand:#98483E; --green:#526447; --leaf:#EEF1E8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:20px 16px 48px}
+  .top{display:flex;align-items:baseline;gap:10px;margin:0 0 4px}
+  .badge{font-size:12px;color:var(--muted);border:1px solid var(--line);
+    border-radius:3px;padding:2px 7px;background:var(--paper)}
+  .hint{color:var(--muted);font-size:12px;margin:0 0 18px;line-height:1.6}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:14px}
+  .cap{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .panel{display:flex;flex-direction:column;gap:12px}
+  .label{font-size:13px;color:var(--muted)}
+  .item,.invite{display:flex;align-items:center;gap:10px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:3px;background:var(--paper);flex-wrap:wrap}
+  .item .txt{flex:1 1 auto;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+  .chip{padding:2px 7px;border-radius:3px;background:var(--leaf);color:var(--green);font-size:12px}
+  .empty{margin:14px 0;color:var(--muted);font-size:13px;line-height:1.6}
+  .notice{margin:0;padding:8px 10px;border-left:3px solid var(--line);
+    color:var(--muted);font-size:13px;line-height:1.6;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .error{margin:0;padding:8px 10px;border-left:3px solid var(--brand);background:var(--bg);
+    color:var(--brand);font-size:13px;line-height:1.6;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ghost,.primary,.link{min-height:32px;padding:0 10px;border-radius:3px;font:inherit;font-size:13px;cursor:pointer}
+  .ghost{border:1px solid var(--line);background:transparent;color:var(--muted)}
+  .primary{border:1px solid var(--brand);background:var(--brand);color:#fff}
+  .primary:disabled{opacity:.6}
+  .link{display:inline-flex;align-items:center;border:1px solid var(--line);
+    background:var(--paper);color:var(--green);text-decoration:none}
+  .textarea{width:100%;min-height:64px;padding:10px;border:1px solid var(--line);
+    border-radius:3px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;line-height:1.6}
+  .file{font-size:12px;color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .skeleton{height:40px;margin:6px 0;border-radius:3px;background:var(--leaf)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);
+    border-top-color:var(--brand);border-radius:50%;animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  @media (max-width:700px){
+    .grid{grid-template-columns:1fr}
+    .wrap{padding:16px 12px 40px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h2 style="margin:0;font-size:18px">B4 评审 v2 · 状态预览</h2>
+    <span class="badge">本地静态 · 非真实数据</span></div>
+  <p class="hint">用于回交截图：心愿/邀请面板在空态、失败、上传中、上传失败、提交失败、最后一条处理完的可视状态。
+    文案与配色取自 b4 正文组件与 e1 色板；不含真实用户照片、Cookie 或密钥，也不作为正式 home/导航。</p>
+  <div class="grid">
+
+    <div class="card">
+      <p class="cap">① 心愿 · 真实空态（phase=ready，无心愿）</p>
+      <div class="panel">
+        <p class="empty">还没告诉它想看什么。</p>
+        <label class="label" for="w1">想看什么……</label>
+        <textarea class="textarea" id="w1" placeholder="想看什么……"></textarea>
+        <div class="row"><label class="label">类目</label>
+          <span class="chip">自然风景</span><span class="label">0/200</span></div>
+        <button class="primary" disabled>记下心愿</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">② 心愿 · 读取失败（不显示空态，显示错误+重试）</p>
+      <div class="panel">
+        <p class="notice">这次没读出来，可以再试一次。
+          <button class="ghost">再试一次</button></p>
+        <p class="empty">这次没读出来，点上面的「再试一次」。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">③ 邀请 · 待回应 + 上传中（可取消，保留文字）</p>
+      <div class="panel">
+        <div class="invite">
+          <span class="txt">把窗外的光带回来</span>
+        </div>
+        <label class="label">回一句（≤200 字）</label>
+        <textarea class="textarea">好，我把它收进窗台。</textarea>
+        <div class="file">已选择：IMG_2041.jpg（发送前会先压缩）</div>
+        <div class="notice"><span class="spin"></span> 正在传图…
+          <button class="ghost">取消上传</button></div>
+        <div class="row">
+          <button class="primary" disabled>正在传图…</button>
+          <a class="link" href="#">先不回</a>
+        </div>
+        <span class="label">邀请会一直留着，这里不催你。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">④ 邀请 · 上传失败（图没传上去 + 415 原因，不发回应）</p>
+      <div class="panel">
+        <div class="invite"><span class="txt">把窗外的光带回来</span></div>
+        <label class="label">回一句（≤200 字）</label>
+        <textarea class="textarea">好，我把它收进窗台。</textarea>
+        <p class="error">图没传上去：这张图打不开或不是支持的格式。
+          <button class="ghost">重试</button>
+          <button class="ghost">清除照片</button></p>
+        <div class="row"><button class="primary">回一句</button>
+          <a class="link" href="#">先不回</a></div>
+        <span class="label">邀请会一直留着，这里不催你。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">⑤ 邀请 · 提交失败（图已保留供重试，不重传）</p>
+      <div class="panel">
+        <div class="invite"><span class="txt">把窗外的光带回来</span></div>
+        <label class="label">回一句（≤200 字）</label>
+        <textarea class="textarea">好，我把它收进窗台。</textarea>
+        <div class="file">图片已上传，可随回应一起送出
+          <button class="ghost">清除照片</button></div>
+        <p class="error">这次没回应成功，文字和图都还在，可以再试一次。
+          <button class="ghost">重试</button></p>
+        <div class="row"><button class="primary">回一句</button>
+          <a class="link" href="#">先不回</a></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">⑥ 邀请 · 真实空态（最后一条刚处理完，不显示"等你回"）</p>
+      <div class="panel">
+        <p class="empty">这一条已经回过了，这里暂时没有别的邀请。</p>
+        <a class="link" href="#" style="align-self:flex-start">返回原处</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">⑦ 心愿 · 未授权（显示返回，不显示空态）</p>
+      <div class="panel">
+        <p class="notice">这只狗不在当前会话里。</p>
+        <p class="empty">这只狗不在当前会话里，请先返回。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="cap">⑧ 邀请 · 上传失败 413（图片过大）</p>
+      <div class="panel">
+        <div class="invite"><span class="txt">把窗外的光带回来</span></div>
+        <label class="label">回一句（≤200 字）</label>
+        <textarea class="textarea">收到。</textarea>
+        <p class="error">图没传上去：图片太大或边长超过 1600，换张小一点的。
+          <button class="ghost">重试</button></p>
+        <div class="row"><button class="primary">回一句</button>
+          <a class="link" href="#">先不回</a></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

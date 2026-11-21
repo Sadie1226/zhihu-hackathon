@@ -1,0 +1,296 @@
+{
+  "checkedAt": "2026-11-20T17:07:29.695185+00:00",
+  "release": "v6-1121",
+  "codeCommit": "37f86e197435c3244c75fd29c59636278a9e09d6",
+  "fixtureOnly": true,
+  "realProviderCalledThisRun": false,
+  "realOAuth": false,
+  "publicDeployment": false,
+  "unitTests": {
+    "tests": 157,
+    "pass": 157,
+    "fail": 0
+  },
+  "commands": {
+    "test": 0,
+    "typecheck": 0,
+    "lint": 0,
+    "build": 0,
+    "checkAll": {
+      "exitCode": 0,
+      "gateCount": 4
+    }
+  },
+  "sources": {
+    "mainBase": "7f6ef5dc7c320dfab631b0a06b039742889a86bc",
+    "C6": "49e5bb9e1580ab65e257bbf0a893f90346604cde",
+    "Message": "9819c6c04e25b86210e2ea1e179abc809028eb30",
+    "A": "6e78fff2b912b3c459f569e1148fdcb66fbddc85",
+    "oldB": "aca451fc1cfdbe10b00bc9e6c536a5c23a89558e",
+    "newB": "bf409c8b00683ef7817f6631f3b4963060e8253e"
+  },
+  "testedCodeBlobs": {
+    "app/(b)/b6-photo.ts": "1126b8a986baaed4673910de68c5a352a9300808",
+    "components/app-shell/content-reader.ts": "33e839312ecb0778a6c8d6a1df7bdfe737a02cb5",
+    "components/app-shell/wiring.tsx": "bf75c9f2412b17639f8c8911840c02e05d8d5b01",
+    "scripts/a5/verify-wiring.mjs": "ef0aaa4ba03be94f19304f39c0f5429844472d93",
+    "tests/photo-integrity.test.mjs": "e10a7460d2445a11a421fb5894ee5072e334a40d",
+    "tests/shell-readers.test.mjs": "81dc8ad3f0da7cefe78f39ce68e91135fd6f1272",
+    "package.json": "9476410446c1244f0ef1cbef796f6a794d38de8c"
+  },
+  "browser": {
+    "runBaseCommit": "442a1a9159c31e46117be2b40145546dcf7c8ff6",
+    "hadUncommittedFixes": true,
+    "finalCodeCommit": "37f86e197435c3244c75fd29c59636278a9e09d6",
+    "checks": [
+      {
+        "name": "two-independent-browser-contexts-adopt-refresh-and-isolate",
+        "passed": true
+      },
+      {
+        "name": "lost-create-response-retry-same-dog",
+        "passed": true
+      },
+      {
+        "name": "required-name-null-or-two-interests-three-dimensions-four-keys",
+        "passed": true
+      },
+      {
+        "name": "cross-owner-dog-read-rejected",
+        "passed": true
+      },
+      {
+        "name": "server-rejects-empty-overlong-name-single-or-duplicate-interests",
+        "passed": true
+      },
+      {
+        "name": "finds-real-http-owned-foreign-missing-no-store",
+        "passed": true
+      },
+      {
+        "name": "running-no-return-content",
+        "passed": true
+      },
+      {
+        "name": "real-trip-done-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-failed-state",
+        "passed": true
+      },
+      {
+        "name": "real-trip-timeout-state",
+        "passed": true
+      },
+      {
+        "name": "trip-scoped-invitation-text-reply-durable-and-idempotent",
+        "passed": true
+      },
+      {
+        "name": "photo-upload-cancel-preserves-text-without-reply",
+        "passed": true
+      },
+      {
+        "name": "browser-photo-compression-upload-reply-retry-idempotent-and-owned",
+        "width": 1600,
+        "mime": "image/webp",
+        "passed": true
+      },
+      {
+        "name": "invalid-upload-session-and-truncated-image-rejected-without-files",
+        "passed": true
+      },
+      {
+        "name": "read-page-does-not-start-or-finish-trips",
+        "passed": true
+      },
+      {
+        "name": "wish-real-create-revoke-local-refresh-draft-and-focus",
+        "passed": true
+      },
+      {
+        "name": "chat-explicit-fixture-and-draft-retained",
+        "passed": true
+      },
+      {
+        "name": "find-failure-not-empty-share-true-null-independent",
+        "passed": true
+      },
+      {
+        "name": "targeted-find-retry-source-label-and-original-link",
+        "passed": true
+      },
+      {
+        "name": "real-empty-response-is-distinct",
+        "passed": true
+      },
+      {
+        "name": "loading-and-late-find-request-does-not-fill-running-page",
+        "passed": true
+      },
+      {
+        "name": "failed-explicit-archive-view-without-success-or-invitation",
+        "passed": true
+      },
+      {
+        "name": "mobile-desktop-no-horizontal-overflow",
+        "passed": true
+      },
+      {
+        "name": "optional-slots-and-independent-message-failure-consumed",
+        "passed": true
+      },
+      {
+        "name": "feedback-reduced-motion-and-unmount-cancellation",
+        "passed": true
+      },
+      {
+        "name": "known-development-logout-replay-gap-reproduced",
+        "replayStatus": 200,
+        "passed": true
+      }
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "productionHttp": {
+    "checkedAt": "2026-11-20T17:02:20.268Z",
+    "production": true,
+    "fixtureOnly": true,
+    "realProviderCalled": false,
+    "checks": [
+      {
+        "name": "production-valid-png-upload",
+        "status": 200,
+        "filesAdded": 1,
+        "passed": true
+      },
+      {
+        "name": "production-valid-jpeg-upload",
+        "status": 200,
+        "filesAdded": 1,
+        "passed": true
+      },
+      {
+        "name": "production-valid-webp-upload",
+        "status": 200,
+        "filesAdded": 1,
+        "passed": true
+      },
+      {
+        "name": "production-no-cookie-rejected",
+        "status": 401,
+        "filesAdded": 0,
+        "passed": true
+      },
+      {
+        "name": "production-forged-cookie-rejected",
+        "status": 401,
+        "filesAdded": 0,
+        "passed": true
+      },
+      {
+        "name": "production-truncated-png-rejected",
+        "status": 415,
+        "filesAdded": 0,
+        "passed": true
+      },
+      {
+        "name": "production-truncated-webp-rejected",
+        "status": 415,
+        "filesAdded": 0,
+        "passed": true
+      },
+      {
+        "name": "production-photo-reply-durable-idempotent-and-owned",
+        "firstStatus": 200,
+        "repeatStatus": 200,
+        "foreignSourceStatus": 404,
+        "foreignPhotoStatus": 409,
+        "replyCount": 1,
+        "passed": true
+      },
+      {
+        "name": "production-message-null-record-ownership-read-only",
+        "nullStatus": 200,
+        "recordStatus": 200,
+        "unauthorizedStatus": 404,
+        "postStatus": 405,
+        "passed": true
+      },
+      {
+        "name": "production-test-fixture-and-development-login-disabled",
+        "fixtureStatus": 404,
+        "developmentLoginStatus": 404,
+        "passed": true
+      }
+    ],
+    "passed": true
+  },
+  "syntheticC6": {
+    "checkedAt": "2026-11-20T17:01:48.766Z",
+    "mode": "SYNTHETIC_PROVIDER",
+    "query": "想看雪",
+    "requestCount": 1,
+    "httpStatus": 200,
+    "successfulCount": 1,
+    "publicUrls": [
+      "https://www.zhihu.com/question/123/answer/456"
+    ],
+    "productionGetStatus": 200,
+    "noCookieStatus": 404,
+    "postStatus": 405,
+    "restartPreserved": true,
+    "result": "PASS",
+    "errorType": null
+  },
+  "excludedD4Review": {
+    "sourceRef": "d64b6eb",
+    "recordExchange": {
+      "inTransactionAtSourceRead": false,
+      "concurrentUpdate": true,
+      "blocked": false,
+      "actualSourceMode": "cache",
+      "savedSourceMode": "fixture",
+      "matches": false
+    },
+    "sendGift": {
+      "inTransactionAtSourceRead": true,
+      "concurrentUpdate": false,
+      "blocked": true,
+      "actualSourceMode": "fixture",
+      "savedSourceMode": "fixture",
+      "matches": true
+    },
+    "savepoint": {
+      "nestedSql": [
+        "BEGIN IMMEDIATE",
+        "SAVEPOINT sp_d4_1",
+        "COMMIT"
+      ],
+      "hasReleaseOnSuccess": false
+    },
+    "meetStatusRace": {
+      "changedBeforeTransaction": true,
+      "actualTripStatus": "done",
+      "exchangeCount": 1,
+      "metCount": 1
+    }
+  },
+  "excluded": [
+    "d4-gift@d64b6eb",
+    "a-social-gate-1120@f80b879",
+    "E candidate@235b8eb"
+  ],
+  "remaining": [
+    "formal OAuth/owner/session expiration and revocation",
+    "upload GET possession-of-link read access",
+    "reply duplicate 200 vs older contract 409 alignment",
+    "B5 real generation / ReplyBody / preferences and reply material",
+    "C6 executor / 3-5 finds / cache",
+    "D4 concurrency and savepoint fixes",
+    "formal visual assets and E routes",
+    "public deployment and full P0"
+  ]
+}
