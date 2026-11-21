@@ -1,0 +1,121 @@
+{
+  "delivery": "2026-11-21 city wardrobe cutout candidates",
+  "status": "candidate assets; not formal E2b/runtime assets",
+  "assets": [
+    {
+      "file": "01-mint-knit-cardigan.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        1038,
+        623
+      ],
+      "bytes": 840936,
+      "sha256": "ffcbeeb25f3bb5d259b0562448b1f890cb47ce91854df6e34cb34ec1b5e64aa2",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true,
+      "asset_id": "wardrobe-candidate-01",
+      "name": "01-薄荷绿针织开衫",
+      "type": "cloth",
+      "source_sha256": "0b9951789eecf0ebd313858a7fbc1fb9a9a7c92787ba3cb45a8d874b5e1a6b1f",
+      "source_original_in_this_repo_package": false
+    },
+    {
+      "file": "02-layered-mint-office-look-candidate.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        1028,
+        845
+      ],
+      "bytes": 1107982,
+      "sha256": "052f5e57eb29a0cf12fff57de34f3d5f1120db322cddf8bc87bb4947216cba7c",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true,
+      "asset_id": "wardrobe-candidate-02",
+      "name": "02-薄荷绿通勤叠穿组合（候选）",
+      "type": "composite-candidate",
+      "source_sha256": "fb365f5cddb3cfc31d3e59c3d252025b0bcf1ed7d23ca044abb8694e9a3ec745",
+      "source_original_in_this_repo_package": false
+    },
+    {
+      "file": "03-cream-knit-vest.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        743,
+        515
+      ],
+      "bytes": 547730,
+      "sha256": "2a1e2482a4281c283e46be2d3721b413e11c98b391ae98cccb05287a177f9396",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true,
+      "asset_id": "wardrobe-candidate-03",
+      "name": "03-奶油白针织马甲",
+      "type": "cloth",
+      "source_sha256": "2ee58a0a39082138f179cb265498df956b1c2ce7bdd7baf990d779510f80f6ef",
+      "source_original_in_this_repo_package": false
+    },
+    {
+      "file": "04-charcoal-short-blazer.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        1006,
+        586
+      ],
+      "bytes": 390959,
+      "sha256": "b0963e7363b8e48a0f19e427cdf57930db431ebd8794400c288c7ffe4e711654",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true,
+      "asset_id": "wardrobe-candidate-04",
+      "name": "04-石墨灰短款西装外套",
+      "type": "cloth",
+      "source_sha256": "0e8992327ef45442c45a7836bb1a1f4749a9c73cf983aebf3721f4f414d4582f",
+      "source_original_in_this_repo_package": false
+    }
+  ],
+  "processing_and_limits": [
+    "The four original 2048x2048 source PNGs were retained in the local working package, but are intentionally not included in this repository payload; source SHA-256 values are recorded for traceability.",
+    "Cutout PNGs are RGBA; transparent corners are recorded per asset.",
+    "No resizing, redrawing, repainting or canvas/anchor normalization was performed.",
+    "Asset 02 is a complete layered outfit candidate, not a single cloth layer.",
+    "Formal new-base-body alignment, canvas, pixel grid, anchors, layer order and assembly remain unverified."
+  ]
+}

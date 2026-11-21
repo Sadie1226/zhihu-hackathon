@@ -1,0 +1,100 @@
+{
+  "delivery": "2026-11-21 nature exploration full-look reference candidates",
+  "status": "full-character visual references only; not transparent clothing layers",
+  "assets": [
+    {
+      "file": "01-leaf-gather-look-variant-a.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        2048,
+        2048
+      ],
+      "bytes": 4025953,
+      "sha256": "97f7ac469b78a2b3cdebc41b67147d9a0e4dbdb6cb509c50b3e3b8b3df8a25ac",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "corner_alpha": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "all_corners_transparent": false
+    },
+    {
+      "file": "02-leaf-gather-look-variant-b.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        2048,
+        2048
+      ],
+      "bytes": 4025953,
+      "sha256": "97f7ac469b78a2b3cdebc41b67147d9a0e4dbdb6cb509c50b3e3b8b3df8a25ac",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "corner_alpha": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "all_corners_transparent": false
+    },
+    {
+      "file": "03-seaside-shell-trip-look.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        2048,
+        2048
+      ],
+      "bytes": 4961936,
+      "sha256": "0febd540dbfbe340ffbadc8565ac286225157e53f39f5654d9f7776af0dd14e5",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "corner_alpha": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "all_corners_transparent": false
+    },
+    {
+      "file": "04-starry-night-camping-look.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        2048,
+        2048
+      ],
+      "bytes": 3833165,
+      "sha256": "d9b551e325b49961a8fc9740d4cc83d045b5504b0d33aa41eb8e57e6103c7322",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "corner_alpha": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "all_corners_transparent": false
+    }
+  ],
+  "review_notes": [
+    "All four submitted image files are retained.",
+    "The first and second leaf-gather files are byte-identical (same SHA-256). Although the intended design description distinguishes the carried-back element as grass versus flower, the two files currently in this package do not encode a detectable difference; keep both and flag for source re-export rather than inventing a distinction.",
+    "Do not register these full-character images as single cloth/runtime assets.",
+    "They include the complete character and background; use only as visual reference until approved base body, canvas and anchors are confirmed."
+  ]
+}
