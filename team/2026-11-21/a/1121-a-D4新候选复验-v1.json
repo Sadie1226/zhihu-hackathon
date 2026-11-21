@@ -1,0 +1,183 @@
+{
+  "checkedAt": "2026-11-21T07:07:41.071462+00:00",
+  "candidate": "8df44729c2d3dffda8ff76bf64ece3f353d469fa",
+  "baseMain": "349738ee8d9814fc6c4bc10317450191270622f3",
+  "reviewBranch": "a-d4-review-1121",
+  "decision": "REQUEST_CHANGES_NO_MAIN_MERGE",
+  "sourceDiff": {
+    "files": 25,
+    "socialFiles": 11,
+    "scripts": 2,
+    "dDocuments": 12,
+    "contractsChanged": false,
+    "otherOwnersCodeChanged": false
+  },
+  "environment": {
+    "node": "v24.11.1",
+    "typescript": "5.9.3",
+    "platform": "Windows",
+    "isolatedCandidateUsesSameInstalledDependencies": true
+  },
+  "social": {
+    "exitCode": 0,
+    "total": 170,
+    "suites": {
+      "rules": 50,
+      "meet": 35,
+      "gift": 41,
+      "store.contract": 32,
+      "tx.concurrency": 12
+    }
+  },
+  "reverseProof": {
+    "candidateTests": "8df4472 tx.concurrency.test.ts",
+    "implementationOnly": "d64b6eb meet.ts/sqlite-store.ts",
+    "pass": 5,
+    "fail": 7,
+    "exitCode": 1,
+    "failed": [
+      "C1",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8"
+    ]
+  },
+  "originalAReproductionAgainstNewCandidate": {
+    "sourceRef": "8df4472",
+    "recordExchange": {
+      "inTransactionAtSourceRead": true,
+      "concurrentUpdate": false,
+      "blocked": true,
+      "actualSourceMode": "fixture",
+      "savedSourceMode": "fixture",
+      "matches": true
+    },
+    "sendGift": {
+      "inTransactionAtSourceRead": true,
+      "concurrentUpdate": false,
+      "blocked": true,
+      "actualSourceMode": "fixture",
+      "savedSourceMode": "fixture",
+      "matches": true
+    },
+    "savepoint": {
+      "nestedSql": [
+        "BEGIN IMMEDIATE",
+        "SAVEPOINT sp_d4_1",
+        "RELEASE sp_d4_1",
+        "COMMIT"
+      ],
+      "hasReleaseOnSuccess": true
+    },
+    "meetStatusRace": {
+      "changedBeforeTransaction": true,
+      "actualTripStatus": "done",
+      "exchangeCount": 0,
+      "relationCount": 0
+    }
+  },
+  "candidateChecks": {
+    "npmTest": {
+      "exitCode": 0,
+      "tests": 157,
+      "pass": 157,
+      "fail": 0
+    },
+    "lintExistingScope": {
+      "exitCode": 0,
+      "socialNotIncludedInPackageLint": true
+    },
+    "checkAll": {
+      "exitCode": 0,
+      "gateCount": 4,
+      "socialNotIncluded": true
+    },
+    "typecheck": {
+      "exitCode": 2,
+      "errors": [
+        {
+          "file": "lib/social/tx.concurrency.test.ts",
+          "line": 196,
+          "column": 30,
+          "code": "TS2339",
+          "message": "Property 'blocked' does not exist on type 'never'."
+        },
+        {
+          "file": "lib/social/tx.concurrency.test.ts",
+          "line": 197,
+          "column": 37,
+          "code": "TS2339",
+          "message": "Property 'message' does not exist on type 'never'."
+        },
+        {
+          "file": "lib/social/tx.concurrency.test.ts",
+          "line": 197,
+          "column": 84,
+          "code": "TS2339",
+          "message": "Property 'message' does not exist on type 'never'."
+        },
+        {
+          "file": "lib/social/tx.concurrency.test.ts",
+          "line": 290,
+          "column": 30,
+          "code": "TS2339",
+          "message": "Property 'blocked' does not exist on type 'never'."
+        },
+        {
+          "file": "lib/social/tx.concurrency.test.ts",
+          "line": 383,
+          "column": 30,
+          "code": "TS2339",
+          "message": "Property 'blocked' does not exist on type 'never'."
+        },
+        {
+          "file": "scripts/e2e-d4.ts",
+          "line": 61,
+          "column": 76,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'SQLInputValue'."
+        },
+        {
+          "file": "scripts/e2e-d4.ts",
+          "line": 219,
+          "column": 82,
+          "code": "TS2698",
+          "message": "Spread types may only be created from object types."
+        }
+      ]
+    },
+    "productionBuild": {
+      "result": "NOT_RUN",
+      "reason": "Candidate failed TypeScript prerequisite; not marked build-passed"
+    }
+  },
+  "baselineMainTypecheck": {
+    "exitCode": 0
+  },
+  "e2e": {
+    "originalScript": {
+      "exitCode": 1,
+      "error": "unable to open database file",
+      "sqliteErrcode": 14,
+      "reason": "fixed /tmp/d4_e2e.db does not open on this Windows environment"
+    },
+    "privatePathOnlyAdaptation": {
+      "exitCode": 0,
+      "onlyDifference": "DBFILE changed to writable isolated fixture path",
+      "exchangeRows": 6,
+      "relationRows": 1,
+      "metCount": 3,
+      "notOriginalScriptPass": true
+    }
+  },
+  "mainMerged": false,
+  "mainPushed": false,
+  "tagCreated": false,
+  "socialGateEnabledOnMain": false,
+  "realProviderCalled": false,
+  "realOAuth": false,
+  "publicDeployment": false
+}
