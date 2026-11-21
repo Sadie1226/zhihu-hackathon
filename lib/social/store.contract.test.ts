@@ -354,6 +354,52 @@ for (const scene of [memoryScene(), sqliteScene()]) {
     assert.equal(scene.countExchange(), exBefore, '外层写没撤 —— 错误没传出去时整笔必须回滚')
     assert.equal(store.readExchange('ex_nest_all_outer'), null)
   })
+
+  // 17—19. 事务回调必须同步。C8 最可能的写法错误就是「在事务里 await 一下」，
+  // 而那种写法**不会报错**：async 回调在第一个 await 就交出控制权，外层照样 COMMIT，
+  // 真正的写落在事务外面。三条用例把这个坑钉死，两套实现必须同样拒。
+  check('17 事务回调是 async → 抛 ASYNC_TRANSACTION，且已写的被回滚', () => {
+    const exBefore = scene.countExchange()
+    let code: string | undefined
+    try {
+      // 故意写成 async：这正是要拦的形状
+      store.transaction(async () => {
+        store.insertExchange(exchangeRow('ex_async_drop', '异步里写的'))
+      })
+    } catch (err) {
+      code = (err as { code?: string }).code
+    }
+    assert.equal(code, 'ASYNC_TRANSACTION', '异步回调没被拒 —— 事务会提前提交，写落在事务外')
+    assert.equal(scene.countExchange(), exBefore, '拒了却留下了写 —— 回滚没走到')
+    assert.equal(store.readExchange('ex_async_drop'), null)
+  })
+
+  check('18 返回 thenable（不是真 Promise）同样拒 —— 不靠 instanceof', () => {
+    let code: string | undefined
+    try {
+      store.transaction(() => ({ then: () => undefined }))
+    } catch (err) {
+      code = (err as { code?: string }).code
+    }
+    assert.equal(code, 'ASYNC_TRANSACTION')
+  })
+
+  check('19 内层 async 被拒、外层接住 → 只撤内层，外层写留', () => {
+    const exBefore = scene.countExchange()
+    store.transaction(() => {
+      store.insertExchange(exchangeRow('ex_async_outer_keep', '外层同步写的'))
+      try {
+        store.transaction(async () => {
+          store.insertExchange(exchangeRow('ex_async_inner_drop', '内层异步写的'))
+        })
+      } catch {
+        // 外层明确接住：内层做不成、外层继续
+      }
+    })
+    assert.equal(store.readExchange('ex_async_outer_keep') !== null, true, '外层写被一起撤了')
+    assert.equal(store.readExchange('ex_async_inner_drop'), null, '内层异步写没被撤')
+    assert.equal(scene.countExchange(), exBefore + 1)
+  })
 }
 
 // ===========================================================================

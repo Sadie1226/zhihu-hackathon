@@ -14,7 +14,7 @@
  */
 
 import type { DatabaseSync } from 'node:sqlite'
-import { pairKey, relationId } from './store.ts'
+import { assertSyncResult, pairKey, relationId } from './store.ts'
 import type {
   ExchangeRow,
   FindSource,
@@ -216,7 +216,9 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
         depth = 1
         let committed = false
         try {
-          const value = fn()
+          // 同步检查放在 COMMIT 之前：fn 若返回 Promise，真正要写的还在后面，
+          // 这时候 COMMIT 等于提交了个空事务，写反而落在事务外面。
+          const value = assertSyncResult(fn())
           db.exec('COMMIT')
           committed = true
           return value
@@ -234,7 +236,7 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
       depth += 1
       db.exec(`SAVEPOINT ${sp}`)
       try {
-        const value = fn()
+        const value = assertSyncResult(fn())
         // 成功也要释放：不释放，savepoint 会一直挂到外层 COMMIT，
         // 期间同名/多层嵌套的语义都会变形（A 11-21 实测只走到 COMMIT，没看到 RELEASE）。
         db.exec(`RELEASE ${sp}`)

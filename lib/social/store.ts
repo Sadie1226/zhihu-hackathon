@@ -184,7 +184,57 @@ export function relationId(a: string, b: string): string {
 }
 
 // ===========================================================================
-// 三、内存实现（测试与 Mock 阶段用）
+// 三、事务回调必须是同步的
+// ===========================================================================
+//
+// `transaction(fn)` 的语义是「fn 跑完，一次 COMMIT」。这个语义只在 fn 同步时成立：
+// fn 若是 async，会在第一个 await 处就交出控制权并返回一个 Promise —— 调用方看到的
+// 是「fn 已经完成」，COMMIT / ROLLBACK 于是发生在真正的写之前，事务形同虚设，
+// 而且失败的那一刻看不出来，只有数据对不上时才暴露。
+//
+// A 11-21 的接入条件里写了「不要在回调中 await 网络调用」，但口头约束在联调时拦不住人。
+// 这条把它变成一句会立刻炸的检查：异步回调交给 transaction，直接抛 ASYNC_TRANSACTION。
+
+export class AsyncTransactionError extends Error {
+  readonly code = 'ASYNC_TRANSACTION'
+
+  constructor() {
+    super(
+      'transaction 的回调必须是同步的：返回了 Promise / thenable。' +
+        '异步步骤（HTTP、读写文件、任何 await）要放在事务之外：' +
+        '先取事实，再进事务只做写。',
+    )
+    this.name = 'AsyncTransactionError'
+  }
+}
+
+/**
+ * 事务回调的返回值必须是同步的。两套实现都过这一关，语义才不会分叉。
+ *
+ * 判据是「有没有 then」，不是 `instanceof Promise`：跨 realm 的 Promise、
+ * 手写的 thenable 都不该漏过去。
+ */
+export function assertSyncResult<T>(value: T): T {
+  const maybe = value as { then?: unknown } | null
+  if (
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof maybe?.then === 'function'
+  ) {
+    // 这个 Promise 还会继续跑完。事务已经判失败，它之后的成败都改不了结论；
+    // 不挂 catch 的话它会变成 unhandledRejection，把上面这条真正该看的错误埋掉。
+    try {
+      void Promise.resolve(value as unknown as PromiseLike<unknown>).catch(() => {})
+    } catch {
+      /* 挂不上 catch 的 thenable，就算了 —— 不能因为它再抛一次把报错换成别的 */
+    }
+    throw new AsyncTransactionError()
+  }
+  return value
+}
+
+// ===========================================================================
+// 四、内存实现（测试与 Mock 阶段用）
 // ===========================================================================
 //
 // 只用来跑通逻辑和验收，**不代表真实信箱**。c 答复要求「Mock 验收与真实信箱验收
@@ -315,7 +365,7 @@ export function createMemoryStore(opts: MemoryStoreOptions = {}): MemoryStore {
     transaction(fn) {
       const snap = snapshot()
       try {
-        return fn()
+        return assertSyncResult(fn())
       } catch (err) {
         restore(snap)
         throw err
