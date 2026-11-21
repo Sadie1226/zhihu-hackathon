@@ -104,8 +104,14 @@ function countRows(db: DatabaseSync, table: 'exchange' | 'relation'): number {
   return Number(row.n)
 }
 
+/** 另一连接动手的结果：被拦了，还是写进去了。 */
+interface AttackOutcome {
+  blocked: boolean
+  message: string
+}
+
 /** 把一个写操作的结果归纳成「被拦」还是「写进去了」，不让用例被错误消息的细节绊住。 */
-function tryWrite(fn: () => void): { blocked: boolean; message: string } {
+function tryWrite(fn: () => void): AttackOutcome {
   try {
     fn()
     return { blocked: false, message: '' }
@@ -161,13 +167,16 @@ check('C1 双连接：读到来源后另一连接改 find.source_mode → 改不
   const store = createSqliteStore(db)
   const other = secondConnection(file)
 
-  let attackResult: { blocked: boolean; message: string } | null = null
+  // 装进容器而不是用裸 `let x = null`：TS 的控制流分析不认为闭包里的赋值发生过，
+  // 读完仍是 null 类型，断言非空后反而收窄成 never（a 报的 7 处里有 5 处是这个）。
+  // 属性访问不做这种窄化，声明类型一直是 `AttackOutcome | null`。
+  const attack: { result: AttackOutcome | null } = { result: null }
   const guarded = attackingStore(store, (point) => {
     // 只打「读到来源之后」这一枪。事务开始前动手是另一回事（那时谁都拦不住，
     // 也正是 C3/C4 那两个用例要证明「必须在事务内重验」的原因）。
     if (point !== 'afterGetFindSource') return
     // 这就是 A 复现的那一手：把 fixture 改成 cache。
-    attackResult = tryWrite(() => {
+    attack.result = tryWrite(() => {
       other
         .prepare(`UPDATE find SET source_mode = 'cache' WHERE id = 'find_a1'`)
         .run()
@@ -192,9 +201,11 @@ check('C1 双连接：读到来源后另一连接改 find.source_mode → 改不
     { idempotencyKey: 'tx-src-1', createdAt: T0 },
   )
 
-  assert.ok(attackResult !== null, '攻击必须在查来源之后触发，否则这个用例没测到东西')
-  assert.equal(attackResult!.blocked, true, '事务已拿写锁，另一连接的 UPDATE 必须被拦')
-  assert.equal(isBusy(attackResult!.message), true, `被拦的原因应是锁冲突，实际：${attackResult!.message}`)
+  // 先落成局部常量再断言：断言之后读的是同一个值，不会被后来的调用重置窄化。
+  const outcome = attack.result
+  assert.ok(outcome !== null, '攻击必须在查来源之后触发，否则这个用例没测到东西')
+  assert.equal(outcome.blocked, true, '事务已拿写锁，另一连接的 UPDATE 必须被拦')
+  assert.equal(isBusy(outcome.message), true, `被拦的原因应是锁冲突，实际：${outcome.message}`)
 
   // 库里的档位没有被改，写入的 payload 也是 fixture —— 两处一致。
   const row = db.prepare(`SELECT source_mode FROM find WHERE id = 'find_a1'`).get() as {
@@ -246,10 +257,13 @@ check('C2b 嵌套调用：外层事务里调 recordExchange，来源查询照样
   const store = createSqliteStore(db)
   const other = secondConnection(file)
 
-  let attackResult: { blocked: boolean; message: string } | null = null
+  // 装进容器而不是用裸 `let x = null`：TS 的控制流分析不认为闭包里的赋值发生过，
+  // 读完仍是 null 类型，断言非空后反而收窄成 never（a 报的 7 处里有 5 处是这个）。
+  // 属性访问不做这种窄化，声明类型一直是 `AttackOutcome | null`。
+  const attack: { result: AttackOutcome | null } = { result: null }
   const guarded = attackingStore(store, (point) => {
     if (point !== 'afterGetFindSource') return
-    attackResult = tryWrite(() => {
+    attack.result = tryWrite(() => {
       other
         .prepare(`UPDATE find SET source_mode = 'cache' WHERE id = 'find_a1'`)
         .run()
@@ -286,8 +300,9 @@ check('C2b 嵌套调用：外层事务里调 recordExchange，来源查询照样
     )
   })
 
-  assert.ok(attackResult !== null, '嵌套时也必须真的走到查来源那一步')
-  assert.equal(attackResult!.blocked, true, '嵌套进 SAVEPOINT 之后，外层已持有写锁，攻击仍须被拦')
+  const outcome = attack.result
+  assert.ok(outcome !== null, '嵌套时也必须真的走到查来源那一步')
+  assert.equal(outcome.blocked, true, '嵌套进 SAVEPOINT 之后，外层已持有写锁，攻击仍须被拦')
   assert.equal(countRows(db, 'exchange'), 2, '外层那条与内层那条都要落下')
   const modes = db.prepare(`SELECT source_mode FROM find WHERE id = 'find_a1'`).get() as {
     source_mode: string
@@ -353,10 +368,13 @@ check('C3 双连接：检查后、事务前把 trip 改成 done → 拒 TRIP_NOT
   const store = createSqliteStore(db)
   const other = secondConnection(file)
 
-  let attackResult: { blocked: boolean; message: string } | null = null
+  // 装进容器而不是用裸 `let x = null`：TS 的控制流分析不认为闭包里的赋值发生过，
+  // 读完仍是 null 类型，断言非空后反而收窄成 never（a 报的 7 处里有 5 处是这个）。
+  // 属性访问不做这种窄化，声明类型一直是 `AttackOutcome | null`。
+  const attack: { result: AttackOutcome | null } = { result: null }
   const guarded = attackingStore(store, () => {
     // 事务还没开，这次改是**会成功的** —— 这正是要堵的窗口。
-    attackResult = tryWrite(() => {
+    attack.result = tryWrite(() => {
       other
         .prepare(`UPDATE trip SET status = 'done', ended_at = ? WHERE id = 'trip_a1'`)
         .run(T0)
@@ -379,8 +397,9 @@ check('C3 双连接：检查后、事务前把 trip 改成 done → 拒 TRIP_NOT
     },
   )
 
-  assert.ok(attackResult !== null, '攻击必须在事务开始前触发')
-  assert.equal(attackResult!.blocked, false, '事务外改状态是允许发生的 —— 所以必须在事务内重验，而不是假设它不会发生')
+  const outcome = attack.result
+  assert.ok(outcome !== null, '攻击必须在事务开始前触发')
+  assert.equal(outcome.blocked, false, '事务外改状态是允许发生的 —— 所以必须在事务内重验，而不是假设它不会发生')
 
   assert.equal(countRows(db, 'exchange'), 0, '前提已失效就不能留下 exchange')
   assert.equal(countRows(db, 'relation'), 0, '关系也不能留 —— 否则下一轮把它当老关系')
