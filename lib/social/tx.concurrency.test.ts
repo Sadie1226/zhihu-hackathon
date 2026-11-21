@@ -241,6 +241,107 @@ check('C2 双连接：事务提交后另一连接能改 —— 拦的是「中�
   db.close()
 })
 
+check('C2b 嵌套调用：外层事务里调 recordExchange，来源查询照样在事务内（不因嵌套掉保护）', () => {
+  const { file, db } = freshFileDb()
+  const store = createSqliteStore(db)
+  const other = secondConnection(file)
+
+  let attackResult: { blocked: boolean; message: string } | null = null
+  const guarded = attackingStore(store, (point) => {
+    if (point !== 'afterGetFindSource') return
+    attackResult = tryWrite(() => {
+      other
+        .prepare(`UPDATE find SET source_mode = 'cache' WHERE id = 'find_a1'`)
+        .run()
+    })
+  })
+
+  // C8 的真实形状：外层开事务（验寄件权/写别的东西），里层调 D 的写入函数。
+  guarded.transaction(() => {
+    store.insertExchange({
+      id: 'ex_outer_guard',
+      fromDog: A,
+      toDog: B,
+      kind: 'greeting',
+      payload: { kind: 'greeting', line: '外层先写一条', weather: null },
+      deliverAfterTripSeq: 1,
+      createdAt: T0,
+    })
+    recordExchange(
+      guarded,
+      {
+        fromDog: A,
+        toDog: B,
+        kind: 'find',
+        payload: {
+          kind: 'find',
+          findTitle: '一条发现',
+          findExcerpt: null,
+          sourceUrl: 'https://www.zhihu.com/question/1',
+          sourceFindId: 'find_a1',
+          sourceMode: 'fixture',
+        },
+      },
+      { idempotencyKey: 'tx-nested', createdAt: T0 },
+    )
+  })
+
+  assert.ok(attackResult !== null, '嵌套时也必须真的走到查来源那一步')
+  assert.equal(attackResult!.blocked, true, '嵌套进 SAVEPOINT 之后，外层已持有写锁，攻击仍须被拦')
+  assert.equal(countRows(db, 'exchange'), 2, '外层那条与内层那条都要落下')
+  const modes = db.prepare(`SELECT source_mode FROM find WHERE id = 'find_a1'`).get() as {
+    source_mode: string
+  }
+  assert.equal(modes.source_mode, 'fixture')
+
+  other.close()
+  db.close()
+})
+
+check('C2c 嵌套调用：内层来源不符而失败 → 只撤内层，外层已写的那条留', () => {
+  const { db } = freshFileDb()
+  const store = createSqliteStore(db)
+
+  store.transaction(() => {
+    store.insertExchange({
+      id: 'ex_outer_keep',
+      fromDog: A,
+      toDog: B,
+      kind: 'greeting',
+      payload: { kind: 'greeting', line: '外层要留', weather: null },
+      deliverAfterTripSeq: 1,
+      createdAt: T0,
+    })
+    // 谎报档位：库里是 fixture，声明 cache → 内层抛 PROVENANCE_MISMATCH
+    assert.throws(
+      () =>
+        recordExchange(
+          store,
+          {
+            fromDog: A,
+            toDog: B,
+            kind: 'find',
+            payload: {
+              kind: 'find',
+              findTitle: '一条发现',
+              findExcerpt: null,
+              sourceUrl: 'https://www.zhihu.com/question/1',
+              sourceFindId: 'find_a1',
+              sourceMode: 'cache',
+            },
+          },
+          { idempotencyKey: 'tx-nested-fail', createdAt: T0 },
+        ),
+      /PROVENANCE_MISMATCH|不一致/,
+    )
+  })
+
+  assert.equal(countRows(db, 'exchange'), 1)
+  const left = db.prepare(`SELECT id FROM exchange`).get() as { id: string }
+  assert.equal(left.id, 'ex_outer_keep', '内层失败只能撤内层，外层那条必须留')
+  db.close()
+})
+
 // ===========================================================================
 // 二、meet：决定写入的状态必须在事务内复核
 // ===========================================================================
@@ -386,7 +487,7 @@ check('C6 内层成功后立即 RELEASE（原来只有失败路径才释放）',
   db.close()
 })
 
-check('C7 连续两次内层成功 → 各自释放，名字不撞（原来两次都叫 sp_d4_1）', () => {
+check('C7 连着两次内层成功 → 各自释放，名字不撞（原来两次都叫 sp_d4_1）', () => {
   const { db } = freshFileDb()
   const store = createSqliteStore(db)
 
@@ -408,7 +509,7 @@ check('C7 连续两次内层成功 → 各自释放，名字不撞（原来两�
     expectReleased(db, 'sp_d4_2')
   })
 
-  assert.equal(countRows(db, 'exchange'), 2, '连续两次内层都成功，两条都该留下')
+  assert.equal(countRows(db, 'exchange'), 2, '连着两次内层都成功，两条都该留下')
   db.close()
 })
 

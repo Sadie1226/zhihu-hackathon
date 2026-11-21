@@ -39,10 +39,10 @@ export function createSqliteStore(db: DatabaseSync): SocialStore {
    *
    * **11-21 A 复核指出：成功路径漏了 `RELEASE`。** 原实现只在失败分支 RELEASE，
    * 内层成功就一直把 savepoint 挂在栈上，名字还每次都叫 `sp_d4_1`（同名会栈式叠加）。
-   * 现在成功路径也 RELEASE，名字用单调计数器 `sp_d4_<n>` —— 连续两次内层不会再撞名。
+   * 现在成功路径也 RELEASE，名字用单调计数器 `sp_d4_<n>` —— 连着两次内层也不会撞名。
    */
   let depth = 0
-  /** savepoint 名的单调计数器；只增不减，保证同一个事务里连续多次内层各得其所。 */
+  /** savepoint 名的单调计数器；只增不减，保证同一个事务里多次内层各得其所。 */
   let spSeq = 0
 
   return {
