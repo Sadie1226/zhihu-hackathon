@@ -22,9 +22,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // 另一份抢同名库文件。目录在 finally 里删掉，库文件不留在机器上。
 const RUN_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'd4-e2e-'))
 const DBFILE = path.join(RUN_DIR, 'd4_e2e.db')
-const db = new DatabaseSync(DBFILE)
-db.exec('PRAGMA foreign_keys = ON')
-db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+
+// 建库、读 schema 这一步也可能失败（schema 被改坏、磁盘满、权限不够）。
+// 所以它和 main() 一起在 try 里 —— 只在 main() 外面建的话，初始化抛错就留下一个空目录。
+// 目录都建出来了，清理的责任就已经背上，不能等 main() 开始才算数。
+let db: DatabaseSync | null = null
 
 // 断言器：只比「值对不对」，不中断执行 —— 一次跑完能看到所有不符项，最后统一退非零。
 let failures = 0
@@ -37,7 +39,7 @@ const expect = (label: string, actual: unknown, wanted: unknown): void => {
   console.error(`  ✗ ${label}：期望 ${String(wanted)}，实际 ${String(actual)}`)
 }
 
-function main(): void {
+function main(db: DatabaseSync): void {
   const T0 = '2026-11-19T08:00:00Z'
   const T1 = '2026-11-19T16:00:00Z'
   const dogRow = (id: string, sample = 0) =>
@@ -320,6 +322,13 @@ function main(): void {
   console.log(db.prepare('SELECT dog_a, dog_b, met_count, first_met_at, last_met_at, is_blocked FROM relation').all())
 
   console.log(`\n合计：exchange ${n('exchange')} 行 · relation ${n('relation')} 行 · 库文件 ${DBFILE}`)
+
+  // 收尾的行数也是断言，不是「打印出来给人看」—— 前面任何一步多写或漏写，
+  // 单看每一步的断言可能都对，只有总数会露出来。
+  expect('收尾：exchange 6 行', n('exchange'), 6)
+  expect('收尾：relation 1 行', n('relation'), 1)
+  expect('收尾：met_count = 3', rel().met_count, 3)
+
   if (failures > 0) {
     console.error(`\n${failures} 项断言未通过`)
     process.exitCode = 1
@@ -329,10 +338,18 @@ function main(): void {
 }
 
 try {
-  main()
+  db = new DatabaseSync(DBFILE)
+  db.exec('PRAGMA foreign_keys = ON')
+  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+  main(db)
 } finally {
   // 先关句柄再删目录：Windows 上文件还开着就删不掉。
-  db.close()
+  // 用 ?. —— 如果 new DatabaseSync 就失败了，这里没有句柄可关，但目录仍然要删。
+  try {
+    db?.close()
+  } catch {
+    // 关不掉也要继续删目录
+  }
   try {
     fs.rmSync(RUN_DIR, { recursive: true, force: true })
   } catch {
