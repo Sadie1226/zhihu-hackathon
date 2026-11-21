@@ -1,0 +1,218 @@
+{
+  "checkedAt": "2026-11-21T07:38:57.905798+00:00",
+  "candidate": "c0d1586eb265e3e5540318bfe94ac8abeb077110",
+  "previousCandidate": "8df44729c2d3dffda8ff76bf64ece3f353d469fa",
+  "main": "349738ee8d9814fc6c4bc10317450191270622f3",
+  "decision": "APPROVE_D4_LIBRARY_INTEGRATION_NO_NEW_BLOCKING_FINDINGS",
+  "scope": "Review only; no merge or main push this turn",
+  "changesSincePrevious": [
+    "lib/social/tx.concurrency.test.ts",
+    "scripts/e2e-d4.ts",
+    "team/2026-11-21/d/1121-d4-类型与跨平台自检修订-v1.md"
+  ],
+  "productionAndContractsAndLockUnchanged": {
+    "sameAs8df4472": {
+      "contracts/schema.sql": true,
+      "contracts/types.ts": true,
+      "contracts/api.md": true,
+      "lib/social/meet.ts": true,
+      "lib/social/gift.ts": true,
+      "lib/social/sqlite-store.ts": true,
+      "lib/social/store.ts": true,
+      "lib/social/provenance.ts": true,
+      "package.json": true,
+      "package-lock.json": true,
+      "tsconfig.json": true,
+      "next.config.ts": true
+    },
+    "failureRunTempCleaned": true
+  },
+  "candidateSourceChangesComparedWithOriginalArchive": [],
+  "environment": {
+    "os": "Windows",
+    "node": "v24.11.1",
+    "npm": "11.6.2",
+    "typescript": "5.9.3",
+    "nodeTypes": "24.19.2",
+    "installPerformed": false,
+    "lockfileChanged": false,
+    "projectEngine": ">=24.0.0",
+    "olderNode22AuthorEvidenceDoesNotProveForwardCompatibility": true,
+    "targetNode24Verified": true
+  },
+  "checks": {
+    "typecheck": 0,
+    "defaultProductionBuild": 0,
+    "npmTest": {
+      "exitCode": 0,
+      "tests": 157,
+      "pass": 157,
+      "fail": 0
+    },
+    "social": {
+      "exitCode": 0,
+      "rules": 50,
+      "meet": 35,
+      "gift": 41,
+      "storeContract": 32,
+      "txConcurrency": 12,
+      "total": 170
+    },
+    "lintExistingScope": 0,
+    "lintSocialProductionAndE2E": 0,
+    "lintExtraIncludingSocialTests": {
+      "exitCode": 1,
+      "file": "lib/social/gift.test.ts",
+      "errors": [
+        {
+          "line": 21,
+          "rule": "@typescript-eslint/no-unused-vars"
+        },
+        {
+          "line": 55,
+          "rule": "no-useless-assignment"
+        },
+        {
+          "line": 60,
+          "rule": "preserve-caught-error"
+        },
+        {
+          "line": 62,
+          "rule": "preserve-caught-error"
+        }
+      ],
+      "classification": "Nonblocking existing test cleanup; excluded from current package lint"
+    },
+    "e2e": {
+      "exitCode": 0,
+      "assertionsPassed": 28,
+      "temporaryDirectoryCleaned": true
+    },
+    "e2eIntentionalFailure": {
+      "exitCode": 1,
+      "assertionsFailed": 1,
+      "temporaryDirectoryCleaned": true
+    },
+    "privateFifthGateMutationProof": {
+      "privateFifthGateOnly": true,
+      "baselineExit": 0,
+      "mutations": [
+        {
+          "scenario": "whitelist-weakened",
+          "socialExit": 1,
+          "allExit": 1
+        },
+        {
+          "scenario": "recipient-foreign-key-removed",
+          "socialExit": 1,
+          "allExit": 1
+        }
+      ],
+      "passed": true
+    },
+    "productionMessageAndControlledC4Delivery": {
+      "fixtureOnly": true,
+      "realApiCalled": false,
+      "http": [
+        {
+          "scenario": "done",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "failed",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "timeout",
+          "status": 200,
+          "realNull": false,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "pending",
+          "status": 200,
+          "realNull": true,
+          "noStore": true,
+          "varyCookie": true
+        },
+        {
+          "scenario": "no-cookie",
+          "status": 404
+        },
+        {
+          "scenario": "foreign-cookie",
+          "status": 404
+        },
+        {
+          "scenario": "post",
+          "status": 405
+        },
+        {
+          "scenario": "query-override",
+          "status": 404
+        }
+      ],
+      "delivery": [
+        {
+          "scenario": "0->1",
+          "threshold": 1,
+          "pendingDoesNotDeliver": true,
+          "actualStartDelivers": true,
+          "replayPreservesTimestamp": true,
+          "duplicateGiftPreservesThreshold": true,
+          "controlledFixtureSessionOnly": true
+        },
+        {
+          "scenario": "1->2",
+          "threshold": 2,
+          "pendingDoesNotDeliver": true,
+          "actualStartDelivers": true,
+          "replayPreservesTimestamp": true,
+          "duplicateGiftPreservesThreshold": true,
+          "controlledFixtureSessionOnly": true
+        }
+      ],
+      "errors": []
+    }
+  },
+  "nonblockingNotes": [
+    "Social test lint cleanup and lint coverage remain outside current package script",
+    "E2E initialization is before try/finally; initialization failure could leave fixture temp directory",
+    "E2E final row counts printed but not separately asserted; 28 existing assertions pass"
+  ],
+  "integrationConditions": [
+    "A adds social script to check-all fifth gate in integration commit and verifies merged tree",
+    "C8 validates trusted sender/owner with same SocialStore transaction instance",
+    "Transaction callbacks synchronous; no await or separate raw BEGIN or independent adapter instance",
+    "meet gate may run twice; use side-effect-free checks"
+  ],
+  "productRemaining": [
+    "formal OAuth/stable owner/revocation and same-owner matching exclusion",
+    "C8 authenticated HTTP and real seed scheduling",
+    "public deployment and full P0"
+  ],
+  "merged": false,
+  "mainPushed": false,
+  "tagCreated": false,
+  "realProviderCalled": false,
+  "logSha256": {
+    "build.log": "5dfaaa3ad9f9cf5253038c0aa1dcf3c68031e8e2f20039597c4487e6c752c0ee",
+    "typecheck.log": "a911dc6ac106b9d24bb83aeeced674d3b57c15f2585631f4cf612b534c06f2dc",
+    "social.log": "0b1ac01d097b6d3fcd28dccd37b092799e22b993093d88e94dce6a731dfbf634",
+    "test.log": "04b990adf8fdd1283e130ed0069b8ec897ac10d73dc1e51ecd312e44087e4f10",
+    "lint.log": "250e45067a1a9996f7f25558eb5f6cfe6b9231f1f200249116d723d46019c5d8",
+    "social-extra-lint.log": "152e0571ddabbd9578e748016e683d0ccf32b5a858b869854b8f4a851f4170be",
+    "social-production-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "e2e.log": "cd6e7b7cae2a7ef9698bf97e24568b34879fd2f7e487ae7c64f8ea74a23e9928",
+    "e2e-broken.log": "215236370f2241f47c0b14b6510c289a55068291692c6e4a33d35e29c5b786b6",
+    "five-gate-baseline.log": "da63d84519e314fb43c28c1c694752c43fae73744944ae6bef22dfb4c5da8220",
+    "message-delivery.log": "5624299fa2771fb50c5bc963fbba098fb7a34f6708a04c37819a5444613b9a26"
+  }
+}
