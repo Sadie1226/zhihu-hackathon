@@ -10,7 +10,7 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "lint": "eslint app components lib/adoption lib/messages lib/db lib/auth lib/trips lib/wishes lib/zhihu scripts/c2 scripts/c4 scripts/c5 scripts/a5 tests next.config.ts eslint.config.mjs --max-warnings=0",
+    "lint": "eslint app components lib/adoption lib/messages lib/db lib/auth lib/trips lib/wishes lib/zhihu lib/social scripts/c2 scripts/c4 scripts/c5 scripts/a5 scripts/e2e-d4.ts tests next.config.ts eslint.config.mjs --max-warnings=0",
     "test": "node --test tests/*.test.mjs && node scripts/check-contracts.mjs && node scripts/check-mailbox.mjs",
     "typecheck": "tsc --noEmit"
   },

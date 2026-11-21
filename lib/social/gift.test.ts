@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 import { sendCoOwnerMessage, sendGift, GiftError, deliverAfterTripSeqFor } from './gift.ts'
 import { nextDeliverSeq } from './meet.ts'
 import { createMemoryStore } from './store.ts'
-import type { ExchangeRow, MemoryStore } from './store.ts'
+import type { MemoryStore } from './store.ts'
 import { createSqliteStore } from './sqlite-store.ts'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -52,14 +52,13 @@ function check(name: string, fn: () => void): void {
 
 /** 期望被拒。name 传 '' 表示由外层 check 计数（避免输出里出现空名字行）。 */
 function expectCode(name: string, fn: () => void, code: string): void {
-  let got: string | null = null
   try {
     fn()
   } catch (err) {
     const e = err as GiftError
-    if (!(err instanceof GiftError)) throw new Error(`期望 GiftError(${code})，实际抛出别的：${(err as Error).message}`)
-    got = String(e.code)
-    if (got !== code) throw new Error(`期望 ${code}，实际 ${got}：${e.message}`)
+    if (!(err instanceof GiftError)) throw new Error(`期望 GiftError(${code})，实际抛出别的：${(err as Error).message}`, { cause: err })
+    const got = String(e.code)
+    if (got !== code) throw new Error(`期望 ${code}，实际 ${got}：${e.message}`, { cause: err })
     if (name !== '') {
       pass++
       console.log(`  ✅ ${name} → ${code}`)
