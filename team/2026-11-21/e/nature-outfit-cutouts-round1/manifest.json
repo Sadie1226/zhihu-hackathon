@@ -1,0 +1,78 @@
+{
+  "delivery": "2026-11-21 nature outfit first-round cutouts",
+  "status": "visual cutout candidates; not formal runtime garment layers",
+  "assets": [
+    {
+      "file": "01_frog_forest_explorer.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        1012,
+        1272
+      ],
+      "bytes": 1299895,
+      "sha256": "237d0aa4ea91919fefe8f23a1018feee936cd19c4584b95041f8c38edbe78b2a",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true
+    },
+    {
+      "file": "02_sky_blue_hoodie.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        872,
+        1199
+      ],
+      "bytes": 856732,
+      "sha256": "c9b0e3d56e61f9ddaaab1d0d59214e410f430dda2d8837ba66a1dca8be83edb6",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true
+    },
+    {
+      "file": "03_winter_postal.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "size": [
+        892,
+        1325
+      ],
+      "bytes": 1258522,
+      "sha256": "0a346ced00dfe5280b870a75cc276fd39c935c6b6a13b60cb77dfcd50cfa837b",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_corners_transparent": true
+    }
+  ],
+  "notes": [
+    "RGBA PNG; alpha transparency and corner alpha are recorded per file.",
+    "Extracted from full-look images; not original layered artwork.",
+    "Face opening and garment/body occlusion must be rechecked against the approved new neutral base body.",
+    "Canvas, pixel grid, anchors and layer order are not formally approved."
+  ]
+}
