@@ -1,0 +1,386 @@
+{
+  "checkedAt": "2026-11-22T05:42:07.273760+00:00",
+  "release": "v8-1122",
+  "baseMain": "4a6e0bbb3a74279dc3e913a213cac1874b7b2b17",
+  "codeMergeHead": "57632a1e70b2de5d08a06ef7fa08f36a25ed3ee3",
+  "merged": {
+    "d4-e2e-1121": "60d4e814ad6e083ba72acf27ba09b1d2f7dcb9f5",
+    "e4-e11-docs-20261121": "3ec1621e8e00eae70a2b2ba4782354c74d795922",
+    "e-visual-assets-20261121": "96c77f58259e8e2dbcd716c532462b0b592f7524"
+  },
+  "held": {
+    "B": {
+      "sha": "f06197f1d10a5ad281d684720d31fcb04688a571",
+      "test": {
+        "exitCode": 1,
+        "tests": 177,
+        "pass": 176,
+        "fail": 1,
+        "reason": "missing app/(b)/b6-invitations.ts; suite loading failed"
+      },
+      "typecheck": {
+        "exitCode": 2,
+        "code": "TS2307"
+      }
+    },
+    "DAsync": {
+      "sha": "2bf5df3c5bf62787bcc37ea966cd33919de7f590",
+      "existingSocial": 176,
+      "existingPass": true,
+      "additionalReproduction": {
+        "candidate": "2bf5df3",
+        "thenable": {
+          "error": "ASYNC_TRANSACTION",
+          "immediately": 0,
+          "afterMicrotask": 1
+        },
+        "async": {
+          "error": "ASYNC_TRANSACTION",
+          "afterMicrotask": 2
+        },
+        "fixtureOnly": true
+      }
+    }
+  },
+  "finalChecks": {
+    "mainTests": 157,
+    "social": 170,
+    "e2e": 31,
+    "typecheck": 0,
+    "lint": 0,
+    "defaultBuild": 0,
+    "checkAll": {
+      "exitCode": 0,
+      "gates": 5
+    },
+    "e2eFaults": {
+      "passed": true,
+      "cases": [
+        {
+          "case": "normal",
+          "exitCode": 0,
+          "residue": 0
+        },
+        {
+          "case": "summary-failure",
+          "exitCode": 1,
+          "residue": 0
+        },
+        {
+          "case": "missing-schema",
+          "exitCode": 1,
+          "residue": 0
+        }
+      ]
+    }
+  },
+  "assets": {
+    "decodedPNGs": 22,
+    "allDecode": true,
+    "natureVariantsIdentical": true,
+    "visualAcceptancePerformed": false,
+    "runtimeBound": false,
+    "assets": [
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "1e3e978bfbf81a0ad6c5f26a68d4000372f9c42d223e8e07b410754d7d926a68",
+        "file": "public/assets/dogs/kanshan-neutral-v1/body-back-neutral.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "90f85098e8011552ec35cb63dd60683cd06da121ef059887af937f84f71c0729",
+        "file": "public/assets/dogs/kanshan-neutral-v1/body-front-neutral.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "131c855a511cf81ca55ace047ff3e7c3cd59e78a14fa1be6d71d19951a7345f8",
+        "file": "public/assets/dogs/kanshan-neutral-v1/body-left-neutral.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "3da45be7119235948b57a2f9638887641b659c1649b8bbd850a05ac7eec9e8fd",
+        "file": "public/assets/dogs/kanshan-neutral-v1/body-right-neutral.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "2c18e5f9f7074df65d7355d93f6cc9a9e98f4ab6ddc5a3b13bae48a0247de1b6",
+        "file": "public/assets/dogs/kanshan-neutral-v1/expressions/fullbody-happy.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "de380dcd460966cc1ef4fb268f2969ba01729e415409f1b75be6a61f7187d040",
+        "file": "public/assets/dogs/kanshan-neutral-v1/expressions/fullbody-hope.png"
+      },
+      {
+        "size": [
+          1024,
+          1024
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "866ec18a7af39b156cd554c1b284e80ddba05e7437363a472e79f56de11de81f",
+        "file": "public/assets/dogs/kanshan-neutral-v1/expressions/fullbody-sad.png"
+      },
+      {
+        "size": [
+          1000,
+          1120
+        ],
+        "mode": "RGB",
+        "alpha": null,
+        "sha256": "18b9229d80dac4450f06537c1e5b995917a00f9be8c7d968f5fb06e2710d4164",
+        "file": "public/assets/dogs/kanshan-neutral-v1/review/transparency-preview.png"
+      },
+      {
+        "size": [
+          1600,
+          1180
+        ],
+        "mode": "RGB",
+        "alpha": null,
+        "sha256": "172b7216c552d748e63009efe748ac7ecc47fa2f3a9ac35ef2ef04cd22bafcc4",
+        "file": "team/2026-11-21/e/city-wardrobe-candidates/wardrobe-candidates-preview.png"
+      },
+      {
+        "size": [
+          2048,
+          2048
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          255,
+          255
+        ],
+        "sha256": "97f7ac469b78a2b3cdebc41b67147d9a0e4dbdb6cb509c50b3e3b8b3df8a25ac",
+        "file": "team/2026-11-21/e/nature-look-reference-candidates/01-leaf-gather-look-variant-a.png"
+      },
+      {
+        "size": [
+          2048,
+          2048
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          255,
+          255
+        ],
+        "sha256": "97f7ac469b78a2b3cdebc41b67147d9a0e4dbdb6cb509c50b3e3b8b3df8a25ac",
+        "file": "team/2026-11-21/e/nature-look-reference-candidates/02-leaf-gather-look-variant-b.png"
+      },
+      {
+        "size": [
+          2048,
+          2048
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          255,
+          255
+        ],
+        "sha256": "0febd540dbfbe340ffbadc8565ac286225157e53f39f5654d9f7776af0dd14e5",
+        "file": "team/2026-11-21/e/nature-look-reference-candidates/03-seaside-shell-trip-look.png"
+      },
+      {
+        "size": [
+          2048,
+          2048
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          255,
+          255
+        ],
+        "sha256": "d9b551e325b49961a8fc9740d4cc83d045b5504b0d33aa41eb8e57e6103c7322",
+        "file": "team/2026-11-21/e/nature-look-reference-candidates/04-starry-night-camping-look.png"
+      },
+      {
+        "size": [
+          1260,
+          645
+        ],
+        "mode": "RGB",
+        "alpha": null,
+        "sha256": "127a53ffd32d9c7590805a829e8171f02bddbe45573050d8c0e46cdd61bcb96c",
+        "file": "team/2026-11-21/e/nature-outfit-cutouts-round1/00_cutout_preview.png"
+      },
+      {
+        "size": [
+          1320,
+          670
+        ],
+        "mode": "RGB",
+        "alpha": null,
+        "sha256": "7f693fb7dd22baac4f6066fbba73032d09bdd4428a77137ad3992dc71ce99c4d",
+        "file": "team/2026-11-21/e/nature-outfit-cutouts-round1/00_透明底抠图预览.png"
+      },
+      {
+        "size": [
+          1012,
+          1272
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "237d0aa4ea91919fefe8f23a1018feee936cd19c4584b95041f8c38edbe78b2a",
+        "file": "team/2026-11-21/e/nature-outfit-cutouts-round1/01_frog_forest_explorer.png"
+      },
+      {
+        "size": [
+          872,
+          1199
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "c9b0e3d56e61f9ddaaab1d0d59214e410f430dda2d8837ba66a1dca8be83edb6",
+        "file": "team/2026-11-21/e/nature-outfit-cutouts-round1/02_sky_blue_hoodie.png"
+      },
+      {
+        "size": [
+          892,
+          1325
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "0a346ced00dfe5280b870a75cc276fd39c935c6b6a13b60cb77dfcd50cfa837b",
+        "file": "team/2026-11-21/e/nature-outfit-cutouts-round1/03_winter_postal.png"
+      },
+      {
+        "size": [
+          1038,
+          623
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "ffcbeeb25f3bb5d259b0562448b1f890cb47ce91854df6e34cb34ec1b5e64aa2",
+        "file": "team/2026-11-21/e/city-wardrobe-candidates/wardrobe-candidates/01-mint-knit-cardigan.png"
+      },
+      {
+        "size": [
+          1028,
+          845
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "052f5e57eb29a0cf12fff57de34f3d5f1120db322cddf8bc87bb4947216cba7c",
+        "file": "team/2026-11-21/e/city-wardrobe-candidates/wardrobe-candidates/02-layered-mint-office-look-candidate.png"
+      },
+      {
+        "size": [
+          743,
+          515
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "2a1e2482a4281c283e46be2d3721b413e11c98b391ae98cccb05287a177f9396",
+        "file": "team/2026-11-21/e/city-wardrobe-candidates/wardrobe-candidates/03-cream-knit-vest.png"
+      },
+      {
+        "size": [
+          1006,
+          586
+        ],
+        "mode": "RGBA",
+        "alpha": [
+          0,
+          255
+        ],
+        "sha256": "b0963e7363b8e48a0f19e427cdf57930db431ebd8794400c288c7ffe4e711654",
+        "file": "team/2026-11-21/e/city-wardrobe-candidates/wardrobe-candidates/04-charcoal-short-blazer.png"
+      }
+    ]
+  },
+  "runtimeBindingsChanged": false,
+  "formalVisualAcceptance": false,
+  "publicDeployment": false,
+  "realOAuth": false,
+  "realProviderCalled": false,
+  "schemaChanged": false,
+  "lockChanged": false,
+  "todayDue": [
+    "c14",
+    "e2c",
+    "e12"
+  ],
+  "logSha256": {
+    "test.log": "bd8e1ad3adc4dfb07c3fff894eaaef0c97f555d87295cf6e481afc52fbbe5a7a",
+    "typecheck.log": "a911dc6ac106b9d24bb83aeeced674d3b57c15f2585631f4cf612b534c06f2dc",
+    "lint.log": "f4d542281a87933b410a8b8c5762f8f38ffc10b0a5ce73dd7f2cbd59f162ae6c",
+    "build.log": "219be58c59206b957a79f022986d9c13f3132233f974656f1cd887373c196852",
+    "check-all.log": "2c0b71d5e7297ada4d4276811b2cf6ff5d60d76d644c721c96ded1978e01375b",
+    "e2e.log": "bd6ab784c06abe7a0a962ed985272364c35fb626d07b4f5eabc94a4f0c8274ef",
+    "b-test.log": "c3287daf3437bbe08e742d283381e4068297a04857c07006979ed081d1c4462e",
+    "b-typecheck.log": "a2f18142b21617210a06891caff3e71ae13b2d8299b4067db6e1d666aa0a15d0",
+    "d-async-social.log": "71e53c0e340137899e5a70843af550588e89becd29ba884eb26f5af6978800b7",
+    "async-proof-result.json": "c0ffee6b6bacfb0381aaf0f85ed9b99c433642bb78ae87ea1297a5fde8dfafe7",
+    "e2e-proof.json": "6a72c81c271669d8ff0234d200b14a47603a75bd1f14ddcc80f48a5660ade1aa",
+    "assets-check.json": "bfedae8de38d6c35804be502d602aaed05473061174063d6c20736f9e0bcc4d1"
+  }
+}
