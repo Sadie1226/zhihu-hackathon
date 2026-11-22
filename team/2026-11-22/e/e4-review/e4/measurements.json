@@ -1,0 +1,288 @@
+{
+  "browser": "148.0.7778.96",
+  "coordinates": [
+    "x",
+    "y",
+    "width",
+    "height",
+    "bottom"
+  ],
+  "results": [
+    {
+      "width": 375,
+      "height": 667,
+      "state": "running",
+      "doc": 375,
+      "scene": [
+        12,
+        110,
+        351,
+        320,
+        430
+      ],
+      "copy": [
+        12,
+        438,
+        351,
+        37.1875,
+        475.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "刘看山出门了。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "done",
+      "doc": 375,
+      "scene": [
+        12,
+        110,
+        351,
+        320,
+        430
+      ],
+      "copy": [
+        12,
+        438,
+        351,
+        37.1875,
+        475.1875
+      ],
+      "find": [
+        12,
+        483.1875,
+        351,
+        100.5,
+        583.6875
+      ],
+      "action": [
+        22,
+        532.6875,
+        84,
+        44,
+        576.6875
+      ],
+      "text": "示例归来话｜湖边的草地很开阔。",
+      "imagesOk": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "state": "running",
+      "doc": 320,
+      "scene": [
+        12,
+        110,
+        296,
+        320,
+        430
+      ],
+      "copy": [
+        12,
+        438,
+        296,
+        37.1875,
+        475.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "刘看山出门了。",
+      "imagesOk": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "state": "done",
+      "doc": 320,
+      "scene": [
+        12,
+        110,
+        296,
+        320,
+        430
+      ],
+      "copy": [
+        12,
+        438,
+        296,
+        37.1875,
+        475.1875
+      ],
+      "find": [
+        12,
+        483.1875,
+        296,
+        100.5,
+        583.6875
+      ],
+      "action": [
+        22,
+        532.6875,
+        84,
+        44,
+        576.6875
+      ],
+      "text": "示例归来话｜湖边的草地很开阔。",
+      "imagesOk": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "state": "running",
+      "doc": 1440,
+      "scene": [
+        352,
+        110,
+        736,
+        420,
+        530
+      ],
+      "copy": [
+        352,
+        538,
+        736,
+        37.1875,
+        575.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "刘看山出门了。",
+      "imagesOk": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "state": "done",
+      "doc": 1440,
+      "scene": [
+        352,
+        110,
+        736,
+        420,
+        530
+      ],
+      "copy": [
+        352,
+        538,
+        736,
+        37.1875,
+        575.1875
+      ],
+      "find": [
+        352,
+        583.1875,
+        736,
+        100.5,
+        683.6875
+      ],
+      "action": [
+        362,
+        632.6875,
+        84,
+        44,
+        676.6875
+      ],
+      "text": "示例归来话｜湖边的草地很开阔。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "loading",
+      "doc": 375,
+      "scene": null,
+      "copy": [
+        12,
+        118,
+        351,
+        37.1875,
+        155.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "正在读取旅途记录。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "timeout",
+      "doc": 375,
+      "scene": null,
+      "copy": [
+        12,
+        118,
+        351,
+        37.1875,
+        155.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "这趟旅途已超时，记录可能不完整。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "failed",
+      "doc": 375,
+      "scene": null,
+      "copy": [
+        12,
+        118,
+        351,
+        37.1875,
+        155.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "这趟旅途未能完成。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "read-error",
+      "doc": 375,
+      "scene": null,
+      "copy": [
+        12,
+        118,
+        351,
+        37.1875,
+        155.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "暂时读不到旅途记录。",
+      "imagesOk": true
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "state": "cached",
+      "doc": 375,
+      "scene": [
+        12,
+        110,
+        351,
+        320,
+        430
+      ],
+      "copy": [
+        12,
+        438,
+        351,
+        37.1875,
+        475.1875
+      ],
+      "find": null,
+      "action": null,
+      "text": "离线 · 上次记录（示例）",
+      "imagesOk": true
+    }
+  ]
+}

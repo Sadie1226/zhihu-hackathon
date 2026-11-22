@@ -1,0 +1,7 @@
+PASS wardrobe: 35 items + 10 expressions, exact visible RGBA recomposition
+PASS canonical body SHA-256 90f85098e8011552ec35cb63dd60683cd06da121ef059887af937f84f71c0729
+PASS 12 scene files, dimensions and in-bounds foot anchors
+PASS E12 Gift and Moment dimensions, Gift transparent edges
+PASS minimum assembly uses byte-identical v4 body and leaf cape
+PASS: exact pixels against expected.png
+PENDING E4 Chromium screenshots and measurements, E5 mobile tests, runtime acceptance.
