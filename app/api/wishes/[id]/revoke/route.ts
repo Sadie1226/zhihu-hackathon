@@ -1,7 +1,7 @@
 // 目标位置：app/api/wishes/[id]/revoke/route.ts
 // 撤销的归属、事务与首次时间守卫全部复用 C 的 revokeWish；本文件只做 HTTP 边界。
 import { getDatabase } from '@/lib/db/index'
-import { readSessionId } from '@/lib/auth/session'
+import { resolveAuthContext } from '@/lib/auth/session'
 import { revokeWish, WishContractError } from '@/lib/wishes/contract'
 
 export const runtime = 'nodejs'
@@ -27,8 +27,7 @@ function contractFail(error: unknown): Response {
 
 export async function PATCH(request: Request, context: Context): Promise<Response> {
   try {
-    const sessionId = readSessionId(request)
-    if (!sessionId) return missing()
+    if (!resolveAuthContext(request, getDatabase)) return missing()
 
     const url = new URL(request.url)
     const expectedOrigin = request.headers.has('host') ? `${url.protocol}//${request.headers.get('host')}` : url.origin
@@ -46,8 +45,11 @@ export async function PATCH(request: Request, context: Context): Promise<Respons
     }
 
     const wishId = (await context.params).id
+    const db = getDatabase()
+    const auth = resolveAuthContext(request, db)
+    if (!auth) return missing()
     // revokeWish 自带 BEGIN IMMEDIATE / 归属 / 首次时间守卫，调用方不再包事务。
-    const wish = revokeWish(getDatabase(), wishId, sessionId, new Date().toISOString())
+    const wish = revokeWish(db, wishId, auth.ownerId, new Date().toISOString())
     return Response.json({ wish }, { headers })
   } catch (error) {
     return contractFail(error)

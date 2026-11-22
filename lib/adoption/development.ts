@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
+import { AdoptionReceiptConflict, recordAdoption } from '../auth/adoption.ts'
+export { developmentEnabled } from '../auth/session.ts'
 import {
   EXCLUSIVE_PAIRS,
   INTEREST_CATEGORIES,
@@ -26,20 +28,6 @@ const invalid = (message: string): never => {
 }
 const digest = (value: unknown) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex')
-
-/** Development identity is opt-in, non-production, and must use a separate SQLite file. */
-export function developmentEnabled(
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return (
-    env.NODE_ENV !== 'production' &&
-    env.APP_IDENTITY_PROVIDER === 'development' &&
-    !!env.DATABASE_PATH &&
-    /(?:^|[\\/])a5-development(?:-[a-z0-9-]+)?\.sqlite$/i.test(
-      env.DATABASE_PATH,
-    )
-  )
-}
 
 export const mockProfile: ProfileView = {
   source: 'mock',
@@ -142,17 +130,15 @@ function parseAssembly(value: unknown): Assembly {
 
 export function ownedDog(
   db: DatabaseSync,
-  sessionId: string,
+  ownerId: string,
   id?: string,
 ): DogView | null {
-  const rows = db
+  const row = db
     .prepare(
       `SELECT id,name,personality_tags,interest_categories,assembly,is_sample
-    FROM dog WHERE session_id = ? ${id ? 'AND id = ?' : ''} ORDER BY created_at,id LIMIT 2`,
+    FROM dog WHERE owner_id = ? ${id ? 'AND id = ?' : ''}`,
     )
-    .all(...(id ? [sessionId, id] : [sessionId]))
-  if (rows.length > 1) invalid('发现多份旧伙伴记录，需要先核对归属')
-  const row = rows[0]
+    .get(...(id ? [ownerId, id] : [ownerId]))
   return row
     ? {
         id: String(row.id),
@@ -170,7 +156,7 @@ export function ownedDog(
 
 export function createDevelopmentDog(
   db: DatabaseSync,
-  sessionId: string,
+  ownerId: string,
   value: unknown,
 ): DogView {
   const input = record(value)
@@ -192,52 +178,41 @@ export function createDevelopmentDog(
   const generated = generateDevelopment(draft)
   if (generated.fingerprint !== input.fingerprint)
     invalid('资料或偏好已改变，请重新整理性格词')
-  if (
-    typeof input.requestId !== 'string' ||
-    !/^[a-f0-9-]{36}$/i.test(input.requestId)
-  )
-    invalid('请保留本次创建标识后重试')
+  const requestId = input.requestId
+  if (typeof requestId !== 'string' || !/^[a-f0-9-]{36}$/i.test(requestId)) {
+    return invalid('请保留本次创建标识后重试')
+  }
   const assembly = parseAssembly(input.assembly)
-  // Temporary development-only receipt in A-owned id. No new table or migration; C will define
-  // durable owner/idempotency storage for real accounts. Both hashes hide the session and inputs.
-  const requestKey = `dev_${digest([sessionId, input.requestId]).slice(0, 32)}`
-  const id = `${requestKey}_${digest([draft, assembly, mockProfile.version])}`
-  db.exec('BEGIN IMMEDIATE')
+  const receipt = { id: requestId, hash: digest([draft, assembly, mockProfile.version]) }
   try {
-    const existing = ownedDog(db, sessionId)
-    if (existing && existing.id !== id)
-      invalid(
-        existing.id.startsWith(`${requestKey}_`)
-          ? '同一创建标识的内容已改变'
-          : '你已经领养过了，可以回小屋看看',
-      )
-    if (!existing)
+    const id = recordAdoption(db, ownerId, receipt, (dogId, timestamp) => {
       db.prepare(
-        `INSERT INTO dog(id,name,session_id,personality_tags,interest_categories,assembly,created_at)
-      VALUES(?,?,?,?,?,?,?)`,
+        `INSERT INTO dog(id,name,session_id,owner_id,personality_tags,interest_categories,assembly,created_at)
+      VALUES(?,?,?,?,?,?,?,?)`,
       ).run(
-        id,
+        dogId,
         draft.name,
-        sessionId,
+        ownerId,
+        ownerId,
         JSON.stringify(generated.tags),
         draft.interestCategories === null
           ? null
           : JSON.stringify(draft.interestCategories),
         JSON.stringify(assembly),
-        new Date().toISOString(),
+        timestamp,
       )
-    const dog = existing ?? ownedDog(db, sessionId)!
-    db.exec('COMMIT')
-    return dog
+    })
+    return ownedDog(db, ownerId, id)!
   } catch (error) {
-    db.exec('ROLLBACK')
+    if (error instanceof AdoptionReceiptConflict)
+      invalid(error.reason === 'changed' ? '同一创建标识的内容已改变' : '你已经领养过了，可以回小屋看看')
     throw error
   }
 }
 
 export function renameDevelopmentDog(
   db: DatabaseSync,
-  sessionId: string,
+  ownerId: string,
   id: string,
   name: unknown,
 ): DogView {
@@ -247,10 +222,10 @@ export function renameDevelopmentDog(
     tendencies: [0, 0, 0, 0, 0, 0],
   })
   const result = db
-    .prepare('UPDATE dog SET name = ? WHERE id = ? AND session_id = ?')
-    .run(draft.name, id, sessionId)
+    .prepare('UPDATE dog SET name = ? WHERE id = ? AND owner_id = ?')
+    .run(draft.name, id, ownerId)
   if (!result.changes) throw new AdoptionError('NOT_FOUND', '这只伙伴不在这里')
-  return ownedDog(db, sessionId, id)!
+  return ownedDog(db, ownerId, id)!
 }
 
 // Kept as a type boundary for the future real provider; no client-authored owner/token is accepted.

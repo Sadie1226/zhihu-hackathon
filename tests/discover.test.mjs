@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { openDatabase } from '../lib/db/bootstrap.ts'
-import { ensureAnonymousSession } from '../lib/auth/session.ts'
+import { fixtureSession } from './helpers/owner-session.mjs'
 import { createZhihuSearchClient } from '../lib/zhihu/client.ts'
 import { createTripDiscoverer } from '../lib/trips/discover.ts'
 import { createFindStore, handleFindsRequest } from '../lib/trips/finds.ts'
@@ -24,15 +24,15 @@ function provider(handler = () => Response.json(envelope([item]))) {
     } })
   return { search, queries, get calls() { return calls } }
 }
-function setup(t) {
+function setup(t, legacy = false) {
   const root = resolve('.local/c6-wire-tests'); mkdirSync(root, { recursive: true })
   const directory = mkdtempSync(join(root, 'case-')), path = join(directory, 'app.sqlite')
   const db = openDatabase(path)
   t.after(() => { if (db.isOpen) db.close(); rmSync(directory, { recursive: true, force: true }) })
-  const session = ensureAnonymousSession(new Request('http://localhost'), db, false)
-  db.prepare(`INSERT INTO dog(id,session_id,personality_tags,interest_categories,assembly,created_at)
-    VALUES('fixture-dog',?,'["好奇","看物","直给"]','["自然风景","冷知识"]',
-    '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, at)
+  const session = legacy ? { sessionId: 'fixture-internal', setCookie: '' } : fixtureSession(db)
+  db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,interest_categories,assembly,created_at)
+    VALUES('fixture-dog',?,?,'["好奇","看物","直给"]','["自然风景","冷知识"]',
+    '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, legacy ? null : session.sessionId, at)
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at) VALUES('fixture-wish','fixture-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db, { now: () => new Date(at), newId: () => 'fixture-trip' })
   service.create('fixture-dog', session.sessionId, 'wish'); service.start('fixture-trip', session.sessionId)
@@ -157,7 +157,7 @@ test('trip finishing during network request prevents commit and network holds no
 })
 
 test('ownership and latest blocked topics are rechecked when committing', async t => {
-  const { db, execute, rows } = setup(t)
+  const { db, execute, rows } = setup(t, true)
   const p = provider(() => {
     db.exec(`UPDATE dog SET blocked_topics='["雪"]'`)
     return Response.json(envelope([item]))
@@ -185,7 +185,7 @@ test('cross-owner, missing session and terminal trips fail before search; histor
 })
 
 test('sample dog never runs live search and cannot acquire live provenance during commit', async t => {
-  const { db, execute, rows } = setup(t), p = provider()
+  const { db, execute, rows } = setup(t, true), p = provider()
   db.exec('UPDATE dog SET is_sample=1')
   await assert.rejects(execute(p.search), { code: 'CONFLICT' }); assert.equal(p.calls, 0)
   db.exec('UPDATE dog SET is_sample=0')

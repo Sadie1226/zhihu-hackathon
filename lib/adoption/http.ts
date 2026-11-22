@@ -1,14 +1,15 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { createHash } from 'node:crypto'
 import {
-  ensureAnonymousSession,
-  readSessionId,
-  sessionCookieName,
+  clearSessionCookie,
+  developmentEnabled,
+  resolveAuthContext,
+  revokeSession,
+  startDevelopmentSession,
 } from '../auth/session.ts'
 import {
   AdoptionError,
   createDevelopmentDog,
-  developmentEnabled,
   generateDevelopment,
   mockProfile,
   ownedDog,
@@ -40,9 +41,7 @@ export async function handleAdoptionRequest(
   ) => Response.json(value, { status, headers: { ...headers, ...extra } })
   try {
     const enabled = developmentEnabled()
-    if (action === 'session' && !enabled)
-      return json({ provider: 'unavailable', authenticated: false, dog: null })
-    if (!enabled)
+    if (!enabled && ['login', 'profile', 'generate', 'create'].includes(action))
       return json(
         { code: 'NOT_FOUND', detail: '身份接入尚未开放', retriable: false },
         404,
@@ -61,36 +60,36 @@ export async function handleAdoptionRequest(
     ) {
       throw new AdoptionError('CONFLICT', '请求来源不匹配')
     }
-    if (action === 'logout')
-      return json({ ok: true }, 200, {
-        'Set-Cookie': `${sessionCookieName()}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
-      })
     const db = getDatabase()
+    if (action === 'logout') {
+      revokeSession(request, db)
+      return json({ ok: true }, 200, { 'Set-Cookie': clearSessionCookie() })
+    }
     if (action === 'login') {
-      const { setCookie } = ensureAnonymousSession(request, db)
+      const setCookie = startDevelopmentSession(request, db)
       return json(
         { ok: true, provider: 'development' },
         200,
         setCookie ? { 'Set-Cookie': setCookie } : {},
       )
     }
-    const session = readSessionId(request)
+    const auth = resolveAuthContext(request, db)
     if (action === 'session')
       return json({
-        provider: 'development',
-        authenticated: !!session,
-        draftScope: session
+        provider: auth?.namespace ?? (enabled ? 'development' : 'unavailable'),
+        authenticated: !!auth,
+        draftScope: auth
           ? createHash('sha256')
-              .update(`a5-ui-draft-v1:${session}`)
+              .update(`a5-ui-draft-v1:${auth.ownerId}`)
               .digest('hex')
           : null,
-        dog: session ? ownedDog(db, session) : null,
+        dog: auth ? ownedDog(db, auth.ownerId) : null,
       })
-    if (!session)
-      throw new AdoptionError('NOT_FOUND', '测试身份已失效，请重新进入')
+    if (!auth)
+      throw new AdoptionError('NOT_FOUND', '身份已失效，请重新进入')
     if (action === 'profile') return json(mockProfile)
     if (action === 'dog') {
-      const dog = ownedDog(db, session, id)
+      const dog = ownedDog(db, auth.ownerId, id)
       if (!dog) throw new AdoptionError('NOT_FOUND', '这只伙伴不在这里')
       return json({ dog })
     }
@@ -101,10 +100,12 @@ export async function handleAdoptionRequest(
     const body: unknown = await request.json().catch(() => {
       throw new AdoptionError('CONFLICT', '输入格式不正确')
     })
+    if (!resolveAuthContext(request, db))
+      throw new AdoptionError('NOT_FOUND', '身份已失效，请重新进入')
     if (action === 'generate')
       return json(generateDevelopment(parseDraft(body)))
     if (action === 'create')
-      return json({ dog: createDevelopmentDog(db, session, body) })
+      return json({ dog: createDevelopmentDog(db, auth.ownerId, body) })
     if (action === 'rename') {
       if (
         !body ||
@@ -116,7 +117,7 @@ export async function handleAdoptionRequest(
       return json({
         dog: renameDevelopmentDog(
           db,
-          session,
+          auth.ownerId,
           id!,
           (body as { name: unknown }).name,
         ),

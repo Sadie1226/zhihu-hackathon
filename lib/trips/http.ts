@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { TripTrigger } from '../../contracts/types.ts'
-import { readSessionId } from '../auth/session.ts'
+import { assertOwnedDog, assertOwnedTrip, OwnershipError, resolveAuthContext } from '../auth/session.ts'
 import { createTripService, isTerminal, TripError } from './service.ts'
 
 type Action = 'create' | 'start' | 'finish' | 'get' | 'list'
@@ -10,8 +10,9 @@ const invalid = (detail: string): never => { throw new TripError('CONFLICT', det
 export async function handleTripRequest(request: Request, action: Action, id: string,
   getDatabase: () => DatabaseSync): Promise<Response> {
   try {
-    const session = readSessionId(request)
-    if (!session) throw new TripError('NOT_FOUND', '这条记录不在这里')
+    const db = getDatabase()
+    const auth = resolveAuthContext(request, db)
+    if (!auth) throw new TripError('NOT_FOUND', '这条记录不在这里')
     const url = new URL(request.url)
     const query = [...url.searchParams.keys()]
     if (query.some(key => action !== 'list' || key !== 'limit') || url.searchParams.getAll('limit').length > 1) {
@@ -19,8 +20,10 @@ export async function handleTripRequest(request: Request, action: Action, id: st
     }
     let body: Record<string, unknown> = {}
     if (action === 'create' || action === 'start' || action === 'finish') {
+      const host = request.headers.get('host')
+      const origin = host ? `${url.protocol}//${host}` : url.origin
       if (request.headers.get('sec-fetch-site') === 'cross-site' ||
-        (request.headers.has('origin') && request.headers.get('origin') !== url.origin)) invalid('请求来源不匹配')
+        (request.headers.has('origin') && request.headers.get('origin') !== origin)) invalid('请求来源不匹配')
       if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
         invalid('请求需要 JSON 内容')
       }
@@ -29,8 +32,12 @@ export async function handleTripRequest(request: Request, action: Action, id: st
       body = value as Record<string, unknown>
       const allowed = action === 'create' ? ['trigger'] : action === 'finish' ? ['status'] : []
       if (Object.keys(body).some(key => !allowed.includes(key))) invalid('请求包含未定义字段')
+      if (!resolveAuthContext(request, db)) throw new TripError('NOT_FOUND', '这条记录不在这里')
     }
-    const service = createTripService(getDatabase())
+    if (action === 'create' || action === 'list') assertOwnedDog(db, id, auth)
+    else assertOwnedTrip(db, id, auth)
+    const session = auth.ownerId
+    const service = createTripService(db)
     let result: unknown
     switch (action) {
       case 'get': result = { trip: service.get(id, session) }; break
@@ -51,7 +58,7 @@ export async function handleTripRequest(request: Request, action: Action, id: st
     }
     return Response.json(result, { headers })
   } catch (error) {
-    if (error instanceof TripError) return Response.json({ code: error.code, detail: error.message, retriable: false },
+    if (error instanceof TripError || error instanceof OwnershipError) return Response.json({ code: error.code, detail: error.message, retriable: false },
       { status: error.code === 'NOT_FOUND' ? 404 : 409, headers })
     return Response.json({ code: 'NETWORK', detail: '这次没连上，可以再试一次', retriable: true }, { status: 503, headers })
   }

@@ -8,7 +8,7 @@ import type { SearchProvider } from './search-proof.ts'
 import { createTripService, TripError } from './service.ts'
 
 /** Internal server executor, not an HTTP handler or an automatic scheduler.
- * sessionId must come from readSessionId; no caller-supplied query/mode/time fields.
+ * The ownership key comes from trusted server context. Query, mode and time are server-controlled.
  * Provider/clock overrides are trusted server test configuration, never request data.
  */
 export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {

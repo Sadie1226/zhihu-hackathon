@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process'
 import { openDatabase } from '../lib/db/bootstrap.ts'
 import { createFindStore, handleFindsRequest } from '../lib/trips/finds.ts'
 import { createTripService } from '../lib/trips/service.ts'
-import { ensureAnonymousSession } from '../lib/auth/session.ts'
+import { fixtureSession } from './helpers/owner-session.mjs'
 
 // Explicit fixture material; no env file, credentials, search client or network calls.
 const fixture = { sourceMode: 'fixture', title: 'C6 fixture snow material', excerpt: 'fixture excerpt',
@@ -23,10 +23,10 @@ function setup(t) {
     assert.ok(directory.startsWith(root + sep))
     rmSync(directory, { recursive: true, force: true })
   })
-  const session = ensureAnonymousSession(new Request('http://localhost/'), db)
-  const dog = id => db.prepare(`INSERT INTO dog(id,session_id,personality_tags,assembly,created_at)
-    VALUES(?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
-    .run(id, session.sessionId, '2026-11-19T00:00:00Z')
+  const session = fixtureSession(db)
+  const dog = id => db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
+    VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
+    .run(id, session.sessionId, session.sessionId, '2026-11-19T00:00:00Z')
   dog('fixture-owner')
   function trip(id, status = 'running', dogId = 'fixture-owner') {
     const seq = Number(db.prepare('SELECT COALESCE(MAX(seq),0)+1 n FROM trip WHERE dog_id=?').get(dogId).n)
@@ -186,7 +186,7 @@ test('GET handler enforces cookies/parameters, returns no-store empty/full colle
     assert.equal((await result.json()).code, 'NOT_FOUND')
     assert.equal(result.headers.get('cache-control'), 'no-store')
   }
-  const foreign = ensureAnonymousSession(new Request('http://localhost/'), db).setCookie.split(';')[0]
+  const foreign = fixtureSession(db).setCookie.split(';')[0]
   assert.equal(get('fixture-trip', '', foreign).status, 404)
   const down = get('fixture-trip', '', cookie, 'GET', () => { throw new Error('private/path fixture') })
   assert.equal(down.status, 503)

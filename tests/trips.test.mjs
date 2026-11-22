@@ -6,14 +6,14 @@ import { fork } from 'node:child_process'
 import { once } from 'node:events'
 import { openDatabase } from '../lib/db/bootstrap.ts'
 import { createTripService, startsOnShanghaiDay } from '../lib/trips/service.ts'
-import { ensureAnonymousSession, readSessionId } from '../lib/auth/session.ts'
+import { fixtureSession } from './helpers/owner-session.mjs'
 import { handleTripRequest } from '../lib/trips/http.ts'
 
 const root = resolve('.local/c4-tests')
 mkdirSync(root, { recursive: true })
-function dog(db, id, session) {
-  db.prepare('INSERT INTO dog(id,session_id,personality_tags,assembly,created_at) VALUES(?,?,?,?,?)')
-    .run(id, session, '["好奇","看物","直给"]',
+function dog(db, id, session, owner = null) {
+  db.prepare('INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at) VALUES(?,?,?,?,?,?)')
+    .run(id, session, owner, '["好奇","看物","直给"]',
       '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', '2026-11-16T00:00:00Z')
 }
 function setup(t) {
@@ -213,26 +213,10 @@ test('two processes contend on SQLite: exactly one creates an active trip', { ti
   assert.equal(db.prepare("SELECT COUNT(*) n FROM trip WHERE status IN ('pending','running')").get().n, 1)
 })
 
-test('anonymous helper issues opaque cookie, hashes stored ID, rotates unknown and reuses owned session', t => {
-  const { db } = setup(t)
-  const request = new Request('http://localhost/')
-  const first = ensureAnonymousSession(request, db, true)
-  assert.match(first.setCookie, /^__Host-zhihu_session=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Secure$/)
-  assert.ok(!first.setCookie.includes(first.sessionId))
-  const cookie = first.setCookie.split(';')[0]
-  const owned = new Request('http://localhost/', { headers: { cookie } })
-  assert.equal(readSessionId(owned, true), first.sessionId)
-  assert.notEqual(ensureAnonymousSession(owned, db, true).sessionId, first.sessionId)
-  dog(db, 'adopted', first.sessionId)
-  assert.deepEqual(ensureAnonymousSession(owned, db, true), { sessionId: first.sessionId, setCookie: null })
-  assert.equal(readSessionId(new Request('http://localhost/', { headers: { cookie: `${cookie}; ${cookie}` } }), true), null)
-  assert.equal(readSessionId(new Request('http://localhost/', { headers: { cookie: '__Host-zhihu_session=bad' } }), true), null)
-})
-
 test('HTTP lifecycle: ownership, JSON whitelist, error shape, no-store and read-only GET', async t => {
   const { db } = setup(t)
-  const session = ensureAnonymousSession(new Request('http://localhost/'), db)
-  dog(db, 'http-dog', session.sessionId)
+  const session = fixtureSession(db)
+  dog(db, 'http-dog', session.sessionId, session.sessionId)
   const cookie = session.setCookie.split(';')[0]
   async function call(action, id, body, query = '', extra = {}) {
     const request = new Request(`http://localhost/api/test${query}`, {

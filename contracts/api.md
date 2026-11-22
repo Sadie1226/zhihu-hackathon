@@ -77,6 +77,14 @@ c3 v2 只补读取契约、查询参考、类型和索引，不表示 HTTP 路�
 
 ### 1. 领养（a 实现）
 
+#### v5 内部身份与会话
+
+- 受保护接口从 HttpOnly Cookie 经 `resolveAuthContext(request, db)` 解析。认证要求随机凭据的哈希已登记、未撤销、未过期，并匹配当前数据库的身份命名空间。服务端以稳定 owner 归属狗和 Trip。
+- 一个已验证的知乎 UID 对应一个 owner，可持有多个独立会话，并恢复唯一领养狗。现阶段只提供服务端映射和会话签发，真实 OAuth 的凭据、回调和身份验证待接。
+- `GET /api/session` 返回公开会话视图。`POST /api/auth/logout` 撤销当前会话并清 Cookie，成功返回 `{ "ok": true }`。过期、撤销或未知 Cookie 无法访问私有记录。开发模式需要非生产环境、显式开关及独立数据库。
+- 创建收据按 owner 与 requestId 隔离。相同收据和相同内容返回原狗，同收据改内容或已领养后用新收据创建返回 `CONFLICT`。owner、提供方标识、会话哈希与原始 token 都是内部信息。
+- v4 升级保留历史 `dog.session_id`，旧匿名 Cookie 不提供新的狗归属。新绑定的狗通过 `dog.owner_id` 关联，种子狗与尚未绑定的历史记录保持无 owner。
+
 ```
 POST /api/dogs
 入： { name?: string, interestCategories?: InterestCategory[] }
@@ -217,7 +225,7 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 #### C4 实现细则（11-17，沿用现有 Trip 字段）
 
 - `GET /api/trips/:id` 出参为 `{ trip: Trip }`，列表默认 `limit=10`，允许 1–100 整数，按 `seq DESC` 返回；空集合 `{ trips: [] }`。
-- 五个路由全部验证匿名 cookie 所属狗；缺少 cookie、跨 session、记录不存在均 HTTP 404 / `NOT_FOUND`。所有响应 `Cache-Control: no-store`，读取不触发状态更新或投递。
+- 五个路由全部验证服务端会话与 owner 归属；缺少有效 Cookie、跨 owner、记录不存在均 HTTP 404 / `NOT_FOUND`。所有响应 `Cache-Control: no-store`，读取不触发状态更新或投递。
 - POST 接受 JSON 对象：创建只有 `trigger`，开始为 `{}`，结束只有 `status`。不接收 `session_id`、seq 或时间戳；不允许跨来源 POST。参数/状态/额度冲突均 HTTP 409 / `CONFLICT`；数据库不可用返回脱敏 HTTP 503 / `NETWORK`。成功 HTTP 200。
 - A 裁定：UTC 存储；自然日按上海固定 +8 小时切分，仅统计 `started_at IS NOT NULL`，`date(started_at, '+8 hours')` 为归属日。pending 不扣次数，failed/timeout 已出发则计数，跨午夜结束仍归出发日。每日上限 2；沿用 `TRIP_MIN_GAP_HOURS=6`，出发时检查间隔。
 - 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务、当日额度、分配 `MAX(seq)+1` 并插入；出发在同类事务内重新检查额度及间隔，再写 running/started_at 并调用现有投递器。投递失败整笔回滚。
@@ -336,7 +344,7 @@ GET /api/exchanges?from_dog=:id
 入：query.from_dog，必填且只出现一次的非空字符串，不限定为 UUID
 出：ExchangesResponse = { exchanges: Exchange[] }
 错：CONFLICT（参数缺失、空白、重复或不是单个字符串）
-    NOT_FOUND（狗不存在、不属于当前匿名 session，或没有有效的服务端 session）
+    NOT_FOUND（狗不存在、不属于当前 owner，或没有有效的服务端 session）
 ```
 
 只返回 `exchange.from_dog = :id` 的记录，包括在路上、已到未读、已读、已回应的记录；
@@ -393,7 +401,7 @@ GET /api/dogs/:id/neighbor    出：{ dog: Dog, snapshot: Snapshot|null }
 GET /api/dogs/:id/relations
 入：path.id，请求狗的 ID（沿用现有 dog ID，不限定为 UUID）
 出：RelationsResponse = { relations: RelationView[] }
-错：NOT_FOUND（狗不存在、不属于当前匿名 session，或没有有效的服务端 session）
+错：NOT_FOUND（狗不存在、不属于当前 owner，或没有有效的服务端 session）
 ```
 
 返回 `dog_a = :id OR dog_b = :id` 的关系，保留 `relation.isBlocked`（包括拉黑记录），不修改关系。
@@ -431,7 +439,7 @@ GET /api/dogs/:id/relations
 
 #### v2 两个新增 GET 的 session 与映射约定
 
-当前匿名 session 由服务端已验证的会话上下文提供；客户端的 URL、query、body 不能提供或覆盖归属。
+当前 owner 由服务端已验证的会话上下文提供。客户端的 URL、query、body 不能提供或覆盖归属。
 下方 `:sessionId` 只允许从该服务端上下文绑定，`:dogId` 才来自 path.id 或 query.from_dog。
 先验证参数，再用同一只请求狗做归属检查；不属于当前 session 与不存在统一返回 `NOT_FOUND`。
 读取须在同一只读事务中完成归属检查与查询，避免空集合和越权混淆；查询也重复限定归属。

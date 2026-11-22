@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { Message } from '../../contracts/types.ts'
-import { readSessionId } from '../auth/session.ts'
+import { assertOwnedTrip, OwnershipError, resolveAuthContext } from '../auth/session.ts'
 import { TripError } from '../trips/service.ts'
 
 const missing = (): never => { throw new TripError('NOT_FOUND', '这条记录不在这里') }
@@ -34,10 +34,15 @@ export function readTripMessage(db: DatabaseSync, tripId: string, sessionId: str
 export function handleMessageReadRequest(request: Request, tripId: string, getDatabase: () => DatabaseSync): Response {
   const headers = { 'Cache-Control': 'no-store', Vary: 'Cookie' }
   try {
-    const sessionId = readSessionId(request)
-    if (request.method !== 'GET' || !sessionId || !validId(tripId) || new URL(request.url).search) return missing()
-    return Response.json({ message: readTripMessage(getDatabase(), tripId, sessionId) }, { headers })
+    if (request.method !== 'GET' || !validId(tripId) || new URL(request.url).search) return missing()
+    const auth = resolveAuthContext(request, getDatabase)
+    if (!auth) return missing()
+    const db = getDatabase()
+    assertOwnedTrip(db, tripId, auth)
+    return Response.json({ message: readTripMessage(db, tripId, auth.ownerId) }, { headers })
   } catch (error) {
+    if (error instanceof OwnershipError) return Response.json({ code: error.code, detail: error.message, retriable: false },
+      { status: 404, headers })
     if (error instanceof TripError && error.code === 'NOT_FOUND') {
       return Response.json({ code: 'NOT_FOUND', detail: error.message, retriable: false }, { status: 404, headers })
     }
