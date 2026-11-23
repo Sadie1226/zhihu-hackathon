@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 社交写入自检（d4）—— 相遇 / 礼物 / 捎话 / 存储契约 / 双连接事务
+# 社交自检（d4 / d5）—— 相遇 / 礼物 / 捎话 / 存储契约 / 双连接事务 / 快照形状
 #
 #   bash scripts/check-social.sh
 #
@@ -7,16 +7,16 @@
 #
 #   bash scripts/check-social.sh || FAIL=1
 #
-# 为什么单独一个文件：`check-all.sh` 只有 c 能改，而这五个用例是 d 的。
+# 为什么单独一个文件：`check-all.sh` 只有 c 能改，而这六个用例是 d 的。
 # 单独跑能让 d 每次提交前自查；接进总门禁时也不动 c 已有的四道编号。
 #
-# 这五个文件里的失败都会把退出码置 1（各自的 `process.exitCode = 1`），
+# 这六个文件里的失败都会把退出码置 1（各自的 `process.exitCode = 1`），
 # 所以只看退出码就够，解析输出只是为了打印一行给人看。
 
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
-TESTS="rules meet gift store.contract tx.concurrency"
+TESTS="rules meet gift store.contract tx.concurrency snapshot"
 FAIL=0
 
 for t in $TESTS; do
@@ -45,7 +45,7 @@ done
 echo
 
 if [ $FAIL -ne 0 ]; then
-  echo "社交写入有失败用例，修完再提交。"
+  echo "社交自检有失败用例，修完再提交。"
   exit 1
 fi
-echo "社交写入全部通过。"
+echo "社交自检全部通过。"
