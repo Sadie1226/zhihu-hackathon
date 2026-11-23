@@ -1,0 +1,3 @@
+scenes/bookstore-exterior-750w.png: (750, 640), colors=96, foot=[370, 550], SHA256=43e0ac9ad5b17b2b81daa65062dd5e7142eff333e906a817c8917e890d88a1e9
+scenes/bookstore-interior-750w.png: (750, 640), colors=96, foot=[400, 550], SHA256=02089214083f60d194898d0a3e3cffe576aad68cc516ccdf0c9d636eaf701721
+Body SHA256=90f85098e8011552ec35cb63dd60683cd06da121ef059887af937f84f71c0729
