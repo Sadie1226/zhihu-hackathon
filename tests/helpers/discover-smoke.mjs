@@ -5,7 +5,7 @@ import { createServer } from 'node:net'
 import { spawn } from 'node:child_process'
 import { loadEnvFile } from 'node:process'
 import { openDatabase } from '../../lib/db/bootstrap.ts'
-import { ensureAnonymousSession, sessionCookieName } from '../../lib/auth/session.ts'
+import { fixtureSession } from './owner-session.mjs'
 import { createTripService } from '../../lib/trips/service.ts'
 import { createTripDiscoverer } from '../../lib/trips/discover.ts'
 import { createFindStore } from '../../lib/trips/finds.ts'
@@ -30,11 +30,11 @@ try {
     }
   }
   db = openDatabase(path)
-  const session = ensureAnonymousSession(new Request('http://localhost'), db, true)
+  const session = fixtureSession(db, 'c6-local-smoke', true)
   const at = new Date().toISOString()
-  db.prepare(`INSERT INTO dog(id,session_id,personality_tags,assembly,created_at)
-    VALUES('smoke-private-dog',?,'["好奇","看物","直给"]',
-    '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, at)
+  db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
+    VALUES('smoke-private-dog',?,?,'["好奇","看物","直给"]',
+      '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, session.sessionId, at)
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at)
     VALUES('smoke-wish','smoke-private-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db)
@@ -63,7 +63,7 @@ try {
   // The production HTTP child cannot use the real search credential, even if .env exists.
   child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)],
     { windowsHide: true, stdio: 'ignore', env: { ...process.env, NODE_ENV: 'production',
-      NODE_OPTIONS: '', DATABASE_PATH: path, ZHIHU_ACCESS_SECRET: '' } })
+      NODE_OPTIONS: '', DATABASE_PATH: path, APP_IDENTITY_PROVIDER: 'zhihu', ZHIHU_ACCESS_SECRET: '' } })
   const base = `http://127.0.0.1:${port}`
   let ready = false
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -74,7 +74,7 @@ try {
   assert.ok(ready)
   const endpoint = `${base}/api/trips/${trip.id}/finds`
   const cookie = session.setCookie.split(';')[0]
-  assert.ok(cookie.startsWith(sessionCookieName(true) + '='))
+  assert.ok(cookie.startsWith('__Host-zhihu_session='))
   const response = await globalThis.fetch(endpoint, { headers: { cookie } })
   report.productionGetStatus = response.status; assert.equal(response.status, 200)
   assert.equal(response.headers.get('cache-control'), 'no-store')

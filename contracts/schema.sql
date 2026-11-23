@@ -51,7 +51,7 @@ CREATE TABLE dog (
   -- a 写。可空；空则用标签生成的候选名。1–6 字。
   name                TEXT    CHECK (name IS NULL OR length(trim(name)) BETWEEN 1 AND 6),
 
-  -- a 写。匿名 session，本产品不做登录（D-003）。一个人可以有多只狗。
+  -- 历史值保留。v5 已绑定的记录在兼容列保存 owner.id，Cookie 凭据只经 owner_session 验证。
   session_id          TEXT    NOT NULL,
 
   -- a 写。恰好 3 个，每个都是 12 个标签之一，且来自 3 个不同维度、不能是互斥对的两极。
@@ -80,8 +80,61 @@ CREATE TABLE dog (
                               CHECK (json_valid(blocked_topics)
                                      AND json_type(blocked_topics) = 'array'),
 
-  created_at          TEXT    NOT NULL
+  created_at          TEXT    NOT NULL,
+  owner_id            TEXT    REFERENCES owner(id)
 );
+
+-- v5 owner 归属。会话日期使用 Unix 毫秒，其余 created_at 延续 ISO 时间。
+CREATE TABLE owner (
+  id TEXT NOT NULL PRIMARY KEY,
+  namespace TEXT NOT NULL CHECK (namespace IN ('zhihu', 'development')),
+  provider TEXT NOT NULL CHECK (provider = namespace),
+  provider_subject TEXT NOT NULL CHECK (length(provider_subject) > 0),
+  created_at TEXT NOT NULL,
+  UNIQUE (namespace, provider, provider_subject)
+) STRICT;
+
+CREATE TABLE owner_session (
+  token_hash TEXT NOT NULL PRIMARY KEY CHECK (length(token_hash) = 64 AND token_hash NOT GLOB '*[^0-9a-f]*'),
+  owner_id TEXT NOT NULL REFERENCES owner(id),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+  revoked_at INTEGER CHECK (revoked_at >= created_at)
+) STRICT;
+
+CREATE UNIQUE INDEX uniq_dog_owner ON dog(owner_id) WHERE owner_id IS NOT NULL;
+CREATE UNIQUE INDEX uniq_dog_id_owner ON dog(id, owner_id);
+
+CREATE TABLE adoption_receipt (
+  owner_id TEXT NOT NULL REFERENCES owner(id),
+  request_id TEXT NOT NULL,
+  request_hash TEXT NOT NULL CHECK (length(request_hash) = 64 AND request_hash NOT GLOB '*[^0-9a-f]*'),
+  dog_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (owner_id, request_id),
+  FOREIGN KEY (dog_id, owner_id) REFERENCES dog(id, owner_id)
+) STRICT;
+
+CREATE TRIGGER owner_legacy_key_guard BEFORE INSERT ON owner
+WHEN EXISTS (SELECT 1 FROM dog WHERE session_id = NEW.id AND owner_id IS NULL)
+BEGIN
+  SELECT RAISE(ABORT, 'owner: legacy dog key collision');
+END;
+
+CREATE TRIGGER dog_owner_guard_insert BEFORE INSERT ON dog
+WHEN (NEW.owner_id IS NOT NULL AND (NEW.is_sample <> 0 OR NEW.session_id <> NEW.owner_id))
+  OR (NEW.owner_id IS NULL AND EXISTS (SELECT 1 FROM owner WHERE id = NEW.session_id))
+BEGIN
+  SELECT RAISE(ABORT, 'dog: invalid owner association');
+END;
+
+CREATE TRIGGER dog_owner_guard_update BEFORE UPDATE OF owner_id, session_id, is_sample ON dog
+WHEN (OLD.owner_id IS NOT NULL AND OLD.owner_id IS NOT NEW.owner_id)
+  OR (NEW.owner_id IS NOT NULL AND (NEW.is_sample <> 0 OR NEW.session_id <> NEW.owner_id))
+  OR (NEW.owner_id IS NULL AND EXISTS (SELECT 1 FROM owner WHERE id = NEW.session_id))
+BEGIN
+  SELECT RAISE(ABORT, 'dog: invalid owner association');
+END;
 
 -- 装配单校验：恰好四个键，且这四个键都在。写在触发器里因为 CHECK 不许子查询。
 --

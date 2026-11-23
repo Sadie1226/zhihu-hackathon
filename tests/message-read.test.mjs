@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { openDatabase } from '../lib/db/bootstrap.ts'
-import { ensureAnonymousSession } from '../lib/auth/session.ts'
+import { fixtureSession } from './helpers/owner-session.mjs'
 import { handleMessageReadRequest, readTripMessage } from '../lib/messages/read.ts'
 
 // All records are explicit fixtures; no B5 generation, OAuth, secrets or network.
@@ -13,11 +13,11 @@ function setup(t) {
   const directory = mkdtempSync(join(root, 'case-')), path = join(directory, 'app.sqlite')
   const db = openDatabase(path)
   t.after(() => { if (db.isOpen) db.close(); rmSync(directory, { recursive: true, force: true }) })
-  const session = ensureAnonymousSession(new Request('http://localhost'), db, false)
-  const other = ensureAnonymousSession(new Request('http://localhost'), db, false)
+  const session = fixtureSession(db)
+  const other = fixtureSession(db)
   for (const [id, owner] of [['fixture-dog', session.sessionId], ['other-dog', other.sessionId]]) {
-    db.prepare(`INSERT INTO dog(id,session_id,personality_tags,assembly,created_at)
-      VALUES(?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(id, owner, at)
+    db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
+      VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(id, owner, owner, at)
   }
   function trip(id, status = 'done', dog = 'fixture-dog') {
     const seq = Number(db.prepare('SELECT COALESCE(MAX(seq),0)+1 n FROM trip WHERE dog_id=?').get(dog).n)

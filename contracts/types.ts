@@ -146,8 +146,10 @@ export interface Dog {
   id: string
   /** 1–6 字。null 则用标签生成的候选名。 */
   name: string | null
-  /** 匿名 session，不做登录（D-003）。一个人可以有多只狗。 */
+  /** 内部兼容归属键，禁止序列化到浏览器。 */
   sessionId: string
+  /** v5 持久归属，种子狗和未绑定的历史狗为 null。禁止序列化到浏览器。 */
+  ownerId?: string | null
   /** 恰好 3 个，来自 3 个不同维度，不含互斥对。 */
   personalityTags: [PersonalityTag, PersonalityTag, PersonalityTag]
   /** 2–3 个类目；null = 全都要。 */
@@ -394,7 +396,7 @@ export interface RelationView {
   snapshot: Snapshot | null
 }
 
-/** GET /api/dogs/:id/relations；请求狗必须属于服务端当前匿名 session。 */
+/** GET /api/dogs/:id/relations；请求狗必须属于服务端确认的当前 owner。 */
 export interface RelationsResponse {
   relations: RelationView[]
 }

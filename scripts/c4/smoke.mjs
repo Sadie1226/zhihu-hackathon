@@ -6,19 +6,21 @@ import { createServer } from 'node:net'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { openDatabase } from '../../lib/db/bootstrap.ts'
-import { ensureAnonymousSession } from '../../lib/auth/session.ts'
+import { fixtureSession } from '../../tests/helpers/owner-session.mjs'
 
 const root = resolve('.local/c4-smoke')
 mkdirSync(root, { recursive: true })
 const directory = mkdtempSync(join(root, 'run-'))
 const path = join(directory, 'fixture.sqlite')
 const db = openDatabase(path)
-const session = ensureAnonymousSession(new Request('http://localhost/'), db, true)
+const session = fixtureSession(db, 'c4-local-smoke', true)
+const secondDevice = fixtureSession(db, 'c4-local-smoke', true)
 const cookie = session.setCookie.split(';')[0]
-for (const [id, owner] of [['fixture-recipient', session.sessionId], ['fixture-sender', 'fixture-other']]) {
-  db.prepare(`INSERT INTO dog(id,session_id,personality_tags,assembly,is_sample,created_at)
-    VALUES(?,?,? ,?,1,?)`).run(id, owner, '["好奇","看物","直给"]',
-    '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', '2026-11-17T00:00:00Z')
+const secondCookie = secondDevice.setCookie.split(';', 1)[0]
+for (const [id, owner, sample] of [['fixture-recipient', session.sessionId, 0], ['fixture-sender', null, 1]]) {
+  db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,is_sample,created_at)
+    VALUES(?,?,?,?,?,?,?)`).run(id, owner ?? 'fixture-other', owner, '["好奇","看物","直给"]',
+    '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', sample, '2026-11-17T00:00:00Z')
 }
 db.prepare(`INSERT INTO exchange(id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at)
   VALUES('fixture-gift','fixture-sender','fixture-recipient','gift',?,1,?)`)
@@ -34,7 +36,7 @@ let child, exit
 async function start() {
   child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)], {
     windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, NODE_ENV: 'production', DATABASE_PATH: path },
+    env: { ...process.env, NODE_ENV: 'production', DATABASE_PATH: path, APP_IDENTITY_PROVIDER: 'zhihu' },
   })
   exit = once(child, 'exit')
   await new Promise((resolveReady, reject) => {
@@ -55,8 +57,9 @@ async function stop() {
 }
 async function request(route, body, expected = 200, authenticated = true) {
   const response = await globalThis.fetch(base + route, {
-    method: body === undefined ? 'GET' : 'POST',
-    headers: { ...(authenticated ? { cookie } : {}), 'content-type': 'application/json' },
+    method: body === undefined ? 'GET' : route.endsWith('/revoke') ? 'PATCH' : 'POST',
+    headers: { ...(authenticated ? { cookie: authenticated === true ? cookie : authenticated } : {}),
+      ...(body === undefined ? {} : { origin: base }), 'content-type': 'application/json' },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
   assert.equal(response.status, expected, route)
@@ -86,6 +89,28 @@ try {
   console.log('PASS: production root/health, create/start/finish/get/list, ownership, idempotency and delivery')
   await stop(); await start()
   assert.deepEqual(await (await request(`/api/trips/${trip.id}`)).json(), { trip: finished.trip })
+  assert.deepEqual(await (await request(`/api/trips/${trip.id}/finds`)).json(), { finds: [] })
+  assert.deepEqual(await (await request(`/api/trips/${trip.id}/message`)).json(), { message: null })
+  const wishes = '/api/dogs/fixture-recipient/wishes'
+  const newWish = await (await request(wishes, { text: '想看雪', category: '自然风景' })).json()
+  await request(`/api/wishes/${newWish.wish.id}/revoke`, {})
+  assert.deepEqual(await (await request(wishes)).json(), { wishes: [] })
+  const sessionView = await (await request('/api/session')).text()
+  assert.equal(JSON.parse(sessionView).dog.id, 'fixture-recipient')
+  assert.ok(!sessionView.includes(session.sessionId))
+  assert.deepEqual(await (await request('/api/session', undefined, 200, secondCookie)).json(), JSON.parse(sessionView))
+  await request('/api/dogs/fixture-recipient/invitations?state=all', undefined, 200, secondCookie)
+  const logout = await request('/api/auth/logout', {})
+  assert.match(logout.headers.get('set-cookie'), /HttpOnly.*Max-Age=0.*Secure/)
+  await request(`/api/trips/${trip.id}`, undefined, 404)
+  await request(`/api/trips/${trip.id}/finds`, undefined, 404)
+  await request(`/api/trips/${trip.id}/message`, undefined, 404)
+  await request(wishes, undefined, 404)
+  await request('/api/dogs/fixture-recipient/invitations?state=all', undefined, 404)
+  await request('/api/uploads/photo', {}, 401)
+  await request('/api/replies', {}, 401)
+  await request(`/api/trips/${trip.id}`, undefined, 200, secondCookie)
+  console.log('PASS: production owner session, C4/C6/Wish/Message, logout and stale Cookie replay')
   const check = openDatabase(path)
   try {
     const gift = check.prepare("SELECT * FROM exchange WHERE id='fixture-gift'").get()

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Find } from '../../contracts/types.ts'
-import { readSessionId } from '../auth/session.ts'
+import { assertOwnedTrip, OwnershipError, resolveAuthContext } from '../auth/session.ts'
 import { TripError } from './service.ts'
 import { proofTripId, verifiedSearchInput } from './search-proof.ts'
 import type { SearchProof } from './search-proof.ts'
@@ -141,10 +141,15 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
 export function handleFindsRequest(request: Request, tripId: string, getDatabase: () => DatabaseSync): Response {
   const headers = { 'Cache-Control': 'no-store', Vary: 'Cookie' }
   try {
-    const sessionId = readSessionId(request)
-    if (request.method !== 'GET' || !sessionId || !validId(tripId) || new URL(request.url).search) return missing()
-    return Response.json({ finds: createFindStore(getDatabase()).list(tripId, sessionId) }, { headers })
+    if (request.method !== 'GET' || !validId(tripId) || new URL(request.url).search) return missing()
+    const auth = resolveAuthContext(request, getDatabase)
+    if (!auth) return missing()
+    const db = getDatabase()
+    assertOwnedTrip(db, tripId, auth)
+    return Response.json({ finds: createFindStore(db).list(tripId, auth.ownerId) }, { headers })
   } catch (error) {
+    if (error instanceof OwnershipError) return Response.json({ code: error.code, detail: error.message, retriable: false },
+      { status: 404, headers })
     if (error instanceof TripError) return Response.json({ code: error.code, detail: error.message, retriable: false },
       { status: error.code === 'NOT_FOUND' ? 404 : 409, headers })
     return Response.json({ code: 'NETWORK', detail: '这次没连上，可以再试一次', retriable: true }, { status: 503, headers })

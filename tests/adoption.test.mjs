@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DatabaseSync } from 'node:sqlite'
-import { execFileSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import {
@@ -16,10 +15,8 @@ import { handleAdoptionRequest } from '../lib/adoption/http.ts'
 import { currentTrip } from '../lib/adoption/view.ts'
 import { checkPersonalityTags } from '../contracts/types.ts'
 
-// Verify against committed main schema, not a teammate's local uncommitted contract draft.
-const schema = execFileSync('git', ['show', 'HEAD:contracts/schema.sql'], {
-  encoding: 'utf8',
-})
+import { openDatabase } from '../lib/db/bootstrap.ts'
+
 const draft = {
   name: '小山',
   interestCategories: null,
@@ -39,11 +36,16 @@ function payload() {
     requestId: '01234567-0123-4123-8123-012345678901',
   }
 }
+function insertOwner(db, id) {
+  db.prepare("INSERT INTO owner VALUES (?, 'development', 'development', ?, '2026-11-22')").run(id, id)
+}
 function database(t) {
-  const db = new DatabaseSync(':memory:')
-  db.exec('PRAGMA foreign_keys=ON')
-  db.exec(schema)
-  t.after(() => db.close())
+  const root = resolve('.local/a5-tests')
+  mkdirSync(root, { recursive: true })
+  const dir = mkdtempSync(join(root, 'session-'))
+  const db = openDatabase(join(dir, 'a5-development-test.sqlite'))
+  for (const id of ['owner-a', 'owner-b']) insertOwner(db, id)
+  t.after(() => { db.close(); rmSync(dir, { recursive: true, force: true }) })
   return db
 }
 
@@ -157,9 +159,8 @@ test('two independent server processes racing the same receipt create exactly on
   const directory = mkdtempSync(join(root, 'parallel-')),
     file = join(directory, 'test.sqlite')
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const db = new DatabaseSync(file)
-  db.exec('PRAGMA journal_mode=WAL')
-  db.exec(schema)
+  const db = openDatabase(file)
+  insertOwner(db, 'parallel-owner')
   const worker = () =>
     new Promise((resolve, reject) => {
       const child = spawn(
@@ -197,7 +198,7 @@ test('HTTP login/session, whitelist, same-origin, bad input and disabled provide
   Object.assign(process.env, {
     NODE_ENV: 'development',
     APP_IDENTITY_PROVIDER: 'development',
-    DATABASE_PATH: './data/a5-development-test.sqlite',
+    DATABASE_PATH: db.location(),
   })
   const request = (body, cookie = '', origin = 'http://localhost:3000') =>
     new Request('http://localhost:3000/api/dogs', {
