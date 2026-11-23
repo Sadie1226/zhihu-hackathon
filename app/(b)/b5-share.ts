@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Find, Message } from '../../contracts/types.ts'
-import { readSessionId } from '../../lib/auth/session.ts'
+import { resolveAuthContext } from '../../lib/auth/session.ts'
 import { TripError } from '../../lib/trips/service.ts'
 import { createFindStore } from '../../lib/trips/finds.ts'
 
@@ -159,7 +159,7 @@ export async function handleMessageReadAdapter(
   options: { now?: () => Date } = {},
 ): Promise<Response> {
   try {
-    const sessionId = readSessionId(request)
+    const sessionId = resolveAuthContext(request, getDatabase)?.ownerId
     if (request.method !== 'GET' || !sessionId || !validId(tripId) || new URL(request.url).search) {
       return Response.json({ code: 'NOT_FOUND', detail: '这条记录不在这里', retriable: false },
         { status: 404, headers: noStoreHeaders })
@@ -178,7 +178,7 @@ export async function handleContentRequest(
   getDatabase: () => DatabaseSync,
 ): Promise<Response> {
   try {
-    const sessionId = readSessionId(request)
+    const sessionId = resolveAuthContext(request, getDatabase)?.ownerId
     if (request.method !== 'GET' || !sessionId || !validId(tripId) || new URL(request.url).search) {
       return Response.json({ code: 'NOT_FOUND', detail: '这条记录不在这里', retriable: false },
         { status: 404, headers: noStoreHeaders })

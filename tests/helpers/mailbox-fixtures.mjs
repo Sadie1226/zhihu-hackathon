@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { Worker } from 'node:worker_threads'
-import { ensureAnonymousSession } from '../../lib/auth/session.ts'
+import { fixtureSession } from './owner-session.mjs'
 import { openDatabase } from '../../lib/db/bootstrap.ts'
 import { createTripService } from '../../lib/trips/service.ts'
 
@@ -25,8 +25,9 @@ export function mailboxDatabase(t) {
 }
 
 export function insertDog(db, id, sessionId, isSample = 0) {
-  db.prepare(`INSERT INTO dog(id, session_id, personality_tags, assembly, is_sample, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)`).run(id, sessionId, '["好奇","看物","直给"]',
+  const owner = db.prepare('SELECT id FROM owner WHERE id = ?').get(sessionId)
+  db.prepare(`INSERT INTO dog(id, session_id, owner_id, personality_tags, assembly, is_sample, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, sessionId, owner ? sessionId : null, '["好奇","看物","直给"]',
     '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', isSample, createdAt)
 }
 
@@ -36,7 +37,7 @@ export function insertExchange(db, id, fromDog, toDog, seq, payload = gift, at =
 }
 
 export function ownedDog(db, id, production) {
-  const { sessionId, setCookie } = ensureAnonymousSession(new Request('http://localhost/'), db, production)
+  const { sessionId, setCookie } = fixtureSession(db, undefined, production)
   insertDog(db, id, sessionId)
   return { id, sessionId, cookie: setCookie.split(';', 1)[0] }
 }

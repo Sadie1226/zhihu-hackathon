@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 import { openDatabase } from '../lib/db/bootstrap.ts'
-import { ensureAnonymousSession } from '../lib/auth/session.ts'
+import { fixtureSession } from './helpers/owner-session.mjs'
 import { createMessageStore, handleContentRequest, handleMessageReadAdapter } from '../app/(b)/b5-share.ts'
 import { createInvitationStore, invitationText, MAX_WAITING_INVITATIONS } from '../app/(b)/b6-invitations.ts'
 
@@ -20,11 +20,11 @@ function setup(t) {
     assert.ok(directory.startsWith(root + sep))
     rmSync(directory, { recursive: true, force: true })
   })
-  const session = ensureAnonymousSession(new Request('http://localhost/'), db)
+  const session = fixtureSession(db)
   const cookie = session.setCookie.split(';')[0]
-  const insertDog = (id, sessionId) => db.prepare(`INSERT INTO dog(id,session_id,personality_tags,assembly,created_at)
-    VALUES(?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
-    .run(id, sessionId, '2026-11-20T00:00:00Z')
+  const insertDog = (id, sessionId) => db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
+    VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
+    .run(id, sessionId, db.prepare('SELECT id FROM owner WHERE id = ?').get(sessionId) ? sessionId : null, '2026-11-20T00:00:00Z')
   insertDog('dog-owner', session.sessionId)
   insertDog('dog-other', 'anon_other_dog_session')
 
@@ -93,12 +93,11 @@ test('B5 rejects running trips, foreign sessions, foreign findings and oversized
 })
 
 test('B5 get hides a message whose referenced find no longer belongs to the trip', t => {
-  const { db, session, trip, insertDog } = setup(t)
+  const { db, session, trip } = setup(t)
   const store = createMessageStore(db, { now: () => new Date(at) })
   store.write('trip-done', { text: '巷口那面墙红透了，只有靠窗那块还是绿的。', mentionsFindId: 'find-1' }, session)
   // 把被引用的 find 迁到另一趟真实存在的 trip（同主人、跨 trip），模拟读取时引用越界。
-  insertDog('dog-other-owner', session)
-  trip('trip-elsewhere', 'done', 'dog-other-owner')
+  trip('trip-elsewhere', 'done', 'dog-owner')
   db.prepare('UPDATE find SET trip_id = ? WHERE id = ?').run('trip-elsewhere', 'find-1')
   assert.throws(() => store.get('trip-done', session), /Invalid Message reference/)
 })

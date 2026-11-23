@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { readSessionId } from '../auth/session.ts'
+import { resolveAuthContext } from '../auth/session.ts'
 import { TripError } from '../trips/service.ts'
 import { markExchangeRead, readInbox, readOutbox, validMailboxId } from './service.ts'
 
@@ -46,7 +46,7 @@ export async function handleMailboxRequest(
   request: Request, target: MailboxRequest, getDatabase: () => DatabaseSync,
 ): Promise<Response> {
   try {
-    const sessionId = readSessionId(request)
+    const sessionId = resolveAuthContext(request, getDatabase)?.ownerId
     if (!sessionId || (target.action !== 'outbox' && !validMailboxId(target.id))) {
       throw new TripError('NOT_FOUND', '这条记录不在这里')
     }
