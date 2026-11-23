@@ -1,0 +1,6 @@
+656e03c8adb7863ea805fc0d63d8d5add6725aabb1c962fc86e99487ad751f79  evidence/01-auth-layout.png
+5e641739c6b901306c62fdb40b903236084de560ad9b83eff3403fa90f5f4c30  evidence/02-slider-recording.mp4
+21449f7e13c53863c0a5dda15a17ba1f7734d5d8829fd080f800f651fb2adbd6  evidence/03-slider-help.png
+ce78394b60446485d84ba72a0868ed22c99ef3af7d5753f68c8fa9a9024ed5a7  evidence/04-hydration-error.jpg
+40434cf25cb32c9a659e64e7a1da22a242880875500d20fd8680f7620e0a49ad  evidence/05-create-error.jpg
+a5dbcc259a62440657b00ed1571e959f9a04e7129ff2bfdb97149a72c49d0fec  evidence/06-step-progress.png
