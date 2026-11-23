@@ -3,6 +3,8 @@ import type { SearchResult } from '../zhihu/client.ts'
 import { canonicalZhihuContentUrl } from '../wishes/contract.ts'
 import type { FindInput } from './finds.ts'
 import { TripError } from './service.ts'
+import { selectForPersonality } from '../adoption/a6-selection.ts'
+import type { SelectionContext } from '../adoption/a6-selection.ts'
 
 /** Trusted server dependency injection only. Never select a provider from HTTP input. */
 export type SearchProvider = (query: string, count: number) => Promise<SearchResult>
@@ -20,7 +22,7 @@ export function blockedBy(topics: string[], ...texts: string[]): boolean {
  * synthetic operations explicitly; their outputs are not real integration evidence.
  */
 export async function searchForTrip(context: { tripId: string; sessionId: string; query: string;
-  category: string; blockedTopics: string[] }, provider?: SearchProvider): Promise<
+  category: string; blockedTopics: string[]; selection?: SelectionContext }, provider?: SearchProvider): Promise<
   { ok: true; proof: SearchProof | null; httpStatus: number; fetchedAt: string } |
   { ok: false; error: ContractError; httpStatus: number | null; fallback: 'cache-or-fixture' | null; alert: boolean }
 > {
@@ -43,7 +45,20 @@ export async function searchForTrip(context: { tripId: string; sessionId: string
         sourceUrl: canonicalZhihuContentUrl(item.sourceUrl), sourceMode: 'live' as const,
         authorityLevel: item.authorityLevel, voteUpCount: item.voteUpCount, assetPath: null }
     })
-    const input = inputs.find(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
+    // Opt-in trusted server composition only. Existing C6 callers retain their current behavior.
+    // The selector cannot author a source: it only picks an index from this validated collection.
+    const uniqueInputs = inputs.filter((item, index) => {
+      const first = inputs.findIndex(other => other.sourceUrl === item.sourceUrl)
+      if (context.selection && first !== index && JSON.stringify(inputs[first]) !== JSON.stringify(item)) {
+        throw new Error('Conflicting source metadata')
+      }
+      return first === index
+    })
+    const selection = context.selection ? selectForPersonality(uniqueInputs.map(item => ({
+      id: item.sourceUrl, title: item.title, excerpt: item.excerpt,
+    })), { ...context.selection, blockedTopics: context.blockedTopics }) : null
+    const input = selection ? (selection.selectedIndex === null ? undefined : uniqueInputs[selection.selectedIndex])
+      : inputs.find(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
     if (!input) return { ok: true, proof: null, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
     const proof: SearchProof = Object.freeze({ verifiedSearch: true })
     evidence.set(proof, { tripId: context.tripId, sessionId: context.sessionId,
