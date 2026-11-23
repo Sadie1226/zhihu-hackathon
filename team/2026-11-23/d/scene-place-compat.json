@@ -6,7 +6,8 @@
   "source": {
     "scenes": "E2c scene-map.json（team/2026-11-22/e/e2c/），12 张 750×640 PNG，附脚底点",
     "events": "team/2026-11-18/d/1118-d2c-事件池三十条-v1.sql，30 条",
-    "tagVocabulary": "contracts/types.ts PlaceTag = street | stall | riverside | bookstore"
+    "tagVocabulary": "contracts/types.ts PlaceTag = street | stall | riverside | bookstore",
+    "delivered": "E 11/23 分支 e5-scene-crop-20261123 的 bookstore-backgrounds-v1/（两图 SHA256 已核，与 E 的检查记录一致）；status=delivered-review 表示未进正式清单"
   },
   "tagDefinitions": {
     "street": "有可走的室外路面（街、巷、步道），且街面上会有人/车/门面可看",
@@ -18,31 +19,43 @@
     {
       "place": "长白山天池",
       "file": "scenes/changbai.png",
-      "tags": ["riverside"],
+      "tags": [
+        "riverside"
+      ],
       "why": "火山口湖面 + 岸线卵石坡，有连续低纹理空地；无街面、无摊、无书"
     },
     {
       "place": "阿勒泰·喀纳斯",
       "file": "scenes/kanas.png",
-      "tags": ["riverside"],
+      "tags": [
+        "riverside"
+      ],
       "why": "湖岸草甸与水边空地；无街面、无摊、无书"
     },
     {
       "place": "三亚海滩",
       "file": "scenes/sanya.png",
-      "tags": ["riverside"],
+      "tags": [
+        "riverside"
+      ],
       "why": "海岸线与沙滩，遮阳伞与木箱在画内；无街面、无书架"
     },
     {
       "place": "深圳南头古城",
       "file": "scenes/nantou.png",
-      "tags": ["street", "stall"],
+      "tags": [
+        "street",
+        "stall"
+      ],
       "why": "石板街巷可走 + 沿街门面与灯笼，能发生买卖"
     },
     {
       "place": "深夜街角",
       "file": "scenes/late-night-corner.png",
-      "tags": ["street", "stall"],
+      "tags": [
+        "street",
+        "stall"
+      ],
       "why": "斑马线与路面 + 便利店门面（营业中），夜市型街角"
     },
     {
@@ -60,37 +73,98 @@
     {
       "place": "盘锦红海滩",
       "file": "scenes/panjin-red-beach.png",
-      "tags": ["riverside"],
+      "tags": [
+        "riverside"
+      ],
       "why": "湿地水道与碱蓬滩涂，沿水可走"
     },
     {
       "place": "桂林漓江",
       "file": "scenes/guilin-li-river.png",
-      "tags": ["riverside"],
+      "tags": [
+        "riverside"
+      ],
       "why": "江岸卵石与水面，能沿水走、听水"
     },
     {
       "place": "广州北京路",
       "file": "scenes/beijing-road.png",
-      "tags": ["street", "stall"],
+      "tags": [
+        "street",
+        "stall"
+      ],
       "why": "步行街可走 + 沿街商户与灯笼，能发生买卖"
     },
     {
       "place": "城市社区公园",
       "file": "scenes/city-community-park.png",
-      "tags": ["street"],
+      "tags": [
+        "street"
+      ],
       "why": "园路可走、有长椅与人；无营业摊面、无水、无书"
     },
     {
       "place": "街角小酒馆内景",
       "file": "scenes/corner-tavern-interior.png",
       "tags": [],
-      "why": "室内吧台与桌凳。四值里没有「室内」，30 条事件也无一条是室内事件 —— 强行给 stall 会让烤红薯摊、栗子摊开在吧台边"
+      "why": "室内吧台与桌凳。四值里没有「室内」，只能靠 eventAllow 逐张收敛；这份表只有一张酒馆图，没有互斥对象，所以仍不给 stall —— 给了烤红薯摊、栗子摊就会开在吧台边"
+    },
+    {
+      "place": "街角书店外景",
+      "file": "scenes/bookstore-exterior-750w.png",
+      "sourceDir": "team/2026-11-23/e/bookstore-backgrounds-v1",
+      "sourceRef": "origin/e5-scene-crop-20261123",
+      "status": "delivered-review",
+      "variant": "outdoor",
+      "tags": [
+        "bookstore"
+      ],
+      "foot": [
+        370,
+        550
+      ],
+      "eventAllow": [
+        "summer_bookstore_ac",
+        "autumn_book_box",
+        "any_shop_cat",
+        "autumn_birds",
+        "any_moon_ring"
+      ],
+      "why": "门面 + 橱窗 + 门口盆栽与 A 字立牌 + 人行道；玻璃后面能看到一排书，但没有店内纵深、没有角落。所以「冷气从门口漏出来」「门口摆了个纸箱」「店门口的猫」成立，「最里面的角落有张椅子」不成立"
+    },
+    {
+      "place": "街角书店内景",
+      "file": "scenes/bookstore-interior-750w.png",
+      "sourceDir": "team/2026-11-23/e/bookstore-backgrounds-v1",
+      "sourceRef": "origin/e5-scene-crop-20261123",
+      "status": "delivered-review",
+      "variant": "indoor",
+      "tags": [
+        "bookstore"
+      ],
+      "foot": [
+        400,
+        550
+      ],
+      "eventAllow": [
+        "winter_bookstore_chair",
+        "autumn_birds",
+        "any_moon_ring"
+      ],
+      "why": "纵深书架 + 木地板 + 窗，角落有一把扶手椅和盆栽 —— 那正是「最里面的角落有张椅子，椅背上搭着一件外套」的画面。反过来「门口的纸箱」「冷气从门口漏出来」「店门口的猫」在店里不成立"
     }
   ],
   "gaps": {
-    "noSceneFor": ["bookstore"],
-    "unusedScenes": ["敦煌鸣沙山", "大兴安岭白桦林", "街角小酒馆内景"],
-    "note": "标签是必要条件不是充分条件：四值只保证「这个场景装得下这一类事」，具体某条事件读着自不自然，由 40 字文本自己撑，不靠标签。"
+    "noSceneFor": [],
+    "unusedScenes": [
+      "敦煌鸣沙山",
+      "大兴安岭白桦林",
+      "街角小酒馆内景"
+    ],
+    "note": "标签是必要条件不是充分条件：四值只保证「这个场景装得下这一类事」，具体某条事件读着自不自然，由 40 字文本自己撑，不靠标签。**书店两张是四值表达不了的例外**：同为 bookstore，但门口与店里空间互斥，用 eventAllow 逐张收敛（外景不出角落椅子、内景不出门口纸箱）。正式方案（加第五值 indoor/outdoor 或 event 侧加空间字段）待 C 定，本表先兜住。",
+    "pendingSceneMap": [
+      "街角书店外景",
+      "街角书店内景"
+    ]
   }
 }
