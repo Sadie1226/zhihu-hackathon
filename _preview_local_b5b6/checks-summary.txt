@@ -1,0 +1,26 @@
+=== typecheck ===
+> tsc --noEmit
+
+TYPECHECK_EXIT=0
+=== lint ===
+> eslint app components lib/adoption lib/messages lib/db lib/auth lib/trips lib/wishes lib/zhihu lib/social scripts/c2 scripts/c4 scripts/c5 scripts/a5 scripts/e2e-d4.ts tests next.config.ts eslint.config.mjs --max-warnings=0
+
+LINT_EXIT=0
+=== test ===
+# tests 167
+# pass 167
+# fail 0
+TEST_DONE
+=== check-all ===
+
+══════════════════════════════════════════════════════
+✅ 全部通过，可以提交。
+CHECK_ALL_DONE
+=== build ===
+└ ƒ /uploads/[name]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+BUILD_EXIT=0
