@@ -47,3 +47,19 @@ test('all blocked produces no proof or invented candidate', async () => {
   assert.equal(result.ok, true)
   assert.equal(result.proof, null)
 })
+
+test('trusted async semantics sees validated candidates and cannot bypass the opaque source proof', async () => {
+  let called = 0
+  const semanticProvider = async ({ candidates }) => {
+    called++
+    assert.equal(candidates[0].title, items[0].title)
+    return { items: [{ index: 1, focus: 'people', focusQuote: items[1].title,
+      time: 'unknown', timeQuote: '', nature: 'unknown', natureQuote: '' }] }
+  }
+  const result = await searchForTrip({ ...context, semanticProvider }, provider(items))
+  assert.equal(called, 1)
+  assert.equal(verifiedSearchInput(result.proof, context.sessionId, []).sourceUrl, items[1].sourceUrl)
+  const invalid = await searchForTrip({ ...context, semanticProvider }, provider([{ ...items[0], sourceMode: 'fixture' }]))
+  assert.equal(invalid.ok, false)
+  assert.equal(called, 1)
+})

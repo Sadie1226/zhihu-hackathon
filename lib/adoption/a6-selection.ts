@@ -1,7 +1,9 @@
 import { EXCLUSIVE_PAIRS, checkPersonalityTags } from '../../contracts/types.ts'
 import type { PersonalityTag } from '../../contracts/types.ts'
+import { semanticFor, explicitFiction } from './a6-semantics.ts'
+import type { SemanticReview, ContentNature } from './a6-semantics.ts'
 
-export const A6_POLICY_VERSION = 'a6-selection-v1'
+export const A6_POLICY_VERSION = 'a6-selection-v2'
 
 /** Server-only input after source/topic validation. id is a stable source identity,
  * not a client-supplied Find ID. This module cannot certify a source or write a Find. */
@@ -12,10 +14,11 @@ export type SelectionContext = Readonly<{
   blockedTopics: readonly string[]
   /** Only this dog's prior trips, loaded by the trusted caller. Absence means unknown. */
   history?: Readonly<{ dogId: string; sourceIds: readonly string[] }>
+  semanticReview?: SemanticReview
 }>
 export type SelectionReason = Readonly<{
   tag: PersonalityTag
-  basis: 'text-cue' | 'seen-source' | 'unseen-source'
+  basis: 'text-cue' | 'semantic-quote' | 'seen-source' | 'unseen-source'
   cues: readonly string[]
 }>
 export type SelectionDecision = Readonly<{
@@ -24,6 +27,7 @@ export type SelectionDecision = Readonly<{
   blocked: boolean
   score: number
   reasons: readonly SelectionReason[]
+  nature: ContentNature
 }>
 export type SelectionResult = Readonly<{
   version: typeof A6_POLICY_VERSION
@@ -83,6 +87,10 @@ export function selectForPersonality(
     const blocked = context.blockedTopics.some(topic => topic.trim() &&
       [candidate.title, candidate.excerpt ?? ''].some(text => normalize(text).includes(normalize(topic.trim()))))
     const reasons: SelectionReason[] = []
+    const semantic = context.semanticReview ? semanticFor(context.semanticReview, candidate) : undefined
+    const visible = `${candidate.title}\n${candidate.excerpt ?? ''}`
+    const fiction = explicitFiction(candidate)
+    const nature: ContentNature = fiction ? 'fiction' : semantic?.nature ?? 'unknown'
     if (!blocked) {
       const text = normalize(`${candidate.title}\n${candidate.excerpt ?? ''}`)
       const add = (tag: PersonalityTag, cues: readonly string[]) => {
@@ -90,10 +98,29 @@ export function selectForPersonality(
         const found = matches(text, cues)
         if (found.length) reasons.push({ tag, basis: 'text-cue', cues: found })
       }
-      add(attention[0], objectCues)
-      add(attention[1], peopleCues)
-      add(time[0], presentCues)
-      add(time[1], memoryCues)
+      if (context.semanticReview) {
+        // Explicit review failures abstain instead of silently reviving unsafe keyword scores.
+        const addSemantic = (tag: PersonalityTag, quote: string | undefined) => {
+          if (tags.has(tag) && quote) reasons.push({ tag, basis: 'semantic-quote', cues: [quote] })
+        }
+        if (semantic?.focus === 'object') addSemantic(attention[0], semantic.focusQuote)
+        if (semantic?.focus === 'people') addSemantic(attention[1], semantic.focusQuote)
+        if (semantic?.time === 'present') addSemantic(time[0], semantic.timeQuote)
+        if (semantic?.time === 'memory') addSemantic(time[1], semantic.timeQuote)
+      } else {
+        // Cheap fallback only for unambiguous short technical/observational material.
+        // Long narrative/fiction and mixed time cues abstain; absence is not evidence.
+        const narrative = fiction || /故事|父亲|母亲|爷爷|奶奶|相思|人生|回忆/.test(visible)
+        if (!fiction && narrative && !matches(text, objectCues).length) add(attention[1], peopleCues)
+        if (!narrative) {
+          const objects = matches(text, objectCues), people = matches(text, peopleCues)
+          if (!people.length) add(attention[0], objectCues)
+          if (!objects.length) add(attention[1], peopleCues)
+          const now = matches(text, presentCues), past = matches(text, memoryCues)
+          if (!past.length) add(time[0], presentCues)
+          if (!now.length) add(time[1], memoryCues)
+        }
+      }
       // With no previous source identities, neither pole gets an invented familiarity score.
       if (history.size) {
         const seen = history.has(candidate.id)
@@ -101,7 +128,7 @@ export function selectForPersonality(
         if (tags.has(tag)) reasons.push({ tag, basis: seen ? 'seen-source' : 'unseen-source', cues: [] })
       }
     }
-    return { index, id: candidate.id, blocked, score: reasons.length, reasons }
+    return { index, id: candidate.id, blocked, score: reasons.length, reasons, nature }
   })
   let selected: SelectionDecision | undefined
   for (const decision of decisions) {

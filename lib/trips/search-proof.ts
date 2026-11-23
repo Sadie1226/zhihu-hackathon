@@ -5,6 +5,8 @@ import type { FindInput } from './finds.ts'
 import { TripError } from './service.ts'
 import { selectForPersonality } from '../adoption/a6-selection.ts'
 import type { SelectionContext } from '../adoption/a6-selection.ts'
+import { reviewSemantics } from '../adoption/a6-semantics.ts'
+import type { SemanticProvider } from '../adoption/a6-semantics.ts'
 
 /** Trusted server dependency injection only. Never select a provider from HTTP input. */
 export type SearchProvider = (query: string, count: number) => Promise<SearchResult>
@@ -22,7 +24,8 @@ export function blockedBy(topics: string[], ...texts: string[]): boolean {
  * synthetic operations explicitly; their outputs are not real integration evidence.
  */
 export async function searchForTrip(context: { tripId: string; sessionId: string; query: string;
-  category: string; blockedTopics: string[]; selection?: SelectionContext }, provider?: SearchProvider): Promise<
+  category: string; blockedTopics: string[]; selection?: SelectionContext;
+  semanticProvider?: SemanticProvider }, provider?: SearchProvider): Promise<
   { ok: true; proof: SearchProof | null; httpStatus: number; fetchedAt: string } |
   { ok: false; error: ContractError; httpStatus: number | null; fallback: 'cache-or-fixture' | null; alert: boolean }
 > {
@@ -54,9 +57,13 @@ export async function searchForTrip(context: { tripId: string; sessionId: string
       }
       return first === index
     })
-    const selection = context.selection ? selectForPersonality(uniqueInputs.map(item => ({
+    const selectionCandidates = uniqueInputs.map(item => ({
       id: item.sourceUrl, title: item.title, excerpt: item.excerpt,
-    })), { ...context.selection, blockedTopics: context.blockedTopics }) : null
+    }))
+    const semanticReview = context.selection && context.semanticProvider
+      ? await reviewSemantics(selectionCandidates, context.semanticProvider) : context.selection?.semanticReview
+    const selection = context.selection ? selectForPersonality(selectionCandidates,
+      { ...context.selection, semanticReview, blockedTopics: context.blockedTopics }) : null
     const input = selection ? (selection.selectedIndex === null ? undefined : uniqueInputs[selection.selectedIndex])
       : inputs.find(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
     if (!input) return { ok: true, proof: null, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }

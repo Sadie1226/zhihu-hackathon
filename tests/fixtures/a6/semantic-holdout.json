@@ -1,0 +1,246 @@
+{
+  "description": "Real public search summaries, reduced to title and exact evidence windows for an offline regression. No current live label, no credentials. Expected focus is assistant review of visible summaries, not independent human truth.",
+  "model": "glm-4.6v-flashx",
+  "records": [
+    {
+      "candidate": {
+        "id": "https://www.zhihu.com/question/2047254050370840426/answer/2047688545343738285",
+        "title": "科学家从木乃伊中提取酵母做酸面包,这是真的吗?背后有什么科学原理? - 知乎",
+        "excerpt": "研究团队从遗体的皮肤、胃内容物和内部融水中分离出了四株酵母菌：Glaciozyma watsonii、Mrakia robertii、Phenoliferia glacialis和Goffeauzyma sp。"
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "object",
+        "time": "unknown",
+        "nature": "account",
+        "focusQuote": "研究团队从遗体的皮肤、胃内容物和内部融水中分离出了四株酵母菌：Glaciozyma watsonii、Mrakia robertii、Phenoliferia glacialis和Goffeauzyma sp。",
+        "timeQuote": "",
+        "natureQuote": "研究团队从遗体的皮肤、胃内容物和内部融水中分离出了四株酵母菌：Glaciozyma watsonii、Mrakia robertii、Phenoliferia glacialis和Goffeauzyma sp。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/341346803",
+        "title": "食品工艺学复习总结 - 知乎",
+        "excerpt": null
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "unknown",
+        "time": "unknown",
+        "nature": "unknown",
+        "focusQuote": "",
+        "timeQuote": "",
+        "natureQuote": ""
+      },
+      "originalFailure": "INVALID_MODEL_OUTPUT"
+    },
+    {
+      "candidate": {
+        "id": "https://www.zhihu.com/question/326567129/answer/1897333526006854371",
+        "title": "面团是如何进化成面包的? - 知乎",
+        "excerpt": "面团进化成面包的过程其实是一场微生物和温度的精彩合作。"
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "object",
+        "time": "mixed",
+        "nature": "knowledge",
+        "focusQuote": "面团进化成面包的过程其实是一场微生物和温度的精彩合作。",
+        "timeQuote": "面团进化成面包的过程其实是一场微生物和温度的精彩合作。",
+        "natureQuote": "面团进化成面包的过程其实是一场微生物和温度的精彩合作。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/684579800",
+        "title": "食品工艺学 - 知乎",
+        "excerpt": null
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "unknown",
+        "time": "unknown",
+        "nature": "unknown",
+        "focusQuote": "",
+        "timeQuote": "",
+        "natureQuote": ""
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://www.zhihu.com/question/548238426/answer/2087263474883768879",
+        "title": "请问发酵原理? - 知乎",
+        "excerpt": null
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "unknown",
+        "time": "unknown",
+        "nature": "unknown",
+        "focusQuote": "",
+        "timeQuote": "",
+        "natureQuote": ""
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/2106319053811889250",
+        "title": "面包为什么发得更挺、果汁为什么不褐变?:葡萄糖氧化酶,食品工业里的\"抢氧工\" - 知乎",
+        "excerpt": "一、先认识主角：拿糖换氧\n葡萄糖氧化酶的英文缩写是 GOD，一种黄素蛋白，辅基是 FAD。它催化的反应干脆利落：\nβ-D-葡萄糖 + 氧气 → 葡萄糖酸-δ-内酯 + 过氧化氢\n生成的内酯不稳定，很快水解成葡萄糖酸。所以它一手消耗糖，一手消耗氧，同时交出两样东西：过氧化氢和葡萄糖酸。"
+      },
+      "query": "面包 发酵 原理 为什么",
+      "fetchedAt": "2026-11-23T07:07:23.257Z",
+      "expectedFocus": "object",
+      "recordedModel": {
+        "index": 0,
+        "focus": "object",
+        "time": "unknown",
+        "nature": "unknown",
+        "focusQuote": "一、先认识主角：拿糖换氧\n葡萄糖氧化酶的英文缩写是 GOD，一种黄素蛋白，辅基是 FAD。它催化的反应干脆利落：\nβ-D-葡萄糖 + 氧气 → 葡萄糖酸-δ-内酯 + 过氧化氢\n生成的内酯不稳定，很快水解成葡萄糖酸。所以它一手消耗糖，一手消耗氧，同时交出两样东西：过氧化氢和葡萄糖酸。",
+        "timeQuote": "",
+        "natureQuote": ""
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/691928294",
+        "title": "重启人生成为面包学徒的她们,现在怎么样了? - 知乎",
+        "excerpt": "逃离职场，重启人生，成了当代中青年的关键词。\n不藏私采访了几位正在经历或已从面包学徒“毕业”的网友分享她们的想法。"
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "people",
+      "recordedModel": {
+        "index": 0,
+        "focus": "people",
+        "time": "unknown",
+        "nature": "account",
+        "focusQuote": "逃离职场，重启人生，成了当代中青年的关键词。",
+        "timeQuote": "",
+        "natureQuote": "不藏私采访了几位正在经历或已从面包学徒“毕业”的网友分享她们的想法。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/1989374266957897771",
+        "title": "【独家专访】十年酸面团之路:在卷与不卷之间,这家面包店选择了坚持与“松弛” - 知乎",
+        "excerpt": "与许多面包师不同，老瞎的入行源于对“变化”本身的着迷。\n“我求知欲比较旺盛，”她回忆道，“标准流程固然重要，但面团每天呈现的不同状态更让我好奇。”\n东京烘焙职业人原创《中国烘焙匠人店》系列已开启。来 # 听创始人说，说他们精彩的创业故事。"
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "mixed",
+      "recordedModel": {
+        "index": 0,
+        "focus": "mixed",
+        "time": "memory",
+        "nature": "account",
+        "focusQuote": "与许多面包师不同，老瞎的入行源于对“变化”本身的着迷。",
+        "timeQuote": "“我求知欲比较旺盛，”她回忆道，“标准流程固然重要，但面团每天呈现的不同状态更让我好奇。”",
+        "natureQuote": "东京烘焙职业人原创《中国烘焙匠人店》系列已开启。来 # 听创始人说，说他们精彩的创业故事。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/717025216",
+        "title": "高中辍学做面包,25岁靠卖碱水面包实现3亿营收,这个00后如何走出一条不同的路? - 知乎",
+        "excerpt": "高中辍学做面包,25岁靠卖碱水面包实现3亿营收,这个00后如何走出一条不同的路?"
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "mixed",
+      "recordedModel": {
+        "index": 0,
+        "focus": "mixed",
+        "time": "mixed",
+        "nature": "account",
+        "focusQuote": "高中辍学做面包,25岁靠卖碱水面包实现3亿营收,这个00后如何走出一条不同的路?",
+        "timeQuote": "高中辍学做面包,25岁靠卖碱水面包实现3亿营收,这个00后如何走出一条不同的路?",
+        "natureQuote": "高中辍学做面包,25岁靠卖碱水面包实现3亿营收,这个00后如何走出一条不同的路?"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/1943351431521343123",
+        "title": "【独家专访】从检察院到面包房:把纳西火腿、牦牛奶酥揉进面团,他在丽江烤出另一种人生 - 知乎",
+        "excerpt": "鹿溪是土生土长的丽江纳西族人。大学毕业后，他通过公务员考试进入检察院工作。在旁人眼里，这是稳定体面的职业，但对他来说，却像一个无法挣脱的牢笼。\n东京烘焙职业人原创《中国烘焙匠人店》系列已开启。来 # 听创始人说，说他们精彩的创业故事。"
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "people",
+      "recordedModel": {
+        "index": 0,
+        "focus": "people",
+        "time": "unknown",
+        "nature": "account",
+        "focusQuote": "鹿溪是土生土长的丽江纳西族人。大学毕业后，他通过公务员考试进入检察院工作。在旁人眼里，这是稳定体面的职业，但对他来说，却像一个无法挣脱的牢笼。",
+        "timeQuote": "",
+        "natureQuote": "东京烘焙职业人原创《中国烘焙匠人店》系列已开启。来 # 听创始人说，说他们精彩的创业故事。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/576761854",
+        "title": "那个差点做保安的男生,逆袭成为了首个双料世界面包冠军,他的精彩人生才刚刚开始! - 知乎",
+        "excerpt": "起初的半年，朋福东的主要工作就是配送面包。后来我们知道，他成为了那个做面包的人。\n这也是朋福东真正意义上开始了面包生涯，牛奶面包、红豆面包、毛毛虫面包......在当时一个月工资才300块出头的日子里，面包若做的大小不一便会相应的扣除工资。朋福东告诉我们，入行的第一年，也是职业生涯中最辛苦的一年，但这也夯实了他的烘焙基本功。"
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "people",
+      "recordedModel": {
+        "index": 0,
+        "focus": "people",
+        "time": "unknown",
+        "nature": "account",
+        "focusQuote": "起初的半年，朋福东的主要工作就是配送面包。后来我们知道，他成为了那个做面包的人。",
+        "timeQuote": "",
+        "natureQuote": "这也是朋福东真正意义上开始了面包生涯，牛奶面包、红豆面包、毛毛虫面包......在当时一个月工资才300块出头的日子里，面包若做的大小不一便会相应的扣除工资。朋福东告诉我们，入行的第一年，也是职业生涯中最辛苦的一年，但这也夯实了他的烘焙基本功。"
+      },
+      "originalFailure": null
+    },
+    {
+      "candidate": {
+        "id": "https://zhuanlan.zhihu.com/p/588347184",
+        "title": "独家采访 | 林育玮:从杂工到台湾面包冠军!他揉了20多年面团,将面包作为一场修行! - 知乎",
+        "excerpt": null
+      },
+      "query": "面包师 人生 经历",
+      "fetchedAt": "2026-11-23T07:07:25.087Z",
+      "expectedFocus": "people",
+      "recordedModel": {
+        "index": 0,
+        "focus": "unknown",
+        "time": "unknown",
+        "nature": "unknown",
+        "focusQuote": "",
+        "timeQuote": "",
+        "natureQuote": ""
+      },
+      "originalFailure": "INVALID_MODEL_OUTPUT"
+    }
+  ]
+}
