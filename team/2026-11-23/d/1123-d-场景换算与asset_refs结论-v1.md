@@ -1,9 +1,11 @@
 # d · 场景与 place 标签换算 + `asset_refs` 结论（v1）
 
 > 日期：2026-11-23\
-> 交付：`team/2026-11-23/d/scene-place-compat.json`（换算表）、`scripts/d2c-scene-coverage.mjs`（有守卫的报告脚本）\
-> 依赖：E2c 的 12 张场景（`team/2026-11-22/e/e2c/`，E 的包按「本包未推仓库」交付，未进 main）\
+> 交付：`team/2026-11-23/d/scene-place-compat.json`（换算表）、`scripts/d2c-scene-coverage.mjs`（有守卫的报告脚本，11/23 晚已改造：场景数不写死、叠加事件条件补丁）\
+> 依赖：E2c 的 12 张场景（`team/2026-11-22/e/e2c/`，已随 `dd5f53e` 进 main，我按目录逐文件核对过）\
 > 未改：30 条事件一列未动（`asset_refs` 仍是 `{}`）、`contracts/` 一字未改、12 张图未改
+
+> **11/23 傍晚更新**：`place_tags=[]` 里两条假「不限」已收紧（`spring_first_green`、`summer_cicada`），所以本文件第四节那张表是**修正前的基线**；修正后 riverside 场景 8→6、空转场景 4→2（只剩 `autumn_birds` / `any_moon_ring`）、平均 11.4→10.1。新数字与 E 补两张书店图后的预期，见 `1123-d-裁定落地与三项修正-v1.md`。另：E 已按 C 的安排补书店室外、室内各一张，换算表届时加两行即可（模板在新文档里）。
 
 ## 一、三句话
 
