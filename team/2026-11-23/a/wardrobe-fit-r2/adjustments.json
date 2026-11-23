@@ -1,0 +1,119 @@
+{
+  "basedOn": "dfa10952c6f2ad03baeeadbd46df1bf8638e53bd",
+  "removed": [
+    "F09-dark"
+  ],
+  "changes": [
+    {
+      "id": "T01-frog",
+      "scale": 1,
+      "dx": 18,
+      "dy": 0,
+      "pivot": [
+        522,
+        800
+      ],
+      "method": "nearest-uniform-scale-and-translation",
+      "clip": false
+    },
+    {
+      "id": "S01-yellow-cardigan",
+      "scale": 1.055,
+      "dx": 0,
+      "dy": 0,
+      "pivot": [
+        522,
+        800
+      ],
+      "method": "nearest-uniform-scale-and-translation",
+      "clip": false
+    },
+    {
+      "id": "S05-cream-vest",
+      "scale": 1.055,
+      "dx": 0,
+      "dy": 0,
+      "pivot": [
+        522,
+        800
+      ],
+      "method": "nearest-uniform-scale-and-translation",
+      "clip": false
+    },
+    {
+      "id": "S06-navy-varsity",
+      "scale": 1.055,
+      "dx": 0,
+      "dy": 0,
+      "pivot": [
+        522,
+        800
+      ],
+      "method": "nearest-uniform-scale-and-translation",
+      "clip": false
+    },
+    {
+      "id": "S08-blue-check-pajamas",
+      "scale": 1.055,
+      "dx": 0,
+      "dy": 0,
+      "pivot": [
+        522,
+        920
+      ],
+      "method": "nearest-uniform-scale-and-translation",
+      "clip": false
+    },
+    {
+      "id": "T02-winter-post",
+      "scale": 1.055,
+      "pivot": [
+        522,
+        800
+      ],
+      "keepHatUnchanged": true,
+      "transparentSplitY": 377
+    },
+    {
+      "id": "P13-blue-cap",
+      "replacement": "references/P13-replacement.png",
+      "sourceAlphaBounds": [
+        492,
+        365,
+        1375,
+        955
+      ],
+      "sourceAspect": 1.4966101694915255,
+      "targetSize": [
+        520,
+        347
+      ],
+      "targetPosition": [
+        202,
+        33
+      ],
+      "aspectErrorPixels": 0.45186862967159414
+    },
+    {
+      "id": "P16-mint-sunglasses",
+      "replacement": "references/P16-replacement.png",
+      "sourceAlphaBounds": [
+        1,
+        1,
+        319,
+        109
+      ],
+      "sourceAspect": 2.9444444444444446,
+      "targetSize": [
+        410,
+        139
+      ],
+      "targetPosition": [
+        317,
+        103
+      ],
+      "aspectErrorPixels": 0.24528301886792292
+    }
+  ],
+  "status": "local-static-review-pending-user-approval"
+}
