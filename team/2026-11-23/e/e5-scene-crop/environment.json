@@ -1,0 +1,71 @@
+{
+  "package": "E5 场景裁切验收包 v1",
+  "capturedAt": "2026-11-23T20:15:00+08:00",
+  "os": {
+    "caption": "Microsoft Windows 11 家庭版 中文版",
+    "version": "10.0.26300",
+    "build": "26300",
+    "ubr": 9711,
+    "displayVersion": "26H2",
+    "architecture": "64 位",
+    "locale": "en-US",
+    "timeZone": "China Standard Time"
+  },
+  "runtime": {
+    "node": "v24.20.0",
+    "nodePath": "C:/Program Files/nodejs/node.exe",
+    "npm": "11.19.0",
+    "packageEngines": ">=24.0.0",
+    "shell": "Git Bash (POSIX sh) on Windows"
+  },
+  "framework": {
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "bundler": "Turbopack (next dev)",
+    "devCommand": "next dev --hostname 0.0.0.0",
+    "port": 3000,
+    "listen": "0.0.0.0:3000",
+    "serverPid": 23380,
+    "serverStartedAt": "2026-11-23T19:06:45+08:00"
+  },
+  "browser": {
+    "engine": "Chromium (Playwright)",
+    "version": "148.0.7778.96",
+    "package": "playwright 1.65.1",
+    "binary": "C:/Users/A/AppData/Local/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-win64/chrome-headless-shell.exe",
+    "headless": true,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.7778.96 Safari/537.36",
+    "platform": "Win32",
+    "devicePixelRatio": 1,
+    "mobileEmulation": false,
+    "note": "375×667 与 320×568 是桌面 Chrome 的窄窗口，未开 isMobile/hasTouch，未覆盖 UA；不是真机移动 UA。"
+  },
+  "git": {
+    "repository": "Sadie1226/zhihu-hackathon",
+    "worktree": "C:/Users/A/Desktop/personal/知乎黑客松/.worktrees/e5-mobile-20261123",
+    "branch": "e5-scene-crop-20261123",
+    "headSha": "3c166fec280ba84f2d7a19609a80e52b8a185121",
+    "headShaShort": "3c166fe",
+    "headCommittedAt": "2026-11-23T20:14:26+08:00",
+    "headSubject": "test(e5): add scene cropping acceptance package with 12-scene x 3-viewport evidence",
+    "baseSha": "dd5f53ebb214bc5f8ee4959b95bfeac74a055200",
+    "baseRef": "origin/main",
+    "baseSubject": "docs(a): publish daily integration evidence and TSPF C14 revision requests",
+    "upstream": null,
+    "pushed": false,
+    "workingTreeDirty": [
+      "next-env.d.ts（next dev 自动改写，未提交）",
+      "next.config.ts（本地 allowedDevOrigins，仅 dev 用，未提交）"
+    ],
+    "dirtyImpact": "两项都不影响 TripPage 渲染与场景裁切测量；next.config.ts 只改 dev 跨源白名单，next-env.d.ts 是 Next 自动生成。"
+  },
+  "testIdentity": {
+    "provider": "development",
+    "dogId": "dog_12c9d7be-77b5-4293-a4ad-0c927346cea5",
+    "dogName": "验收小看山",
+    "tripId": "trip_2c7d857b-55ee-458b-b3d4-41d3856a82b0",
+    "tripStatus": "done",
+    "database": "C:/Users/A/Desktop/personal/知乎黑客松/.tmp-e5/db/a5-development.sqlite（项目目录外，不入库）",
+    "note": "running 态为临时改 status 后立即改回 done；未改正式业务数据。"
+  }
+}
