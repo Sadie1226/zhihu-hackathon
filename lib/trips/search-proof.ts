@@ -21,7 +21,7 @@ export function blockedBy(topics: string[], ...texts: string[]): boolean {
  */
 export async function searchForTrip(context: { tripId: string; sessionId: string; query: string;
   category: string; blockedTopics: string[] }, provider?: SearchProvider): Promise<
-  { ok: true; proof: SearchProof | null; httpStatus: number; fetchedAt: string } |
+  { ok: true; proof: SearchProof | null; proofs: readonly SearchProof[]; httpStatus: number; fetchedAt: string } |
   { ok: false; error: ContractError; httpStatus: number | null; fallback: 'cache-or-fixture' | null; alert: boolean }
 > {
   try {
@@ -43,12 +43,14 @@ export async function searchForTrip(context: { tripId: string; sessionId: string
         sourceUrl: canonicalZhihuContentUrl(item.sourceUrl), sourceMode: 'live' as const,
         authorityLevel: item.authorityLevel, voteUpCount: item.voteUpCount, assetPath: null }
     })
-    const input = inputs.find(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
-    if (!input) return { ok: true, proof: null, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
-    const proof: SearchProof = Object.freeze({ verifiedSearch: true })
-    evidence.set(proof, { tripId: context.tripId, sessionId: context.sessionId,
-      query: context.query, category: context.category, input: Object.freeze(input) })
-    return { ok: true, proof, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
+    const proofs = inputs.filter(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
+      .map(input => {
+        const proof: SearchProof = Object.freeze({ verifiedSearch: true })
+        evidence.set(proof, { tripId: context.tripId, sessionId: context.sessionId,
+          query: context.query, category: context.category, input: Object.freeze(input) })
+        return proof
+      })
+    return { ok: true, proof: proofs[0] ?? null, proofs, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
   } catch {
     // Never retain provider exceptions, tokens, request headers or private wish text.
     return { ok: false, error: network(), httpStatus: null, fallback: null, alert: false }
@@ -56,14 +58,19 @@ export async function searchForTrip(context: { tripId: string; sessionId: string
 }
 
 /** Called only inside the store write transaction. JSON/clones/foreign sessions fail. */
-export function verifiedSearchInput(proof: SearchProof, sessionId: string, blockedTopics: string[]): FindInput {
+export function eligibleSearchInput(proof: SearchProof, sessionId: string, blockedTopics: string[]): FindInput | null {
   const value = proof && evidence.get(proof)
-  if (!value || !sessionId || value.sessionId !== sessionId ||
-      value.input.tripId !== value.tripId || blockedBy(blockedTopics, value.query, value.category,
-        value.input.title, value.input.excerpt ?? '')) {
+  if (!value || !sessionId || value.sessionId !== sessionId || value.input.tripId !== value.tripId) {
     throw new TripError('CONFLICT', '发现来源验证未通过')
   }
+  if (blockedBy(blockedTopics, value.query, value.category, value.input.title, value.input.excerpt ?? '')) return null
   return { ...value.input }
+}
+
+export function verifiedSearchInput(proof: SearchProof, sessionId: string, blockedTopics: string[]): FindInput {
+  const input = eligibleSearchInput(proof, sessionId, blockedTopics)
+  if (!input) throw new TripError('CONFLICT', '发现来源验证未通过')
+  return input
 }
 
 export function proofTripId(proof: SearchProof): string {

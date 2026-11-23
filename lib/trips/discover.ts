@@ -11,8 +11,8 @@ import { createTripService, TripError } from './service.ts'
  * The ownership key comes from trusted server context. Query, mode and time are server-controlled.
  * Provider/clock overrides are trusted server test configuration, never request data.
  */
-export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
-  return async function discover(tripId: string, sessionId: string) {
+export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider) {
+  return async function search(tripId: string, sessionId: string) {
     if (!sessionId || !tripId) throw new TripError('NOT_FOUND', '这条记录不在这里')
     const trip = createTripService(db).get(tripId, sessionId)
     if (trip.status !== 'running' || !trip.startedAt) throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
@@ -38,9 +38,16 @@ export function createTripDiscoverer(db: DatabaseSync, options: { provider?: Sea
         if (query) { candidate = { query, category }; break }
       }
     }
-    if (!candidate) return { ok: true as const, finds: [], httpStatus: null, fetchedAt: null }
+    if (!candidate) return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
     // No SQLite transaction spans this await. C4 can finish while the provider runs.
-    const result = await searchForTrip({ tripId, sessionId, ...candidate, blockedTopics }, options.provider)
+    return searchForTrip({ tripId, sessionId, ...candidate, blockedTopics }, provider)
+  }
+}
+
+export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
+  const search = createTripDiscoverySearch(db, options.provider)
+  return async function discover(tripId: string, sessionId: string) {
+    const result = await search(tripId, sessionId)
     if (!result.ok) return result // internal only: AUTH/RATE_LIMITED are never sent to UI here
     const finds = result.proof ? [createFindStore(db, { now: options.now }).writeVerified(result.proof, sessionId)] : []
     return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
