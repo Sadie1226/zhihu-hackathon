@@ -1,0 +1,32 @@
+{
+  "base": "http://172.20.10.4:3000",
+  "actor": "ref",
+  "viewports": [
+    "375x667"
+  ],
+  "generatedAt": "2026-11-23T12:06:47.205Z",
+  "errors": [],
+  "results": [
+    {
+      "viewport": "375x667",
+      "scene": "changbai",
+      "place": "长白山天池",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=changbai&actor=ref",
+      "blocked": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('img[alt=\"归来场景\"], img[alt=\"旅途场景\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "kanas",
+      "place": "阿勒泰·喀纳斯",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=kanas&actor=ref",
+      "blocked": "page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://172.20.10.4:3000/a-scene-crop-fixture?scene=kanas&actor=ref\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "sanya",
+      "place": "三亚海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=sanya&actor=ref",
+      "blocked": "page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://172.20.10.4:3000/a-scene-crop-fixture?scene=sanya&actor=ref\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    }
+  ]
+}

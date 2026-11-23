@@ -1,0 +1,151 @@
+{
+  "base": "http://172.20.10.4:3000",
+  "actor": "body",
+  "viewports": [
+    "375x667"
+  ],
+  "generatedAt": "2026-11-23T12:12:34.649Z",
+  "errors": [],
+  "results": [
+    {
+      "viewport": "375x667",
+      "scene": "changbai",
+      "place": "长白山天池",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=changbai&actor=body",
+      "slug": "changbai",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.8%",
+          "top": "86.0938%",
+          "width": "27%"
+        },
+        "rect": [
+          137.66,
+          355.63,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            137.66,
+            355.63,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          183.06,
+          469.98
+        ],
+        "actor": [
+          183.42,
+          453.55
+        ],
+        "delta": [
+          0.36,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          0.11,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 91.29
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/running-375x667-changbai.png"
+    }
+  ]
+}

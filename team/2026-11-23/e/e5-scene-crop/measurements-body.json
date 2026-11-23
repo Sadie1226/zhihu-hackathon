@@ -1,0 +1,5053 @@
+{
+  "base": "http://172.20.10.4:3000",
+  "actor": "body",
+  "viewports": [
+    "375x667",
+    "320x568",
+    "1440x900"
+  ],
+  "generatedAt": "2026-11-23T12:03:43.129Z",
+  "errors": [],
+  "results": [
+    {
+      "viewport": "375x667",
+      "scene": "changbai",
+      "place": "长白山天池",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=changbai&actor=body",
+      "slug": "changbai",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.8%",
+          "top": "86.0938%",
+          "width": "27%"
+        },
+        "rect": [
+          137.66,
+          355.63,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            137.66,
+            355.63,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          183.06,
+          469.98
+        ],
+        "actor": [
+          183.42,
+          453.55
+        ],
+        "delta": [
+          0.36,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          0.11,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 91.29
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-changbai.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "kanas",
+      "place": "阿勒泰·喀纳斯",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=kanas&actor=body",
+      "slug": "kanas",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "59.2%",
+          "top": "84.8438%",
+          "width": "27%"
+        },
+        "rect": [
+          172.93,
+          351.67,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            172.93,
+            351.67,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          221.57,
+          466.03
+        ],
+        "actor": [
+          218.69,
+          449.59
+        ],
+        "delta": [
+          -2.88,
+          -16.43
+        ],
+        "deltaPctOfStage": [
+          -0.85,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 90.04
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-kanas.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "sanya",
+      "place": "三亚海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=sanya&actor=body",
+      "slug": "sanya",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "45.2%",
+          "top": "80%",
+          "width": "27%"
+        },
+        "rect": [
+          125.46,
+          336.38,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            125.46,
+            336.38,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          169.72,
+          450.72
+        ],
+        "actor": [
+          171.22,
+          434.3
+        ],
+        "delta": [
+          1.5,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          0.44,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 85.2
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-sanya.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "nantou",
+      "place": "深圳南头古城",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=nantou&actor=body",
+      "slug": "nantou",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52.6667%",
+          "top": "85.1562%",
+          "width": "27%"
+        },
+        "rect": [
+          150.77,
+          352.67,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            150.77,
+            352.67,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          197.38,
+          467.02
+        ],
+        "actor": [
+          196.53,
+          450.59
+        ],
+        "delta": [
+          -0.84,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          -0.25,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 90.35
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-nantou.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "late-night-corner",
+      "place": "深夜街角",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=late-night-corner&actor=body",
+      "slug": "late-night-corner",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50%",
+          "top": "77.8125%",
+          "width": "27%"
+        },
+        "rect": [
+          141.74,
+          329.45,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            141.74,
+            329.45,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          187.5,
+          443.81
+        ],
+        "actor": [
+          187.5,
+          427.37
+        ],
+        "delta": [
+          0,
+          -16.44
+        ],
+        "deltaPctOfStage": [
+          0,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 83.01
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-late-night-corner.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "dunhuang-mingsha",
+      "place": "敦煌鸣沙山",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=dunhuang-mingsha&actor=body",
+      "slug": "dunhuang-mingsha",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "51.2%",
+          "top": "84.6875%",
+          "width": "27%"
+        },
+        "rect": [
+          145.8,
+          351.19,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            145.8,
+            351.19,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          191.94,
+          465.53
+        ],
+        "actor": [
+          191.56,
+          449.11
+        ],
+        "delta": [
+          -0.38,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          -0.11,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 89.88
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-dunhuang-mingsha.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "greater-khingan-birch",
+      "place": "大兴安岭白桦林",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=greater-khingan-birch&actor=body",
+      "slug": "greater-khingan-birch",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50.2667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          142.63,
+          350.2,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            142.63,
+            350.2,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          188.49,
+          464.55
+        ],
+        "actor": [
+          188.39,
+          448.12
+        ],
+        "delta": [
+          -0.1,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          -0.03,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 89.57
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-greater-khingan-birch.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "panjin-red-beach",
+      "place": "盘锦红海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=panjin-red-beach&actor=body",
+      "slug": "panjin-red-beach",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "46.2667%",
+          "top": "85.9375%",
+          "width": "27%"
+        },
+        "rect": [
+          129.09,
+          355.14,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            129.09,
+            355.14,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          173.68,
+          469.48
+        ],
+        "actor": [
+          174.85,
+          453.06
+        ],
+        "delta": [
+          1.17,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          0.35,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 91.13
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-panjin-red-beach.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "guilin-li-river",
+      "place": "桂林漓江",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=guilin-li-river&actor=body",
+      "slug": "guilin-li-river",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "43.4667%",
+          "top": "85.7812%",
+          "width": "27%"
+        },
+        "rect": [
+          119.59,
+          354.64,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            119.59,
+            354.64,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          163.31,
+          468.99
+        ],
+        "actor": [
+          165.35,
+          452.56
+        ],
+        "delta": [
+          2.04,
+          -16.43
+        ],
+        "deltaPctOfStage": [
+          0.6,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 90.98
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-guilin-li-river.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "beijing-road",
+      "place": "广州北京路",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=beijing-road&actor=body",
+      "slug": "beijing-road",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52%",
+          "top": "85.3125%",
+          "width": "27%"
+        },
+        "rect": [
+          148.51,
+          353.16,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            148.51,
+            353.16,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          194.91,
+          467.51
+        ],
+        "actor": [
+          194.27,
+          451.08
+        ],
+        "delta": [
+          -0.64,
+          -16.43
+        ],
+        "deltaPctOfStage": [
+          -0.19,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 90.51
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-beijing-road.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "city-community-park",
+      "place": "城市社区公园",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=city-community-park&actor=body",
+      "slug": "city-community-park",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.6667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          137.21,
+          350.2,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            137.21,
+            350.2,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          182.56,
+          464.55
+        ],
+        "actor": [
+          182.97,
+          448.12
+        ],
+        "delta": [
+          0.41,
+          -16.42
+        ],
+        "deltaPctOfStage": [
+          0.12,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 89.57
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-city-community-park.png"
+    },
+    {
+      "viewport": "375x667",
+      "scene": "corner-tavern-interior",
+      "place": "街角小酒馆内景",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=corner-tavern-interior&actor=body",
+      "slug": "corner-tavern-interior",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          343,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "client": [
+          339,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          339,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 15.66,
+          "y": 0,
+          "croppedW": 31.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "57.6%",
+          "top": "85.625%",
+          "width": "27%"
+        },
+        "rect": [
+          167.49,
+          354.14,
+          91.52,
+          114.34
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 91.515625,
+          "boxH": 114.34375,
+          "displayedSprite": [
+            91.52,
+            106.16
+          ],
+          "rect": [
+            167.49,
+            354.14,
+            91.52,
+            106.16
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.91515625,
+          "scaleY": 0.9151400862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          215.64,
+          468.5
+        ],
+        "actor": [
+          213.25,
+          452.06
+        ],
+        "delta": [
+          -2.39,
+          -16.43
+        ],
+        "deltaPctOfStage": [
+          -0.71,
+          -5.2
+        ],
+        "suggestTopPctForVisibleFeet": 90.83
+      },
+      "doc": {
+        "scrollWidth": 375,
+        "innerWidth": 375,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-375x667-corner-tavern-interior.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "changbai",
+      "place": "长白山天池",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=changbai&actor=body",
+      "slug": "changbai",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.8%",
+          "top": "86.0938%",
+          "width": "27%"
+        },
+        "rect": [
+          118.24,
+          372.84,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            118.24,
+            372.84,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          155.56,
+          469.98
+        ],
+        "actor": [
+          156.57,
+          454.88
+        ],
+        "delta": [
+          1.02,
+          -15.1
+        ],
+        "deltaPctOfStage": [
+          0.36,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 90.87
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-changbai.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "kanas",
+      "place": "阿勒泰·喀纳斯",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=kanas&actor=body",
+      "slug": "kanas",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "59.2%",
+          "top": "84.8438%",
+          "width": "27%"
+        },
+        "rect": [
+          147.79,
+          368.89,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            147.79,
+            368.89,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          194.07,
+          466.03
+        ],
+        "actor": [
+          186.13,
+          450.93
+        ],
+        "delta": [
+          -7.94,
+          -15.1
+        ],
+        "deltaPctOfStage": [
+          -2.8,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 89.62
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-kanas.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "sanya",
+      "place": "三亚海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=sanya&actor=body",
+      "slug": "sanya",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "45.2%",
+          "top": "80%",
+          "width": "27%"
+        },
+        "rect": [
+          108.02,
+          353.59,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            108.02,
+            353.59,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          142.22,
+          450.72
+        ],
+        "actor": [
+          146.35,
+          435.63
+        ],
+        "delta": [
+          4.13,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          1.45,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 84.78
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-sanya.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "nantou",
+      "place": "深圳南头古城",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=nantou&actor=body",
+      "slug": "nantou",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52.6667%",
+          "top": "85.1562%",
+          "width": "27%"
+        },
+        "rect": [
+          129.23,
+          369.89,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            129.23,
+            369.89,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          169.88,
+          467.02
+        ],
+        "actor": [
+          167.56,
+          451.93
+        ],
+        "delta": [
+          -2.31,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          -0.81,
+          -4.77
+        ],
+        "suggestTopPctForVisibleFeet": 89.93
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-nantou.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "late-night-corner",
+      "place": "深夜街角",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=late-night-corner&actor=body",
+      "slug": "late-night-corner",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50%",
+          "top": "77.8125%",
+          "width": "27%"
+        },
+        "rect": [
+          121.66,
+          346.67,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            121.66,
+            346.67,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          160,
+          443.81
+        ],
+        "actor": [
+          160,
+          428.71
+        ],
+        "delta": [
+          0,
+          -15.1
+        ],
+        "deltaPctOfStage": [
+          0,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 82.59
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-late-night-corner.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "dunhuang-mingsha",
+      "place": "敦煌鸣沙山",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=dunhuang-mingsha&actor=body",
+      "slug": "dunhuang-mingsha",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "51.2%",
+          "top": "84.6875%",
+          "width": "27%"
+        },
+        "rect": [
+          125.07,
+          368.41,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            125.07,
+            368.41,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          164.44,
+          465.53
+        ],
+        "actor": [
+          163.41,
+          450.45
+        ],
+        "delta": [
+          -1.04,
+          -15.08
+        ],
+        "deltaPctOfStage": [
+          -0.37,
+          -4.77
+        ],
+        "suggestTopPctForVisibleFeet": 89.46
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-dunhuang-mingsha.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "greater-khingan-birch",
+      "place": "大兴安岭白桦林",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=greater-khingan-birch&actor=body",
+      "slug": "greater-khingan-birch",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50.2667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          122.41,
+          367.42,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            122.41,
+            367.42,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          160.99,
+          464.55
+        ],
+        "actor": [
+          160.75,
+          449.46
+        ],
+        "delta": [
+          -0.24,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          -0.09,
+          -4.77
+        ],
+        "suggestTopPctForVisibleFeet": 89.15
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-greater-khingan-birch.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "panjin-red-beach",
+      "place": "盘锦红海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=panjin-red-beach&actor=body",
+      "slug": "panjin-red-beach",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "46.2667%",
+          "top": "85.9375%",
+          "width": "27%"
+        },
+        "rect": [
+          111.05,
+          372.36,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            111.05,
+            372.36,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          146.18,
+          469.48
+        ],
+        "actor": [
+          149.38,
+          454.4
+        ],
+        "delta": [
+          3.21,
+          -15.08
+        ],
+        "deltaPctOfStage": [
+          1.13,
+          -4.77
+        ],
+        "suggestTopPctForVisibleFeet": 90.71
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-panjin-red-beach.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "guilin-li-river",
+      "place": "桂林漓江",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=guilin-li-river&actor=body",
+      "slug": "guilin-li-river",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "43.4667%",
+          "top": "85.7812%",
+          "width": "27%"
+        },
+        "rect": [
+          103.1,
+          371.86,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            103.1,
+            371.86,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          135.81,
+          468.99
+        ],
+        "actor": [
+          141.44,
+          453.9
+        ],
+        "delta": [
+          5.63,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          1.98,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 90.56
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-guilin-li-river.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "beijing-road",
+      "place": "广州北京路",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=beijing-road&actor=body",
+      "slug": "beijing-road",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52%",
+          "top": "85.3125%",
+          "width": "27%"
+        },
+        "rect": [
+          127.34,
+          370.38,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            127.34,
+            370.38,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          167.41,
+          467.51
+        ],
+        "actor": [
+          165.68,
+          452.42
+        ],
+        "delta": [
+          -1.73,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          -0.61,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 90.09
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-beijing-road.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "city-community-park",
+      "place": "城市社区公园",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=city-community-park&actor=body",
+      "slug": "city-community-park",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.6667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          117.87,
+          367.42,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            117.87,
+            367.42,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          155.06,
+          464.55
+        ],
+        "actor": [
+          156.21,
+          449.46
+        ],
+        "delta": [
+          1.14,
+          -15.09
+        ],
+        "deltaPctOfStage": [
+          0.4,
+          -4.77
+        ],
+        "suggestTopPctForVisibleFeet": 89.15
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-city-community-park.png"
+    },
+    {
+      "viewport": "320x568",
+      "scene": "corner-tavern-interior",
+      "place": "街角小酒馆内景",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=corner-tavern-interior&actor=body",
+      "slug": "corner-tavern-interior",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          16,
+          195.92,
+          288,
+          320
+        ],
+        "paddingBox": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "client": [
+          284,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          18,
+          197.92,
+          284,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 0.4938,
+        "drawn": [
+          370.31,
+          316
+        ],
+        "crop": {
+          "x": 43.16,
+          "y": 0,
+          "croppedW": 86.31,
+          "croppedH": 0
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "57.6%",
+          "top": "85.625%",
+          "width": "27%"
+        },
+        "rect": [
+          143.24,
+          371.36,
+          76.67,
+          97.13
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 76.671875,
+          "boxH": 97.125,
+          "displayedSprite": [
+            76.67,
+            88.94
+          ],
+          "rect": [
+            143.24,
+            371.36,
+            76.67,
+            88.94
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 0.76671875,
+          "scaleY": 0.7667025862068966
+        },
+        "clip": {
+          "top": 0,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": true
+      },
+      "foot": {
+        "scene": [
+          188.14,
+          468.5
+        ],
+        "actor": [
+          181.58,
+          453.4
+        ],
+        "delta": [
+          -6.57,
+          -15.1
+        ],
+        "deltaPctOfStage": [
+          -2.31,
+          -4.78
+        ],
+        "suggestTopPctForVisibleFeet": 90.4
+      },
+      "doc": {
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-320x568-corner-tavern-interior.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "changbai",
+      "place": "长白山天池",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=changbai&actor=body",
+      "slug": "changbai",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.8%",
+          "top": "86.0938%",
+          "width": "27%"
+        },
+        "rect": [
+          565.95,
+          121.69,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            565.95,
+            121.69,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 62.359375,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          707.42,
+          666.83
+        ],
+        "actor": [
+          707.43,
+          424.44
+        ],
+        "delta": [
+          0,
+          -242.39
+        ],
+        "deltaPctOfStage": [
+          0,
+          -76.7
+        ],
+        "suggestTopPctForVisibleFeet": 162.8
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-changbai.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "kanas",
+      "place": "阿勒泰·喀纳斯",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=kanas&actor=body",
+      "slug": "kanas",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "59.2%",
+          "top": "84.8438%",
+          "width": "27%"
+        },
+        "rect": [
+          674.93,
+          117.73,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            674.93,
+            117.73,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 66.3125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          816.42,
+          655.65
+        ],
+        "actor": [
+          816.4,
+          420.48
+        ],
+        "delta": [
+          -0.01,
+          -235.17
+        ],
+        "deltaPctOfStage": [
+          0,
+          -74.42
+        ],
+        "suggestTopPctForVisibleFeet": 159.26
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-kanas.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "sanya",
+      "place": "三亚海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=sanya&actor=body",
+      "slug": "sanya",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "45.2%",
+          "top": "80%",
+          "width": "27%"
+        },
+        "rect": [
+          528.21,
+          102.44,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            528.21,
+            102.44,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 81.609375,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          669.7,
+          612.33
+        ],
+        "actor": [
+          669.69,
+          405.19
+        ],
+        "delta": [
+          -0.01,
+          -207.14
+        ],
+        "deltaPctOfStage": [
+          0,
+          -65.55
+        ],
+        "suggestTopPctForVisibleFeet": 145.55
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-sanya.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "nantou",
+      "place": "深圳南头古城",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=nantou&actor=body",
+      "slug": "nantou",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52.6667%",
+          "top": "85.1562%",
+          "width": "27%"
+        },
+        "rect": [
+          606.46,
+          118.73,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            606.46,
+            118.73,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 65.3125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          747.95,
+          658.45
+        ],
+        "actor": [
+          747.94,
+          421.48
+        ],
+        "delta": [
+          -0.01,
+          -236.96
+        ],
+        "deltaPctOfStage": [
+          0,
+          -74.99
+        ],
+        "suggestTopPctForVisibleFeet": 160.14
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-nantou.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "late-night-corner",
+      "place": "深夜街角",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=late-night-corner&actor=body",
+      "slug": "late-night-corner",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50%",
+          "top": "77.8125%",
+          "width": "27%"
+        },
+        "rect": [
+          578.52,
+          95.52,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            578.52,
+            95.52,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 88.53125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          720,
+          592.77
+        ],
+        "actor": [
+          720,
+          398.27
+        ],
+        "delta": [
+          0,
+          -194.5
+        ],
+        "deltaPctOfStage": [
+          0,
+          -61.55
+        ],
+        "suggestTopPctForVisibleFeet": 139.36
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-late-night-corner.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "dunhuang-mingsha",
+      "place": "敦煌鸣沙山",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=dunhuang-mingsha&actor=body",
+      "slug": "dunhuang-mingsha",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "51.2%",
+          "top": "84.6875%",
+          "width": "27%"
+        },
+        "rect": [
+          591.09,
+          117.25,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            591.09,
+            117.25,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 66.796875,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          732.58,
+          654.25
+        ],
+        "actor": [
+          732.57,
+          420
+        ],
+        "delta": [
+          -0.01,
+          -234.25
+        ],
+        "deltaPctOfStage": [
+          0,
+          -74.13
+        ],
+        "suggestTopPctForVisibleFeet": 158.82
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-dunhuang-mingsha.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "greater-khingan-birch",
+      "place": "大兴安岭白桦林",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=greater-khingan-birch&actor=body",
+      "slug": "greater-khingan-birch",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "50.2667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          581.3,
+          116.27,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            581.3,
+            116.27,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 67.78125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          722.79,
+          651.46
+        ],
+        "actor": [
+          722.77,
+          419.02
+        ],
+        "delta": [
+          -0.02,
+          -232.44
+        ],
+        "deltaPctOfStage": [
+          0,
+          -73.56
+        ],
+        "suggestTopPctForVisibleFeet": 157.93
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-greater-khingan-birch.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "panjin-red-beach",
+      "place": "盘锦红海滩",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=panjin-red-beach&actor=body",
+      "slug": "panjin-red-beach",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "46.2667%",
+          "top": "85.9375%",
+          "width": "27%"
+        },
+        "rect": [
+          539.38,
+          121.2,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            539.38,
+            121.2,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 62.84375,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          680.87,
+          665.43
+        ],
+        "actor": [
+          680.86,
+          423.95
+        ],
+        "delta": [
+          -0.02,
+          -241.48
+        ],
+        "deltaPctOfStage": [
+          0,
+          -76.42
+        ],
+        "suggestTopPctForVisibleFeet": 162.35
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-panjin-red-beach.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "guilin-li-river",
+      "place": "桂林漓江",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=guilin-li-river&actor=body",
+      "slug": "guilin-li-river",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "43.4667%",
+          "top": "85.7812%",
+          "width": "27%"
+        },
+        "rect": [
+          510.04,
+          120.7,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            510.04,
+            120.7,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 63.34375,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          651.53,
+          664.04
+        ],
+        "actor": [
+          651.51,
+          423.45
+        ],
+        "delta": [
+          -0.02,
+          -240.58
+        ],
+        "deltaPctOfStage": [
+          0,
+          -76.13
+        ],
+        "suggestTopPctForVisibleFeet": 161.91
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-guilin-li-river.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "beijing-road",
+      "place": "广州北京路",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=beijing-road&actor=body",
+      "slug": "beijing-road",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "52%",
+          "top": "85.3125%",
+          "width": "27%"
+        },
+        "rect": [
+          599.48,
+          119.22,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            599.48,
+            119.22,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 64.828125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          740.96,
+          659.84
+        ],
+        "actor": [
+          740.96,
+          421.97
+        ],
+        "delta": [
+          0,
+          -237.87
+        ],
+        "deltaPctOfStage": [
+          0,
+          -75.28
+        ],
+        "suggestTopPctForVisibleFeet": 160.59
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-beijing-road.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "city-community-park",
+      "place": "城市社区公园",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=city-community-park&actor=body",
+      "slug": "city-community-park",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "48.6667%",
+          "top": "84.375%",
+          "width": "27%"
+        },
+        "rect": [
+          564.54,
+          116.27,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            564.54,
+            116.27,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 67.78125,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          706.03,
+          651.46
+        ],
+        "actor": [
+          706.01,
+          419.02
+        ],
+        "delta": [
+          -0.01,
+          -232.44
+        ],
+        "deltaPctOfStage": [
+          0,
+          -73.56
+        ],
+        "suggestTopPctForVisibleFeet": 157.93
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-city-community-park.png"
+    },
+    {
+      "viewport": "1440x900",
+      "scene": "corner-tavern-interior",
+      "place": "街角小酒馆内景",
+      "url": "http://172.20.10.4:3000/a-scene-crop-fixture?scene=corner-tavern-interior&actor=body",
+      "slug": "corner-tavern-interior",
+      "actorKind": "body",
+      "stage": {
+        "rect": [
+          194,
+          184.05,
+          1052,
+          320
+        ],
+        "paddingBox": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "client": [
+          1048,
+          316
+        ],
+        "padding": [
+          "24px",
+          "24px",
+          "24px",
+          "24px"
+        ],
+        "border": [
+          "2px",
+          "2px",
+          "2px",
+          "2px"
+        ],
+        "overflow": "hidden",
+        "borderRadius": "12px",
+        "aspectRatio": "auto"
+      },
+      "backdrop": {
+        "rect": [
+          196,
+          186.05,
+          1048,
+          316
+        ],
+        "natural": [
+          750,
+          640
+        ],
+        "objectFit": "cover",
+        "objectPosition": "50% 50%",
+        "coverScale": 1.3973,
+        "drawn": [
+          1048,
+          894.29
+        ],
+        "crop": {
+          "x": 0,
+          "y": 289.15,
+          "croppedW": 0,
+          "croppedH": 578.29
+        },
+        "coversStage": false
+      },
+      "actor": {
+        "inline": {
+          "left": "57.6%",
+          "top": "85.625%",
+          "width": "27%"
+        },
+        "rect": [
+          658.16,
+          120.2,
+          282.95,
+          336.41
+        ],
+        "square": false,
+        "baselineGap": 8.19,
+        "sprite": {
+          "natural": [
+            100,
+            116
+          ],
+          "alphaBottomRow": 106,
+          "alphaLeft": 18,
+          "alphaRight": 89,
+          "visibleBottomFraction": 0.9224137931034483,
+          "boxW": 282.953125,
+          "boxH": 336.40625,
+          "displayedSprite": [
+            282.95,
+            328.22
+          ],
+          "rect": [
+            658.16,
+            120.2,
+            282.95,
+            328.22
+          ],
+          "offsetTop": 0,
+          "gapBelowSprite": 8.19,
+          "scaleX": 2.82953125,
+          "scaleY": 2.8294719827586206
+        },
+        "clip": {
+          "top": 63.84375,
+          "bottom": 0,
+          "left": 0,
+          "right": 0
+        },
+        "insideStage": false
+      },
+      "foot": {
+        "scene": [
+          799.65,
+          662.64
+        ],
+        "actor": [
+          799.63,
+          422.95
+        ],
+        "delta": [
+          -0.01,
+          -239.68
+        ],
+        "deltaPctOfStage": [
+          0,
+          -75.85
+        ],
+        "suggestTopPctForVisibleFeet": 161.47
+      },
+      "doc": {
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false
+      },
+      "shot": "shots/body-1440x900-corner-tavern-interior.png"
+    }
+  ]
+}

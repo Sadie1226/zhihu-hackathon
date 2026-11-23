@@ -1,0 +1,41 @@
+[
+  {
+    "viewport": "375x667",
+    "url": "http://172.20.10.4:3000/trip",
+    "heading": "它回来了，带着一些路上的见闻。",
+    "stageText": "它已经回来了。 | 开发预览 · 旅途画面仍在准备中",
+    "stageRect": [
+      343,
+      320
+    ],
+    "hasBackdrop": false,
+    "backdropSrc": null,
+    "hasActor": false
+  },
+  {
+    "viewport": "320x568",
+    "url": "http://172.20.10.4:3000/trip",
+    "heading": "它回来了，带着一些路上的见闻。",
+    "stageText": "它已经回来了。 | 开发预览 · 旅途画面仍在准备中",
+    "stageRect": [
+      288,
+      320
+    ],
+    "hasBackdrop": false,
+    "backdropSrc": null,
+    "hasActor": false
+  },
+  {
+    "viewport": "1440x900",
+    "url": "http://172.20.10.4:3000/trip",
+    "heading": "它回来了，带着一些路上的见闻。",
+    "stageText": "它已经回来了。 | 开发预览 · 旅途画面仍在准备中",
+    "stageRect": [
+      1052,
+      320
+    ],
+    "hasBackdrop": false,
+    "backdropSrc": null,
+    "hasActor": false
+  }
+]
