@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-23",
+  "base": "d615a670ccb08d057fa82ef2e129b30bb02c8cbc",
+  "tag": "v9-1123",
+  "database_version": 5,
+  "source_refs": {
+    "owner": "c8fc2857427c8f23e9a8e2a14404c4184fe95e4f",
+    "mailbox": "170f43efb4e0b659d0c28cc8a895b101d4279bcb",
+    "B": "25dce4f652eab452177645f6ae6ce6521258b3b9",
+    "Dguard": "a35f548decfb104eaf2a86694e7a9cc41eb302bb",
+    "Dsnapshot": "9144c5cc410a0e0900a4ea27d8ecb6449b303121",
+    "Dassembly": "b0f5393bd39957f346ddc93a2736da0931216b83",
+    "E": "dfa10952c6f2ad03baeeadbd46df1bf8638e53bd"
+  },
+  "tests": {
+    "main": 196,
+    "social": 207,
+    "e2e": 31,
+    "wardrobe_layers": 33,
+    "wardrobe_legal_rules": 864,
+    "wardrobe_invalid_rules": 8,
+    "typecheck": true,
+    "lint": true,
+    "default_production_build": true,
+    "five_gates": true,
+    "owner_production_http": true,
+    "mailbox_production_http": true,
+    "replybody_browser_saved_rows": 1
+  },
+  "not_merged": [
+    "c14-image-composer-1122@485677f"
+  ],
+  "not_complete": [
+    "real OAuth",
+    "TSPF K migration/runtime selector",
+    "real image provider/HTTP integration",
+    "C6 executor/multiple/cache",
+    "C8 POST/seed trigger",
+    "D5 real experiences",
+    "public deployment"
+  ],
+  "git_fetch_success": false,
+  "network": "Git fetch timeout; API fetched exact objects and updated selected origin refs",
+  "deployed": false,
+  "automatic_messages": false
+}
