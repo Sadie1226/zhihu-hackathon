@@ -1,0 +1,164 @@
+{
+  "status": "delivered-assets-not-runtime-enabled-list",
+  "canvas": [
+    750,
+    640
+  ],
+  "originalMapSource": "team/2026-11-22/e/e2c/scene-map.json",
+  "scenes": [
+    {
+      "place": "长白山天池",
+      "file": "team/2026-11-22/e/e2c/scenes/changbai.png",
+      "source": "图片 41.png",
+      "foot": [
+        366,
+        551
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "阿勒泰·喀纳斯",
+      "file": "team/2026-11-22/e/e2c/scenes/kanas.png",
+      "source": "图片 42.png",
+      "foot": [
+        444,
+        543
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "三亚海滩",
+      "file": "team/2026-11-22/e/e2c/scenes/sanya.png",
+      "source": "图片 43.png",
+      "foot": [
+        339,
+        512
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "深圳南头古城",
+      "file": "team/2026-11-22/e/e2c/scenes/nantou.png",
+      "source": "图片 44.png",
+      "foot": [
+        395,
+        545
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "深夜街角",
+      "file": "team/2026-11-22/e/e2c/scenes/late-night-corner.png",
+      "source": "图片 45.png",
+      "foot": [
+        375,
+        498
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "敦煌鸣沙山",
+      "file": "team/2026-11-22/e/e2c/scenes/dunhuang-mingsha.png",
+      "source": "图片 46.png",
+      "foot": [
+        384,
+        542
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "大兴安岭白桦林",
+      "file": "team/2026-11-22/e/e2c/scenes/greater-khingan-birch.png",
+      "source": "图片 47.png",
+      "foot": [
+        377,
+        540
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "盘锦红海滩",
+      "file": "team/2026-11-22/e/e2c/scenes/panjin-red-beach.png",
+      "source": "图片 48.png",
+      "foot": [
+        347,
+        550
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "桂林漓江",
+      "file": "team/2026-11-22/e/e2c/scenes/guilin-li-river.png",
+      "source": "图片 49.png",
+      "foot": [
+        326,
+        549
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "广州北京路",
+      "file": "team/2026-11-22/e/e2c/scenes/beijing-road.png",
+      "source": "图片 52.png",
+      "foot": [
+        390,
+        546
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "城市社区公园",
+      "file": "team/2026-11-22/e/e2c/scenes/city-community-park.png",
+      "source": "图片 53.png",
+      "foot": [
+        365,
+        540
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "街角小酒馆内景",
+      "file": "team/2026-11-22/e/e2c/scenes/corner-tavern-interior.png",
+      "source": "图片 54.png",
+      "foot": [
+        432,
+        548
+      ],
+      "sourceGroup": "repository-original-12",
+      "generationTrace": "not-confirmed"
+    },
+    {
+      "place": "街角书店外景",
+      "file": "samples/scene-bookstore-exterior-750w.png",
+      "source": "图片 55.png",
+      "foot": [
+        370,
+        550
+      ],
+      "sourceGroup": "bookstore-1123",
+      "generationTrace": "edit-call-recorded-original-generation-unknown"
+    },
+    {
+      "place": "街角书店内景",
+      "file": "samples/scene-bookstore-interior-750w.png",
+      "source": "图片 56.png",
+      "foot": [
+        400,
+        550
+      ],
+      "sourceGroup": "bookstore-1123",
+      "generationTrace": "edit-call-recorded-original-generation-unknown"
+    }
+  ]
+}

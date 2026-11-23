@@ -1,0 +1,10 @@
+{
+  "purpose": "visual-test-reference-not-production-call",
+  "revision": "wardrobe-fit-r2-tspf-20261123",
+  "selection": {"outfit": null, "cloth": "S02-leaf-cape", "accessory": null, "face": "F01-neutral"},
+  "canvas": [1024,1024],
+  "layers": ["sources/base-front-expression-ready.png", "sources/wardrobe-f01-neutral-1024w.png", "sources/wardrobe-s02-leaf-cape-1024w.png"],
+  "offsets": [[0,0],[0,0],[0,0]],
+  "output": "samples/moment-r2-reference-1024w.png",
+  "repeatLocalAdjustment": false
+}

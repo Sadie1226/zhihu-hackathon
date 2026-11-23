@@ -1,0 +1,97 @@
+{
+  "revision": "E11-closeout-v1",
+  "samples": [
+    {
+      "id": "G01",
+      "kind": "Gift",
+      "file": "samples/gift-shell-64w.png",
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGBA",
+      "colors": 1337,
+      "sha256": "b80a685b5ee470f0824a2f76db0afe1864be4fffea6b88b9daca114b812c8d01",
+      "trace": "legacy-unconfirmed",
+      "status": "technical-pass-source-incomplete",
+      "template": "templates/1123-E11-Gift-template-v8-review.md",
+      "productionVerified": false,
+      "alphaValues": [
+        0,
+        255
+      ],
+      "alphaBounds": [
+        5,
+        7,
+        59,
+        56
+      ],
+      "semiTransparentPixels": 0,
+      "allEdgesTransparent": true
+    },
+    {
+      "id": "M00",
+      "kind": "Moment-no-actor",
+      "file": "samples/moment-shell-legacy-1200w.png",
+      "size": [
+        1200,
+        1200
+      ],
+      "mode": "RGB",
+      "colors": 26008,
+      "sha256": "c286c70686d92aa0db4b9e700e88da318dbbbc951483eb843a478a0d46b45433",
+      "trace": "legacy-unconfirmed",
+      "status": "fixture-only-style-review",
+      "template": "templates/1123-E11-Moment-template-v8-review.md",
+      "productionVerified": false
+    },
+    {
+      "id": "M01",
+      "kind": "Moment-with-actor",
+      "file": "samples/moment-r2-shell-candidate-1200w.png",
+      "size": [
+        1200,
+        1200
+      ],
+      "mode": "P",
+      "colors": 95,
+      "sha256": "d6566af1dc5f0160489fc1cb885d14b05665dacca24885f2dcd2b7476b598b62",
+      "trace": "recorded-this-session",
+      "status": "candidate-awaiting-A",
+      "template": "templates/1123-E11-Moment-template-v8-review.md",
+      "productionVerified": false
+    },
+    {
+      "id": "SC13",
+      "kind": "Scene",
+      "file": "samples/scene-bookstore-exterior-750w.png",
+      "size": [
+        750,
+        640
+      ],
+      "mode": "P",
+      "colors": 96,
+      "sha256": "43e0ac9ad5b17b2b81daa65062dd5e7142eff333e906a817c8917e890d88a1e9",
+      "trace": "edit-recorded",
+      "status": "asset-review-only",
+      "template": "templates/1123-E11-Scene-template-v8-review.md",
+      "productionVerified": false
+    },
+    {
+      "id": "SC14",
+      "kind": "Scene",
+      "file": "samples/scene-bookstore-interior-750w.png",
+      "size": [
+        750,
+        640
+      ],
+      "mode": "P",
+      "colors": 96,
+      "sha256": "02089214083f60d194898d0a3e3cffe576aad68cc516ccdf0c9d636eaf701721",
+      "trace": "edit-recorded",
+      "status": "asset-review-only",
+      "template": "templates/1123-E11-Scene-template-v8-review.md",
+      "productionVerified": false
+    }
+  ]
+}

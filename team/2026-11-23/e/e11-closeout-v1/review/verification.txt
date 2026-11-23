@@ -1,0 +1,1 @@
+PASS: 5 sample hashes/sizes, Gift alpha+edges, Moment4px/Scene2px grids+96 colors, local Markdown links, r2 selected-layer hashes, 14-scene inventory.
