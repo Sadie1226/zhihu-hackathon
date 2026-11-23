@@ -14,7 +14,7 @@ mkdirSync(root, { recursive: true })
 function dog(db, id, session, owner = null) {
   db.prepare('INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at) VALUES(?,?,?,?,?,?)')
     .run(id, session, owner, '["好奇","看物","直给"]',
-      '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', '2026-11-16T00:00:00Z')
+      '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', '2026-11-16T00:00:00Z')
 }
 function setup(t) {
   const directory = mkdtempSync(join(root, 'trip-'))

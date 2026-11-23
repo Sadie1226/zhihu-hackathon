@@ -28,7 +28,7 @@ export function insertDog(db, id, sessionId, isSample = 0) {
   const owner = db.prepare('SELECT id FROM owner WHERE id = ?').get(sessionId)
   db.prepare(`INSERT INTO dog(id, session_id, owner_id, personality_tags, assembly, is_sample, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, sessionId, owner ? sessionId : null, '["好奇","看物","直给"]',
-    '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', isSample, createdAt)
+    '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', isSample, createdAt)
 }
 
 export function insertExchange(db, id, fromDog, toDog, seq, payload = gift, at = createdAt) {

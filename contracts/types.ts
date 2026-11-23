@@ -120,19 +120,27 @@ export type DogGlasses = 'round' | 'square' | 'sun' | 'none'
 export type DogFace = 'happy' | 'tired' | 'hopeful' | 'waiting'
 
 /**
- * 装配单。**这是渲染组件唯一接受的 props，也是存库、进快照、传给对方的唯一格式。**
+ * v5 及更早记录使用的装配单。当前 A 的旧领养和渲染接口仍使用这个形状。
  * 不是一个图片路径，也不是一段提示词 —— 同一组合永远渲染同一结果，一致性 100%。
  *
  * 四个键对应四层精灵部件：衣服 6 + 帽子 4 + 墨镜 4 + 表情 4 = 18 张，
  * 含「不戴」的透明图（`hat`/`glasses` 取 `none` 时仍然叠一张全透明 PNG，不写特判），
  * 组合 6×4×4×4 = 384 种。
  */
-export interface Assembly {
+export interface LegacyAssembly {
   cloth: DogCloth
   hat: DogHat | null
   glasses: DogGlasses | null
   face: DogFace
 }
+
+/** Transition alias for the current A adoption and renderer interfaces. */
+export type Assembly = LegacyAssembly
+
+export type { AccessoryId, ClothId, FaceId, OutfitId, StoredAssembly, TspfAssembly } from './assembly.ts'
+
+/** Storage and read adapters can adopt this before the legacy UI switches. */
+export type StoredDog = Omit<Dog, 'assembly'> & { assembly: import('./assembly.ts').StoredAssembly }
 
 // ===========================================================================
 // 三、九类实体 —— 字段与 schema.sql 一一对应
@@ -154,6 +162,7 @@ export interface Dog {
   personalityTags: [PersonalityTag, PersonalityTag, PersonalityTag]
   /** 2–3 个类目；null = 全都要。 */
   interestCategories: InterestCategory[] | null
+  /** Transitional legacy view. Use StoredDog for database rows spanning K v5 and v6. */
   assembly: Assembly
   /** 种子狗为 true。**界面必须标「示例伙伴」**，装成真人养的算阻断缺陷。 */
   isSample: boolean

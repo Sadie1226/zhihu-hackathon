@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import {
   developmentEnabled,
@@ -15,7 +15,9 @@ import { handleAdoptionRequest } from '../lib/adoption/http.ts'
 import { currentTrip } from '../lib/adoption/view.ts'
 import { checkPersonalityTags } from '../contracts/types.ts'
 
-import { openDatabase } from '../lib/db/bootstrap.ts'
+import { initializeDatabase, openDatabase } from '../lib/db/bootstrap.ts'
+import { migrations } from '../lib/db/migrations.ts'
+import { DatabaseSync } from 'node:sqlite'
 
 const draft = {
   name: '小山',
@@ -36,6 +38,13 @@ function payload() {
     requestId: '01234567-0123-4123-8123-012345678901',
   }
 }
+// A's current legacy writer regression runs on an explicit v5 test database.
+function openV5(path) {
+  const db = new DatabaseSync(path)
+  db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL')
+  initializeDatabase(db, () => readFileSync('tests/fixtures/schema-v1.sql', 'utf8'), migrations.slice(0, 4))
+  return db
+}
 function insertOwner(db, id) {
   db.prepare("INSERT INTO owner VALUES (?, 'development', 'development', ?, '2026-11-22')").run(id, id)
 }
@@ -43,11 +52,25 @@ function database(t) {
   const root = resolve('.local/a5-tests')
   mkdirSync(root, { recursive: true })
   const dir = mkdtempSync(join(root, 'session-'))
-  const db = openDatabase(join(dir, 'a5-development-test.sqlite'))
+  const db = openV5(join(dir, 'a5-development-test.sqlite'))
   for (const id of ['owner-a', 'owner-b']) insertOwner(db, id)
   t.after(() => { db.close(); rmSync(dir, { recursive: true, force: true }) })
   return db
 }
+
+test('strict v6 rejects legacy adoption for a new owner and preserves existing legacy dog reads', t => {
+  const db = database(t)
+  const dog = createDevelopmentDog(db, 'owner-a', payload())
+  const upgraded = openDatabase(db.location())
+  try {
+    assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 6)
+    assert.deepEqual(ownedDog(upgraded, 'owner-a'), dog)
+    assert.deepEqual(createDevelopmentDog(upgraded, 'owner-a', payload()), dog)
+    assert.throws(() => createDevelopmentDog(upgraded, 'owner-b', payload()), /invalid T\/S\/P\/F/)
+    assert.equal(upgraded.prepare('SELECT count(*) n FROM dog').get().n, 1)
+    assert.equal(upgraded.prepare('SELECT count(*) n FROM adoption_receipt').get().n, 1)
+  } finally { upgraded.close() }
+})
 
 test('development gate requires isolated filename and refuses production', () => {
   const env = {
@@ -159,7 +182,7 @@ test('two independent server processes racing the same receipt create exactly on
   const directory = mkdtempSync(join(root, 'parallel-')),
     file = join(directory, 'test.sqlite')
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const db = openDatabase(file)
+  const db = openV5(file)
   insertOwner(db, 'parallel-owner')
   const worker = () =>
     new Promise((resolve, reject) => {

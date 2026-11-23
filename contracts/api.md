@@ -77,6 +77,15 @@ c3 v2 只补读取契约、查询参考、类型和索引，不表示 HTTP 路�
 
 ### 1. 领养（a 实现）
 
+#### K v6 装配写入与历史读取
+
+- 新写入使用 `TspfAssembly`，四键固定为 `outfit`、`cloth`、`accessory`、`face`。每个非空值必须是该类别在 A 的 r2 清单内的精确 ID。T 模式令 S/P 为 `null`，S 模式令 T 为 `null`，P 可为 `null`，F 必选。
+- 单衣示例为 `{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}`。套装示例为 `{"outfit":"T01-frog","cloth":null,"accessory":null,"face":"F02-wink"}`。
+- 存储读取使用 `StoredAssembly`，接受新版和原 `cloth/hat/glasses/face` 结构。`LegacyAssembly` 保留原选项，包括帽和镜。存储版本 6 对新增行和显式更新 `dog.assembly` 执行新版校验，历史行保留原 JSON，其余字段仍可更新。
+- 相近的 r2 款式只可作为重新选择时的建议。旧版可同时佩戴帽和镜，新版只有一个 P。旧装配保持原样，待主人完成重新选择并确认后才保存新版。
+- `Assembly` 与现有 A 领养编译接口暂沿用旧形状。发布 v6 领养写入前，A 需把解析、选择器和写入类型切换到 `TspfAssembly`，并让读取 DTO 和渲染入口接收 `StoredAssembly`。
+- C11b 和 C14 使用同一 `resolveTspfPlan`。路径相对于 r2 资源根，图层为背部 P → 底身 → F → T/S → 前部 P。F01 只使用原中性底身。F02–F08、F10 使用 expression-ready 底身及对应 F 层。P19 在背部。r2 偏移均为 `(0,0)`，调整已烘焙。
+
 #### v5 内部身份与会话
 
 - 受保护接口从 HttpOnly Cookie 经 `resolveAuthContext(request, db)` 解析。认证要求随机凭据的哈希已登记、未撤销、未过期，并匹配当前数据库的身份命名空间。服务端以稳定 owner 归属狗和 Trip。
@@ -508,8 +517,8 @@ POST /api/gen/image
   "purpose": "portrait" | "moment" | "gift" | "scene",  // 加第五种必须由 c 改 K
   "size":    { "w": 1200, "h": 800 },                   // 按资产规范的尺寸表取
   "place":   { "kind": "城市角落", "timeOfDay": "dusk", "weather": "雨" },  // 查 trip/find
-  "dogs": [                                             // 查 dog.assembly，四键
-    { "role": "owner",  "assembly": { "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" },
+  "dogs": [                                             // 服务端查 dog.assembly，C14 新版计划使用 TspfAssembly
+    { "role": "owner",  "assembly": { "outfit": null, "cloth": "S02-leaf-cape", "accessory": null, "face": "F01-neutral" },
       "refImagePath": "/assets/gen/ref-dog_owner.webp" }
   ],
   "camera":  "single" | "group" | "empty"

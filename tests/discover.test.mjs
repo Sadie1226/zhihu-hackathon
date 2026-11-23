@@ -32,7 +32,7 @@ function setup(t, legacy = false) {
   const session = legacy ? { sessionId: 'fixture-internal', setCookie: '' } : fixtureSession(db)
   db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,interest_categories,assembly,created_at)
     VALUES('fixture-dog',?,?,'["好奇","看物","直给"]','["自然风景","冷知识"]',
-    '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, legacy ? null : session.sessionId, at)
+    '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`).run(session.sessionId, legacy ? null : session.sessionId, at)
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at) VALUES('fixture-wish','fixture-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db, { now: () => new Date(at), newId: () => 'fixture-trip' })
   service.create('fixture-dog', session.sessionId, 'wish'); service.start('fixture-trip', session.sessionId)

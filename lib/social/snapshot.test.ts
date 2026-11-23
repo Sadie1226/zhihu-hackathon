@@ -208,7 +208,7 @@ function freshDb(): DatabaseSync {
     DOG,
     JSON.stringify(['看人', '婉转', '当下']),
     JSON.stringify(['人与故事', '手作与食物', '动物与植物']),
-    JSON.stringify({ cloth: 'sweater', hat: null, glasses: 'round', face: 'waiting' }),
+    JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' }),
     T0,
   )
   return db

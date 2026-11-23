@@ -90,7 +90,7 @@ function sqliteScene(): Scene {
       isSample ? 'seed' : 'session_store',
       JSON.stringify(['好奇', '看物', '当下']),
       JSON.stringify(['自然', '日常', '情绪']),
-      JSON.stringify({ cloth: 'sweater', hat: null, glasses: 'round', face: 'waiting' }),
+      JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' }),
       isSample ? 1 : 0,
       '[]',
       T1,

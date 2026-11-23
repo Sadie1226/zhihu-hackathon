@@ -1,0 +1,54 @@
+{
+  "sourceMode": "fixture",
+  "note": "K v6 synthetic dogs for new writes. IDs are shared with the other contract fixtures.",
+  "dogs": [
+    {
+      "id": "dog_owner",
+      "name": "豆子",
+      "session_id": "s_demo_001",
+      "personality_tags": [
+        "好奇",
+        "看物",
+        "直给"
+      ],
+      "interest_categories": [
+        "自然风景",
+        "城市角落"
+      ],
+      "assembly": {
+        "outfit": null,
+        "cloth": "S02-leaf-cape",
+        "accessory": null,
+        "face": "F01-neutral"
+      },
+      "is_sample": false,
+      "blocked_topics": [],
+      "created_at": "2026-11-16T00:10:00Z"
+    },
+    {
+      "id": "dog_seed_07",
+      "name": "青椒",
+      "session_id": "seed",
+      "personality_tags": [
+        "看人",
+        "婉转",
+        "当下"
+      ],
+      "interest_categories": [
+        "人与故事",
+        "手作与食物",
+        "动物与植物"
+      ],
+      "assembly": {
+        "outfit": "T01-frog",
+        "cloth": null,
+        "accessory": null,
+        "face": "F02-wink"
+      },
+      "is_sample": true,
+      "blocked_topics": [],
+      "created_at": "2026-11-16T00:00:00Z"
+    }
+  ],
+  "assemblyVersion": 6
+}
