@@ -30,8 +30,8 @@ function insert(db, table, row) {
     .run(...Object.values(row).map(value => typeof value === 'boolean' ? Number(value)
       : value && typeof value === 'object' ? JSON.stringify(value) : value))
 }
-function dogs(db) {
-  for (const dog of fixture('dog').dogs) insert(db, 'dog', dog)
+function dogs(db, fixtureName = 'dog-v6') {
+  for (const dog of fixture(fixtureName).dogs) insert(db, 'dog', dog)
 }
 function setup(t) {
   let db
@@ -52,7 +52,7 @@ const url = 'https://www.zhihu.com/question/123/answer/456'
 
 test('fresh schema and migration share v3 views, indexes and triggers; default legacy source is owner', t => {
   const { db } = setup(t)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
   const block = read('contracts/schema.sql').split('-- c3-wish-v3: begin')[1].split('-- c3-wish-v3: end')[0]
   assert.equal(block.replaceAll('\r\n', '\n').trim(), WISH_SCHEMA_V3_SQL.trim())
   db.prepare('INSERT INTO wish(id,dog_id,text,category,created_at) VALUES(?,?,?,?,?)')
@@ -191,7 +191,7 @@ function legacy(path, version) {
   const db = new DatabaseSync(path)
   db.exec('PRAGMA foreign_keys=ON')
   initializeDatabase(db, () => read('tests/fixtures/schema-v1.sql'), migrations.slice(0, version - 1))
-  dogs(db)
+  dogs(db, 'dog')
   for (const w of fixture('wish').wishes.filter(w => w.source === 'owner')) {
     const row = { ...w }; delete row.source; delete row.source_url
     insert(db, 'wish', row)
@@ -231,7 +231,7 @@ for (const version of [1, 2]) {
     const before = existing(db)
     db.close(); db = openDatabase(path)
     try {
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5)
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
       preserved(db, before)
       const objects = db.prepare('SELECT * FROM sqlite_schema ORDER BY name').all()
       initializeDatabase(db, () => { throw new Error('No schema replay') })

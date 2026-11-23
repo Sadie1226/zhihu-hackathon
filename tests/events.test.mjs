@@ -34,9 +34,9 @@ function insertEvent(db, overrides = {}) {
   const keys = Object.keys(row)
   db.prepare(`INSERT INTO event (${keys.join(',')}) VALUES (${keys.map(() => '?').join(',')})`).run(...Object.values(row))
 }
-function fixtureData(db) {
+function fixtureData(db, dogFixture = 'dog') {
   for (const [table, key] of [['dog', 'dogs'], ['trip', 'trips'], ['exchange', 'exchanges']]) {
-    const data = fixture(table)
+    const data = fixture(table === 'dog' ? dogFixture : table)
     assert.equal(data.sourceMode, 'fixture')
     for (const row of data[key]) {
       const values = Object.values(row).map(value => value === null ? null
@@ -154,7 +154,7 @@ test('event id primary key and code unique hold on insert/update; null ids are r
 
 test('trip_event foreign keys and compound primary key protect history, without cascading deletion', t => {
   const db = memory(t)
-  fixtureData(db)
+  fixtureData(db, 'dog-v6')
   insertEvent(db); insertEvent(db, { id: 'other', code: 'other' })
   const trip = db.prepare('SELECT * FROM trip ORDER BY seq LIMIT 1').get()
   const row = [trip.id, 'test-event', trip.dog_id, '2026-11-18T00:00:00Z']
@@ -228,7 +228,7 @@ test('fresh initialization and version-1 migration produce identical event table
       WHERE tbl_name IN ('event','trip_event') ORDER BY type,name`).all()
       .map(row => ({ ...row, sql: row.sql?.replace(/\r\n/g, '\n') ?? null }))
     assert.deepEqual(objects(upgraded), objects(fresh))
-    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 5)
+    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 6)
     assert.equal(upgraded.prepare("SELECT COUNT(*) n FROM pragma_table_info('event')").get().n, 12)
     assert.throws(() => insertEvent(upgraded, { place_tags: '["unknown"]' }), /invalid place tag/)
     assert.throws(() => insertEvent(upgraded, { match_tags: '[null]' }), /invalid interest category/)

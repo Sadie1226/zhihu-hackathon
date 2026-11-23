@@ -65,10 +65,7 @@ CREATE TABLE dog (
                                      OR (json_valid(interest_categories)
                                          AND json_array_length(interest_categories) BETWEEN 2 AND 3)),
 
-  -- a 写。装配单，**固定四个键，多一个都不许加**。渲染组件只吃这一个字段。
-  -- 形状：{"cloth","hat","glasses","face"}
-  -- 11-16 删掉 base / skin.color / skin.pattern：刘看山 IP 只有一种体型与一套配色。
-  -- 键数与键名校验在下面的触发器里（CHECK 写不了子查询）。
+  -- a 写。v6 新写入为 outfit/cloth/accessory/face；旧记录按原 JSON 读取。
   assembly            TEXT    NOT NULL,
 
   -- d 写。种子狗为 1。**界面必须据此标「示例伙伴」，这是五种阻断缺陷之一。**
@@ -136,33 +133,51 @@ BEGIN
   SELECT RAISE(ABORT, 'dog: invalid owner association');
 END;
 
--- 装配单校验：恰好四个键，且这四个键都在。写在触发器里因为 CHECK 不许子查询。
---
--- json_type(...) IS NULL 这个写法必须保留：它区分「键不存在」和「值是 JSON null」。
--- hat / glasses 允许 null（不戴），靠的就是 json_type 对 JSON null 返回字符串 'null'
--- 而不是 SQL NULL。改成 json_extract 会把「不戴」误判成「缺键」。
+-- K v6: adopted r2 whitelist and exclusive T/S/P/F selection.
 CREATE TRIGGER dog_assembly_ins BEFORE INSERT ON dog
 BEGIN
-  SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
-  WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
-     OR json_type(NEW.assembly, '$.cloth')  IS NULL
-     OR json_type(NEW.assembly, '$.hat')    IS NULL
-     OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL;
+  SELECT RAISE(ABORT, 'dog.assembly: invalid T/S/P/F') WHERE CASE
+    WHEN typeof(NEW.assembly) <> 'text' OR instr(NEW.assembly, char(0)) > 0 OR json_valid(NEW.assembly) <> 1 THEN 1
+    ELSE NOT COALESCE(
+      json_type(NEW.assembly) = 'object'
+      AND (SELECT count(*) FROM json_each(NEW.assembly)) = 4
+      AND json_type(NEW.assembly, '$.face') = 'text'
+        AND json_extract(NEW.assembly, '$.face') IN ('F01-neutral', 'F02-wink', 'F03-teary', 'F04-smile', 'F05-unimpressed', 'F06-sparkle', 'F07-shiny', 'F08-sleepy', 'F10-closed-smile')
+      AND (
+        (json_type(NEW.assembly, '$.outfit') = 'text'
+        AND json_extract(NEW.assembly, '$.outfit') IN ('T01-frog', 'T02-winter-post', 'T05-cloud-onesie', 'T06-starry-cloak', 'T07-striped-knit', 'T10-cowboy')
+          AND json_type(NEW.assembly, '$.cloth') = 'null'
+          AND json_type(NEW.assembly, '$.accessory') = 'null')
+        OR (json_type(NEW.assembly, '$.outfit') = 'null'
+          AND json_type(NEW.assembly, '$.cloth') = 'text'
+        AND json_extract(NEW.assembly, '$.cloth') IN ('S01-yellow-cardigan', 'S02-leaf-cape', 'S03-apron', 'S04-olive-vest', 'S05-cream-vest', 'S06-navy-varsity', 'S07-blue-cloud-hoodie', 'S08-blue-check-pajamas', 'S09-seaside-shell-cape')
+          AND (json_type(NEW.assembly, '$.accessory') = 'null' OR (json_type(NEW.assembly, '$.accessory') = 'text'
+        AND json_extract(NEW.assembly, '$.accessory') IN ('P05-daisy-crown', 'P12-orange-thermos', 'P13-blue-cap', 'P15-star-bag', 'P16-mint-sunglasses', 'P19-blue-wings', 'P22-gold-round-glasses', 'P23-black-sunglasses', 'P25-blue-check-nightcap'))))
+      ), 0)
+  END;
 END;
 
 CREATE TRIGGER dog_assembly_upd BEFORE UPDATE OF assembly ON dog
 BEGIN
-  SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
-  WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
-     OR json_type(NEW.assembly, '$.cloth')  IS NULL
-     OR json_type(NEW.assembly, '$.hat')    IS NULL
-     OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL;
+  SELECT RAISE(ABORT, 'dog.assembly: invalid T/S/P/F') WHERE CASE
+    WHEN typeof(NEW.assembly) <> 'text' OR instr(NEW.assembly, char(0)) > 0 OR json_valid(NEW.assembly) <> 1 THEN 1
+    ELSE NOT COALESCE(
+      json_type(NEW.assembly) = 'object'
+      AND (SELECT count(*) FROM json_each(NEW.assembly)) = 4
+      AND json_type(NEW.assembly, '$.face') = 'text'
+        AND json_extract(NEW.assembly, '$.face') IN ('F01-neutral', 'F02-wink', 'F03-teary', 'F04-smile', 'F05-unimpressed', 'F06-sparkle', 'F07-shiny', 'F08-sleepy', 'F10-closed-smile')
+      AND (
+        (json_type(NEW.assembly, '$.outfit') = 'text'
+        AND json_extract(NEW.assembly, '$.outfit') IN ('T01-frog', 'T02-winter-post', 'T05-cloud-onesie', 'T06-starry-cloak', 'T07-striped-knit', 'T10-cowboy')
+          AND json_type(NEW.assembly, '$.cloth') = 'null'
+          AND json_type(NEW.assembly, '$.accessory') = 'null')
+        OR (json_type(NEW.assembly, '$.outfit') = 'null'
+          AND json_type(NEW.assembly, '$.cloth') = 'text'
+        AND json_extract(NEW.assembly, '$.cloth') IN ('S01-yellow-cardigan', 'S02-leaf-cape', 'S03-apron', 'S04-olive-vest', 'S05-cream-vest', 'S06-navy-varsity', 'S07-blue-cloud-hoodie', 'S08-blue-check-pajamas', 'S09-seaside-shell-cape')
+          AND (json_type(NEW.assembly, '$.accessory') = 'null' OR (json_type(NEW.assembly, '$.accessory') = 'text'
+        AND json_extract(NEW.assembly, '$.accessory') IN ('P05-daisy-crown', 'P12-orange-thermos', 'P13-blue-cap', 'P15-star-bag', 'P16-mint-sunglasses', 'P19-blue-wings', 'P22-gold-round-glasses', 'P23-black-sunglasses', 'P25-blue-check-nightcap'))))
+      ), 0)
+  END;
 END;
 
 CREATE INDEX idx_dog_session ON dog(session_id);

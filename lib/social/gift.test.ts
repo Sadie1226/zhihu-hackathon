@@ -463,7 +463,7 @@ function insertDog(db: DatabaseSync, id: string, isSample = false): void {
     // 故意给一只狗兴趣为 NULL：c 11/19 第 3 条说「不因为兴趣为空拒掉交换」，
     // 这里把 NULL 摆进来，证明 gift 这条路上没有任何地方会因为它报错。
     null,
-    JSON.stringify({ cloth: 'sweater', hat: null, glasses: 'round', face: 'waiting' }),
+    JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' }),
     isSample ? 1 : 0,
     '[]',
     T0,

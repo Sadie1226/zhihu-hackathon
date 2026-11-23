@@ -34,7 +34,7 @@ try {
   const at = new Date().toISOString()
   db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
     VALUES('smoke-private-dog',?,?,'["好奇","看物","直给"]',
-      '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, session.sessionId, at)
+      '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`).run(session.sessionId, session.sessionId, at)
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at)
     VALUES('smoke-wish','smoke-private-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db)
