@@ -1,0 +1,10 @@
+{
+  "canvas": [1024, 1024],
+  "origin": "top-left",
+  "footAnchor": [522, 950],
+  "layers": [
+    {"file": "../../wardrobe/base-front.png", "offset": [0, 0]},
+    {"file": "../../wardrobe/singles/S02-leaf-cape.png", "offset": [0, 0]}
+  ],
+  "expected": "assets/expected.png"
+}

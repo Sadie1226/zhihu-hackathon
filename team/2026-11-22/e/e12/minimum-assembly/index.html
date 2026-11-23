@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>A/E 叶片披肩装配</title>
+<h1>A/E 叶片披肩装配</h1>
+<button id="toggle" type="button">切换披肩</button>
+<p id="result">载入中</p>
+<canvas id="preview" style="width:min(90vw,480px);height:auto;background:#dedbd3;image-rendering:pixelated"></canvas>
+<script type="module">
+const result = document.querySelector("#result");
+try {
+  const spec = await (await fetch("./assembly.json")).json();
+  const load = async (file) => {
+    const image = new Image();
+    image.src = file;
+    await image.decode();
+    return image;
+  };
+  const [body, cape, expected] = await Promise.all(
+    [...spec.layers.map(layer => layer.file), spec.expected].map(load)
+  );
+  const canvas = document.querySelector("#preview");
+  [canvas.width, canvas.height] = spec.canvas;
+  const context = canvas.getContext("2d");
+  let equipped = true;
+  function render() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(body, ...spec.layers[0].offset);
+    if (equipped) context.drawImage(cape, ...spec.layers[1].offset);
+  }
+  function compare(reference) {
+    const check = document.createElement("canvas");
+    [check.width, check.height] = spec.canvas;
+    const comparison = check.getContext("2d");
+    comparison.drawImage(reference, 0, 0);
+    const actual = context.getImageData(0, 0, ...spec.canvas).data;
+    const target = comparison.getImageData(0, 0, ...spec.canvas).data;
+    let maximum = 0;
+    for (let i = 0; i < actual.length; i++) {
+      maximum = Math.max(maximum, Math.abs(actual[i] - target[i]));
+    }
+    return maximum;
+  }
+  render();
+  const on = compare(expected);
+  const toggle = document.querySelector("#toggle");
+  toggle.onclick = () => { equipped = !equipped; render(); };
+  toggle.click();
+  const off = compare(body);
+  toggle.click();
+  const restored = compare(expected);
+  const pass = on <= 3 && off === 0 && restored === on;
+  result.textContent = (pass ? "PASS" : "FAIL") + " · 最大通道差：穿上 " + on + " / 脱下 " + off + " / 再穿 " + restored;
+} catch (error) {
+  result.textContent = "ERROR: " + error.message;
+}
+</script>
+</html>

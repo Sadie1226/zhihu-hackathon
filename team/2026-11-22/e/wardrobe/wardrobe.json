@@ -1,0 +1,737 @@
+{
+  "canvas": [
+    1024,
+    1024
+  ],
+  "footAnchor": [
+    522,
+    950
+  ],
+  "base": "base-front.png",
+  "items": [
+    {
+      "id": "T01-frog",
+      "category": "sets",
+      "layer": "sets/T01-frog.png",
+      "preview": "try-on/T01-frog.png",
+      "alphaBounds": [
+        200,
+        50,
+        845,
+        800
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T02-winter-post",
+      "category": "sets",
+      "layer": "sets/T02-winter-post.png",
+      "preview": "try-on/T02-winter-post.png",
+      "alphaBounds": [
+        212,
+        14,
+        835,
+        812
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T03-blue-cloud",
+      "category": "sets",
+      "layer": "sets/T03-blue-cloud.png",
+      "preview": "try-on/T03-blue-cloud.png",
+      "alphaBounds": [
+        204,
+        78,
+        844,
+        821
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T04-seaside-shell",
+      "category": "sets",
+      "layer": "sets/T04-seaside-shell.png",
+      "preview": "try-on/T04-seaside-shell.png",
+      "alphaBounds": [
+        198,
+        65,
+        850,
+        779
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T05-cloud-onesie",
+      "category": "sets",
+      "layer": "sets/T05-cloud-onesie.png",
+      "preview": "try-on/T05-cloud-onesie.png",
+      "alphaBounds": [
+        215,
+        45,
+        832,
+        960
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T06-starry-cloak",
+      "category": "sets",
+      "layer": "sets/T06-starry-cloak.png",
+      "preview": "try-on/T06-starry-cloak.png",
+      "alphaBounds": [
+        173,
+        0,
+        874,
+        830
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S01-yellow-cardigan",
+      "category": "singles",
+      "layer": "singles/S01-yellow-cardigan.png",
+      "preview": "try-on/S01-yellow-cardigan.png",
+      "alphaBounds": [
+        213,
+        442,
+        832,
+        754
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S02-leaf-cape",
+      "category": "singles",
+      "layer": "singles/S02-leaf-cape.png",
+      "preview": "try-on/S02-leaf-cape.png",
+      "alphaBounds": [
+        229,
+        398,
+        817,
+        692
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S03-apron",
+      "category": "singles",
+      "layer": "singles/S03-apron.png",
+      "preview": "try-on/S03-apron.png",
+      "alphaBounds": [
+        296,
+        480,
+        744,
+        784
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S04-olive-vest",
+      "category": "singles",
+      "layer": "singles/S04-olive-vest.png",
+      "preview": "try-on/S04-olive-vest.png",
+      "alphaBounds": [
+        296,
+        488,
+        752,
+        792
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S05-cream-vest",
+      "category": "singles",
+      "layer": "singles/S05-cream-vest.png",
+      "preview": "try-on/S05-cream-vest.png",
+      "alphaBounds": [
+        288,
+        488,
+        760,
+        792
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S06-navy-varsity",
+      "category": "singles",
+      "layer": "singles/S06-navy-varsity.png",
+      "preview": "try-on/S06-navy-varsity.png",
+      "alphaBounds": [
+        227,
+        402,
+        829,
+        805
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P02-acorn-bag",
+      "category": "accessories",
+      "layer": "accessories/P02-acorn-bag.png",
+      "preview": "try-on/P02-acorn-bag.png",
+      "alphaBounds": [
+        307,
+        436,
+        763,
+        738
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P04-vine-pendant",
+      "category": "accessories",
+      "layer": "accessories/P04-vine-pendant.png",
+      "preview": "try-on/P04-vine-pendant.png",
+      "alphaBounds": [
+        294,
+        430,
+        752,
+        736
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P05-daisy-crown",
+      "category": "accessories",
+      "layer": "accessories/P05-daisy-crown.png",
+      "preview": "try-on/P05-daisy-crown.png",
+      "alphaBounds": [
+        254,
+        125,
+        795,
+        300
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P06-pinecone-bag",
+      "category": "accessories",
+      "layer": "accessories/P06-pinecone-bag.png",
+      "preview": "try-on/P06-pinecone-bag.png",
+      "alphaBounds": [
+        302,
+        433,
+        729,
+        780
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P08-pink-headscarf",
+      "category": "accessories",
+      "layer": "accessories/P08-pink-headscarf.png",
+      "preview": "try-on/P08-pink-headscarf.png",
+      "alphaBounds": [
+        312,
+        104,
+        808,
+        312
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P09-carrot-basket",
+      "category": "accessories",
+      "layer": "accessories/P09-carrot-basket.png",
+      "preview": "try-on/P09-carrot-basket.png",
+      "alphaBounds": [
+        300,
+        449,
+        753,
+        775
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P12-orange-thermos",
+      "category": "accessories",
+      "layer": "accessories/P12-orange-thermos.png",
+      "preview": "try-on/P12-orange-thermos.png",
+      "alphaBounds": [
+        306,
+        455,
+        756,
+        783
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P13-blue-cap",
+      "category": "accessories",
+      "layer": "accessories/P13-blue-cap.png",
+      "preview": "try-on/P13-blue-cap.png",
+      "alphaBounds": [
+        167,
+        33,
+        724,
+        344
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P15-star-bag",
+      "category": "accessories",
+      "layer": "accessories/P15-star-bag.png",
+      "preview": "try-on/P15-star-bag.png",
+      "alphaBounds": [
+        307,
+        447,
+        765,
+        798
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P16-mint-sunglasses",
+      "category": "accessories",
+      "layer": "accessories/P16-mint-sunglasses.png",
+      "preview": "try-on/P16-mint-sunglasses.png",
+      "alphaBounds": [
+        298,
+        137,
+        748,
+        301
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P19-blue-wings",
+      "category": "accessories",
+      "layer": "accessories/P19-blue-wings.png",
+      "preview": "try-on/P19-blue-wings.png",
+      "alphaBounds": [
+        112,
+        440,
+        936,
+        664
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "behind"
+    },
+    {
+      "id": "P20-heart-necklace",
+      "category": "accessories",
+      "layer": "accessories/P20-heart-necklace.png",
+      "preview": "try-on/P20-heart-necklace.png",
+      "alphaBounds": [
+        293,
+        409,
+        754,
+        652
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P21-mint-bag",
+      "category": "accessories",
+      "layer": "accessories/P21-mint-bag.png",
+      "preview": "try-on/P21-mint-bag.png",
+      "alphaBounds": [
+        288,
+        464,
+        688,
+        760
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T07-striped-knit",
+      "name": "条纹针织套装",
+      "category": "sets",
+      "layer": "sets/T07-striped-knit.png",
+      "preview": "try-on/T07-striped-knit.png",
+      "alphaBounds": [
+        220,
+        135,
+        829,
+        811
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T08-fries-uniform",
+      "name": "红黄薯条制服",
+      "category": "sets",
+      "layer": "sets/T08-fries-uniform.png",
+      "preview": "try-on/T08-fries-uniform.png",
+      "alphaBounds": [
+        228,
+        148,
+        820,
+        808
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T09-work-apron",
+      "name": "棕色工装围裙套装",
+      "category": "sets",
+      "layer": "sets/T09-work-apron.png",
+      "preview": "try-on/T09-work-apron.png",
+      "alphaBounds": [
+        224,
+        139,
+        824,
+        810
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "T10-cowboy",
+      "name": "格纹牛仔套装",
+      "category": "sets",
+      "layer": "sets/T10-cowboy.png",
+      "preview": "try-on/T10-cowboy.png",
+      "alphaBounds": [
+        209,
+        129,
+        837,
+        819
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S07-blue-cloud-hoodie",
+      "name": "蓝云连帽卫衣",
+      "category": "singles",
+      "layer": "singles/S07-blue-cloud-hoodie.png",
+      "preview": "try-on/S07-blue-cloud-hoodie.png",
+      "alphaBounds": [
+        224,
+        432,
+        826,
+        815
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "S08-blue-check-pajamas",
+      "name": "蓝白格纹睡衣",
+      "category": "singles",
+      "layer": "singles/S08-blue-check-pajamas.png",
+      "preview": "try-on/S08-blue-check-pajamas.png",
+      "alphaBounds": [
+        222,
+        471,
+        825,
+        904
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P22-gold-round-glasses",
+      "name": "金色圆框眼镜",
+      "category": "accessories",
+      "layer": "accessories/P22-gold-round-glasses.png",
+      "preview": "try-on/P22-gold-round-glasses.png",
+      "alphaBounds": [
+        312,
+        285,
+        738,
+        409
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P23-black-sunglasses",
+      "name": "黑色墨镜",
+      "category": "accessories",
+      "layer": "accessories/P23-black-sunglasses.png",
+      "preview": "try-on/P23-black-sunglasses.png",
+      "alphaBounds": [
+        301,
+        289,
+        749,
+        405
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P24-orange-cap",
+      "name": "橙色反戴帽",
+      "category": "accessories",
+      "layer": "accessories/P24-orange-cap.png",
+      "preview": "try-on/P24-orange-cap.png",
+      "alphaBounds": [
+        285,
+        150,
+        811,
+        467
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    },
+    {
+      "id": "P25-blue-check-nightcap",
+      "name": "蓝白格纹睡帽",
+      "category": "accessories",
+      "layer": "accessories/P25-blue-check-nightcap.png",
+      "preview": "try-on/P25-blue-check-nightcap.png",
+      "alphaBounds": [
+        271,
+        132,
+        842,
+        442
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above"
+    }
+  ],
+  "expressions": [
+    {
+      "id": "F01-neutral",
+      "layer": "expressions/F01-neutral.png",
+      "preview": "try-on/F01-neutral.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F02-wink",
+      "layer": "expressions/F02-wink.png",
+      "preview": "try-on/F02-wink.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F03-teary",
+      "layer": "expressions/F03-teary.png",
+      "preview": "try-on/F03-teary.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F04-smile",
+      "layer": "expressions/F04-smile.png",
+      "preview": "try-on/F04-smile.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F05-unimpressed",
+      "layer": "expressions/F05-unimpressed.png",
+      "preview": "try-on/F05-unimpressed.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F06-sparkle",
+      "layer": "expressions/F06-sparkle.png",
+      "preview": "try-on/F06-sparkle.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F07-shiny",
+      "layer": "expressions/F07-shiny.png",
+      "preview": "try-on/F07-shiny.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F08-sleepy",
+      "layer": "expressions/F08-sleepy.png",
+      "preview": "try-on/F08-sleepy.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F09-dark",
+      "layer": "expressions/F09-dark.png",
+      "preview": "try-on/F09-dark.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F10-closed-smile",
+      "layer": "expressions/F10-closed-smile.png",
+      "preview": "try-on/F10-closed-smile.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    }
+  ],
+  "expressionBase": "base-front-expression-ready.png",
+  "revision": "v4",
+  "sourceBody": {
+    "repository": "Sadie1226/zhihu-hackathon",
+    "path": "public/assets/dogs/kanshan-neutral-v1/body-front-neutral.png",
+    "sha256": "90f85098e8011552ec35cb63dd60683cd06da121ef059887af937f84f71c0729"
+  }
+}

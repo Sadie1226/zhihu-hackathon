@@ -1,0 +1,715 @@
+{
+  "canvas": [
+    1024,
+    1024
+  ],
+  "footAnchor": [
+    522,
+    950
+  ],
+  "base": "base-front.png",
+  "items": [
+    {
+      "id": "T01-frog",
+      "name": "青蛙探险",
+      "category": "sets",
+      "layer": "sets/wardrobe-t01-frog-1024w.png",
+      "preview": "try-on/wardrobe-t01-frog-try-on-1024w.png",
+      "alphaBounds": [
+        202,
+        53,
+        843,
+        803
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (5).zip",
+        "file": "T01.png"
+      }
+    },
+    {
+      "id": "T02-winter-post",
+      "name": "冬日邮差",
+      "category": "sets",
+      "layer": "sets/wardrobe-t02-winter-post-1024w.png",
+      "preview": "try-on/wardrobe-t02-winter-post-try-on-1024w.png",
+      "alphaBounds": [
+        218,
+        19,
+        830,
+        803
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (5).zip",
+        "file": "T02.png"
+      }
+    },
+    {
+      "id": "T05-cloud-onesie",
+      "name": "云朵连体服",
+      "category": "sets",
+      "layer": "sets/wardrobe-t05-cloud-onesie-1024w.png",
+      "preview": "try-on/wardrobe-t05-cloud-onesie-try-on-1024w.png",
+      "alphaBounds": [
+        207,
+        50,
+        834,
+        960
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (5).zip",
+        "file": "T03.png"
+      }
+    },
+    {
+      "id": "T06-starry-cloak",
+      "name": "星夜露营披风",
+      "category": "sets",
+      "layer": "sets/wardrobe-t06-starry-cloak-1024w.png",
+      "preview": "try-on/wardrobe-t06-starry-cloak-try-on-1024w.png",
+      "alphaBounds": [
+        166,
+        9,
+        876,
+        826
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (5).zip",
+        "file": "T04.png"
+      }
+    },
+    {
+      "id": "T07-striped-knit",
+      "name": "复古条纹针织",
+      "category": "sets",
+      "layer": "sets/wardrobe-t07-striped-knit-1024w.png",
+      "preview": "try-on/wardrobe-t07-striped-knit-try-on-1024w.png",
+      "alphaBounds": [
+        220,
+        135,
+        829,
+        811
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/sets/T07-striped-knit.png"
+      }
+    },
+    {
+      "id": "T10-cowboy",
+      "name": "荒野牛仔",
+      "category": "sets",
+      "layer": "sets/wardrobe-t10-cowboy-1024w.png",
+      "preview": "try-on/wardrobe-t10-cowboy-try-on-1024w.png",
+      "alphaBounds": [
+        198,
+        137,
+        845,
+        814
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (5).zip",
+        "file": "T05.png"
+      }
+    },
+    {
+      "id": "S01-yellow-cardigan",
+      "name": "奶黄针织开衫",
+      "category": "singles",
+      "layer": "singles/wardrobe-s01-yellow-cardigan-1024w.png",
+      "preview": "try-on/wardrobe-s01-yellow-cardigan-try-on-1024w.png",
+      "alphaBounds": [
+        215,
+        448,
+        829,
+        766
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S09.png"
+      }
+    },
+    {
+      "id": "S02-leaf-cape",
+      "name": "叶片披肩",
+      "category": "singles",
+      "layer": "singles/wardrobe-s02-leaf-cape-1024w.png",
+      "preview": "try-on/wardrobe-s02-leaf-cape-try-on-1024w.png",
+      "alphaBounds": [
+        229,
+        398,
+        817,
+        692
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/singles/S02-leaf-cape.png"
+      }
+    },
+    {
+      "id": "S03-apron",
+      "name": "口袋围裙",
+      "category": "singles",
+      "layer": "singles/wardrobe-s03-apron-1024w.png",
+      "preview": "try-on/wardrobe-s03-apron-try-on-1024w.png",
+      "alphaBounds": [
+        296,
+        478,
+        745,
+        782
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S05.png"
+      }
+    },
+    {
+      "id": "S04-olive-vest",
+      "name": "橄榄绿工装马甲",
+      "category": "singles",
+      "layer": "singles/wardrobe-s04-olive-vest-1024w.png",
+      "preview": "try-on/wardrobe-s04-olive-vest-try-on-1024w.png",
+      "alphaBounds": [
+        290,
+        489,
+        754,
+        787
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S01.png"
+      }
+    },
+    {
+      "id": "S05-cream-vest",
+      "name": "米白针织背心",
+      "category": "singles",
+      "layer": "singles/wardrobe-s05-cream-vest-1024w.png",
+      "preview": "try-on/wardrobe-s05-cream-vest-try-on-1024w.png",
+      "alphaBounds": [
+        289,
+        488,
+        753,
+        785
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S02.png"
+      }
+    },
+    {
+      "id": "S06-navy-varsity",
+      "name": "藏青棒球外套",
+      "category": "singles",
+      "layer": "singles/wardrobe-s06-navy-varsity-1024w.png",
+      "preview": "try-on/wardrobe-s06-navy-varsity-try-on-1024w.png",
+      "alphaBounds": [
+        219,
+        411,
+        828,
+        796
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S08.png"
+      }
+    },
+    {
+      "id": "S07-blue-cloud-hoodie",
+      "name": "蓝云卫衣",
+      "category": "singles",
+      "layer": "singles/wardrobe-s07-blue-cloud-hoodie-1024w.png",
+      "preview": "try-on/wardrobe-s07-blue-cloud-hoodie-try-on-1024w.png",
+      "alphaBounds": [
+        221,
+        433,
+        823,
+        811
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S07.png"
+      }
+    },
+    {
+      "id": "S08-blue-check-pajamas",
+      "name": "蓝格睡衣",
+      "category": "singles",
+      "layer": "singles/wardrobe-s08-blue-check-pajamas-1024w.png",
+      "preview": "try-on/wardrobe-s08-blue-check-pajamas-try-on-1024w.png",
+      "alphaBounds": [
+        223,
+        474,
+        824,
+        901
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S06.png"
+      }
+    },
+    {
+      "id": "S09-seaside-shell-cape",
+      "name": "蓝色贝壳小披肩",
+      "category": "singles",
+      "layer": "singles/wardrobe-s09-seaside-shell-cape-1024w.png",
+      "preview": "try-on/wardrobe-s09-seaside-shell-cape-try-on-1024w.png",
+      "alphaBounds": [
+        230,
+        434,
+        818,
+        687
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (3).zip",
+        "file": "S04.png"
+      }
+    },
+    {
+      "id": "P05-daisy-crown",
+      "name": "雏菊花冠",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p05-daisy-crown-1024w.png",
+      "preview": "try-on/wardrobe-p05-daisy-crown-try-on-1024w.png",
+      "alphaBounds": [
+        285,
+        139,
+        763,
+        285
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (4).zip",
+        "file": "P01.png"
+      },
+      "slot": "head"
+    },
+    {
+      "id": "P12-orange-thermos",
+      "name": "橙色保温壶",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p12-orange-thermos-1024w.png",
+      "preview": "try-on/wardrobe-p12-orange-thermos-try-on-1024w.png",
+      "alphaBounds": [
+        306,
+        455,
+        756,
+        783
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/accessories/P12-orange-thermos.png"
+      },
+      "slot": "carry"
+    },
+    {
+      "id": "P13-blue-cap",
+      "name": "蓝色棒球帽",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p13-blue-cap-1024w.png",
+      "preview": "try-on/wardrobe-p13-blue-cap-try-on-1024w.png",
+      "alphaBounds": [
+        223,
+        63,
+        749,
+        326
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (4).zip",
+        "file": "P04.png"
+      },
+      "slot": "head"
+    },
+    {
+      "id": "P15-star-bag",
+      "name": "星星斜挎包",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p15-star-bag-1024w.png",
+      "preview": "try-on/wardrobe-p15-star-bag-try-on-1024w.png",
+      "alphaBounds": [
+        289,
+        493,
+        730,
+        756
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (4).zip",
+        "file": "P06.png"
+      },
+      "slot": "carry"
+    },
+    {
+      "id": "P16-mint-sunglasses",
+      "name": "薄荷护目镜",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p16-mint-sunglasses-1024w.png",
+      "preview": "try-on/wardrobe-p16-mint-sunglasses-try-on-1024w.png",
+      "alphaBounds": [
+        303,
+        289,
+        741,
+        408
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (4).zip",
+        "file": "P02.png"
+      },
+      "slot": "eyes"
+    },
+    {
+      "id": "P19-blue-wings",
+      "name": "蓝色双翼",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p19-blue-wings-1024w.png",
+      "preview": "try-on/wardrobe-p19-blue-wings-try-on-1024w.png",
+      "alphaBounds": [
+        112,
+        440,
+        936,
+        664
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "behind",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/accessories/P19-blue-wings.png"
+      },
+      "slot": "back"
+    },
+    {
+      "id": "P22-gold-round-glasses",
+      "name": "金色圆框眼镜",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p22-gold-round-glasses-1024w.png",
+      "preview": "try-on/wardrobe-p22-gold-round-glasses-try-on-1024w.png",
+      "alphaBounds": [
+        312,
+        285,
+        738,
+        409
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/accessories/P22-gold-round-glasses.png"
+      },
+      "slot": "eyes"
+    },
+    {
+      "id": "P23-black-sunglasses",
+      "name": "黑色墨镜",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p23-black-sunglasses-1024w.png",
+      "preview": "try-on/wardrobe-p23-black-sunglasses-try-on-1024w.png",
+      "alphaBounds": [
+        301,
+        289,
+        749,
+        405
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "commit": "b80d66ea6a42c252dac6bbc9eb7bd16c3ef77705",
+        "path": "team/2026-11-22/e/wardrobe/accessories/P23-black-sunglasses.png"
+      },
+      "slot": "eyes"
+    },
+    {
+      "id": "P25-blue-check-nightcap",
+      "name": "蓝格睡帽",
+      "category": "accessories",
+      "layer": "accessories/wardrobe-p25-blue-check-nightcap-1024w.png",
+      "preview": "try-on/wardrobe-p25-blue-check-nightcap-try-on-1024w.png",
+      "alphaBounds": [
+        292,
+        102,
+        825,
+        398
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "order": "above",
+      "source": {
+        "archive": "export (4).zip",
+        "file": "P03.png"
+      },
+      "slot": "head"
+    }
+  ],
+  "expressions": [
+    {
+      "id": "F01-neutral",
+      "layer": "expressions/wardrobe-f01-neutral-1024w.png",
+      "preview": "try-on/wardrobe-f01-neutral-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F02-wink",
+      "layer": "expressions/wardrobe-f02-wink-1024w.png",
+      "preview": "try-on/wardrobe-f02-wink-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F03-teary",
+      "layer": "expressions/wardrobe-f03-teary-1024w.png",
+      "preview": "try-on/wardrobe-f03-teary-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F04-smile",
+      "layer": "expressions/wardrobe-f04-smile-1024w.png",
+      "preview": "try-on/wardrobe-f04-smile-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F05-unimpressed",
+      "layer": "expressions/wardrobe-f05-unimpressed-1024w.png",
+      "preview": "try-on/wardrobe-f05-unimpressed-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F06-sparkle",
+      "layer": "expressions/wardrobe-f06-sparkle-1024w.png",
+      "preview": "try-on/wardrobe-f06-sparkle-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F07-shiny",
+      "layer": "expressions/wardrobe-f07-shiny-1024w.png",
+      "preview": "try-on/wardrobe-f07-shiny-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F08-sleepy",
+      "layer": "expressions/wardrobe-f08-sleepy-1024w.png",
+      "preview": "try-on/wardrobe-f08-sleepy-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F09-dark",
+      "layer": "expressions/wardrobe-f09-dark-1024w.png",
+      "preview": "try-on/wardrobe-f09-dark-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    },
+    {
+      "id": "F10-closed-smile",
+      "layer": "expressions/wardrobe-f10-closed-smile-1024w.png",
+      "preview": "try-on/wardrobe-f10-closed-smile-try-on-1024w.png",
+      "offset": [
+        0,
+        0
+      ],
+      "base": "base-front-expression-ready.png",
+      "order": "above"
+    }
+  ],
+  "expressionBase": "base-front-expression-ready.png",
+  "revision": "v5",
+  "sourceBody": {
+    "repository": "Sadie1226/zhihu-hackathon",
+    "path": "public/assets/dogs/kanshan-neutral-v1/body-front-neutral.png",
+    "sha256": "90f85098e8011552ec35cb63dd60683cd06da121ef059887af937f84f71c0729",
+    "commit": "d615a670ccb08d057fa82ef2e129b30bb02c8cbc",
+    "expressionBaseSha256": "c24373a4d277014c69fa25aa6aac1e7c02e43b3ad2d90c10b3a6d28fffff3d7b"
+  },
+  "modeRules": {
+    "outfit": {
+      "choose": {
+        "set": 1,
+        "single": 0,
+        "accessories": 0
+      }
+    },
+    "mix": {
+      "choose": {
+        "set": 0,
+        "single": 1,
+        "accessoriesPerSlot": 1
+      }
+    },
+    "expressionMax": 1,
+    "accessorySlots": {
+      "head": "头饰",
+      "eyes": "眼镜",
+      "carry": "斜挎／携带",
+      "back": "背部"
+    },
+    "layerOrder": [
+      "back",
+      "base",
+      "expression",
+      "singleOrSet",
+      "carry",
+      "eyes",
+      "head"
+    ],
+    "exclusiveCombinations": [
+      {
+        "item": "F09-dark",
+        "withSlot": "eyes",
+        "reason": "该表情自带深色镜片效果"
+      },
+      {
+        "item": "F09-dark",
+        "withItem": "T07-striped-knit",
+        "reason": "套装自带眼镜"
+      }
+    ]
+  }
+}

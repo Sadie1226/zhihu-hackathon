@@ -1,0 +1,122 @@
+{
+  "canvas": [
+    750,
+    640
+  ],
+  "origin": "top-left",
+  "actorVisibleSize": [
+    132,
+    183
+  ],
+  "placement": "asset-review",
+  "scenes": [
+    {
+      "place": "长白山天池",
+      "file": "scenes/changbai.png",
+      "source": "图片 41.png",
+      "foot": [
+        366,
+        551
+      ]
+    },
+    {
+      "place": "阿勒泰·喀纳斯",
+      "file": "scenes/kanas.png",
+      "source": "图片 42.png",
+      "foot": [
+        444,
+        543
+      ]
+    },
+    {
+      "place": "三亚海滩",
+      "file": "scenes/sanya.png",
+      "source": "图片 43.png",
+      "foot": [
+        339,
+        512
+      ]
+    },
+    {
+      "place": "深圳南头古城",
+      "file": "scenes/nantou.png",
+      "source": "图片 44.png",
+      "foot": [
+        395,
+        545
+      ]
+    },
+    {
+      "place": "深夜街角",
+      "file": "scenes/late-night-corner.png",
+      "source": "图片 45.png",
+      "foot": [
+        375,
+        498
+      ]
+    },
+    {
+      "place": "敦煌鸣沙山",
+      "file": "scenes/dunhuang-mingsha.png",
+      "source": "图片 46.png",
+      "foot": [
+        384,
+        542
+      ]
+    },
+    {
+      "place": "大兴安岭白桦林",
+      "file": "scenes/greater-khingan-birch.png",
+      "source": "图片 47.png",
+      "foot": [
+        377,
+        540
+      ]
+    },
+    {
+      "place": "盘锦红海滩",
+      "file": "scenes/panjin-red-beach.png",
+      "source": "图片 48.png",
+      "foot": [
+        347,
+        550
+      ]
+    },
+    {
+      "place": "桂林漓江",
+      "file": "scenes/guilin-li-river.png",
+      "source": "图片 49.png",
+      "foot": [
+        326,
+        549
+      ]
+    },
+    {
+      "place": "广州北京路",
+      "file": "scenes/beijing-road.png",
+      "source": "图片 52.png",
+      "foot": [
+        390,
+        546
+      ]
+    },
+    {
+      "place": "城市社区公园",
+      "file": "scenes/city-community-park.png",
+      "source": "图片 53.png",
+      "foot": [
+        365,
+        540
+      ]
+    },
+    {
+      "place": "街角小酒馆内景",
+      "file": "scenes/corner-tavern-interior.png",
+      "source": "图片 54.png",
+      "foot": [
+        432,
+        548
+      ]
+    }
+  ]
+}
