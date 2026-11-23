@@ -114,7 +114,7 @@ node scripts/d2c-scene-coverage.mjs
 
 **明确不做的事：为了配图去改 `place_tags`。** 契约原话是「不得为凑素材清空 place_tags」（`api.md:709`）；反过来为了凑图去**加**标签同样不行——那是把「这条事件需要什么条件」改成了「我们有什么图」。
 
-## 六、顺带回 A 的一条：贝壳 Gift 当视觉夹具没问题，但别写进 `imagePath`
+## 六、顺带回 E 的一条（11/23 群消息）：贝壳 Gift 当视觉夹具没问题，但别写进 `imagePath`
 
 E12 的 `gift-shell.png` 我核了：64×64，colorType=6（RGBA）。d 侧的 `gift` 业务只要求 `imagePath` 这个**键在**、值可为 `null`（`lib/social/gift.ts:168`），不校验尺寸、不校验格式——所以换个夹具不牵动任何代码。
 
