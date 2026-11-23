@@ -1,0 +1,64 @@
+/* global document, innerWidth */
+const { chromium } = await import(process.env.E6_PLAYWRIGHT_MODULE || 'playwright')
+import assert from 'node:assert/strict'
+import { mkdir, writeFile } from 'node:fs/promises'
+const output = 'team/2026-11-23/e/e6-mailbox/evidence'
+await mkdir(output, { recursive: true })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.E6_CHROMIUM_PATH, args: ['--no-sandbox'] })
+const results = []
+try {
+ const page = await browser.newPage({ viewport: { width: 375, height: 667 } })
+ const errors = []
+ page.on('pageerror', error => errors.push(error.message))
+ await page.goto(`${process.env.E6_BASE_URL || 'http://127.0.0.1:3106'}/e6-preview`)
+ await page.getByRole('button', { name: '打开邀请', exact: true }).waitFor()
+ for (const [width, height] of [[375,667],[320,568],[1440,900]]) {
+  await page.setViewportSize({ width, height })
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow at ${width}`)
+  const entry = await page.getByRole('button', { name: '捎句话', exact: true }).boundingBox()
+  assert(entry && entry.y + entry.height <= height && entry.height >= 44)
+  await page.screenshot({ path: `${output}/${width}-invitations.png`, fullPage: true })
+  results.push({ view: `${width}x${height}`, horizontalOverflow: false, composeEntryVisible: true })
+ }
+ await page.setViewportSize({ width:375, height:667 })
+ await page.getByRole('button', { name:'朋友来信', exact:true }).click()
+ await page.getByRole('button', { name:'拆开看看', exact:true }).first().waitFor()
+ assert(!await page.getByText('未投递秘密标题', {exact:true}).count())
+ assert(!await page.getByText('未投递秘密正文', {exact:true}).count())
+ await page.screenshot({path:`${output}/375-inbox.png`,fullPage:true})
+ await page.getByRole('button', { name:'拆开看看', exact:true }).last().click()
+ await page.getByRole('heading', {name:'修鞋摊旁边的搪瓷缸',exact:true}).waitFor()
+ await page.screenshot({path:`${output}/375-opened.png`,fullPage:true})
+ await page.getByRole('button',{name:'收好，回到信箱'}).click()
+ await page.getByRole('button',{name:'捎句话',exact:true}).click()
+ await page.getByLabel('捎给哪位伙伴的主人').selectOption('dog_seed_07')
+ await page.getByText('这是一位示例伙伴，可能不会回话。',{exact:true}).waitFor()
+ await page.getByLabel('想捎的话').fill('桂花开了，想给你捎一点秋天。')
+ await page.screenshot({path:`${output}/375-compose.png`,fullPage:true})
+ await page.getByLabel('想捎的话').fill('长'.repeat(201))
+ assert(await page.getByRole('button',{name:'交给伙伴（仅预览）'}).isDisabled())
+ await page.getByLabel('想捎的话').fill('桂花开了，想给你捎一点秋天。')
+ await page.getByRole('button',{name:'交给伙伴（仅预览）'}).click()
+ await page.getByText('桂花开了，想给你捎一点秋天。',{exact:true}).waitFor()
+ await page.getByText('已交给伙伴，尚未送达。',{exact:true}).first().waitFor()
+ await page.screenshot({path:`${output}/375-outbox.png`,fullPage:true})
+ for (const [scenario, expected] of [['empty','还没有寄出的捎话。有想说的，再写也好。'],['error','暂时没读到，请稍后重新读取。'],['slow','正在读取这一叠信…']]) {
+  await page.getByLabel('本地验收场景：').selectOption(scenario)
+  if (scenario==='empty') await page.getByRole('button',{name:'寄出的捎话',exact:true}).click()
+  await page.getByText(expected,{exact:true}).waitFor()
+  await page.screenshot({path:`${output}/375-${scenario}.png`,fullPage:true})
+ }
+ await page.getByLabel('本地验收场景：').selectOption('read-error')
+ await page.getByRole('button',{name:'朋友来信',exact:true}).click()
+ await page.getByRole('button',{name:'拆开看看',exact:true}).last().click()
+ await page.getByRole('button',{name:'重新保存已读',exact:true}).waitFor()
+ await page.screenshot({path:`${output}/375-read-error.png`,fullPage:true})
+ await page.getByLabel('本地验收场景：').selectOption('blocked')
+ await page.getByRole('button',{name:'捎句话',exact:true}).click()
+ await page.getByText('还没有可以捎话的伙伴。以后在路上认识了，再来写也好。',{exact:true}).waitFor()
+ assert.equal(await page.getByLabel('捎给哪位伙伴的主人').count(),0)
+ assert.deepEqual(errors,[])
+ results.push({ pendingIncomingContentHidden:true, seedWarning:true, lengthLimit:true, previewSendQueued:true, emptyErrorLoadingDistinct:true, readFailureVisible:true, blockedRecipientExcluded:true, pageErrors:errors })
+ await writeFile(`${output}/verification.json`, JSON.stringify(results,null,2))
+ console.log(JSON.stringify(results,null,2))
+} finally { await browser.close() }
