@@ -51,6 +51,7 @@ export async function api<T>(
     throw new Error(
       typeof result.publicMessage === 'string'
         ? result.publicMessage
+        : typeof result.detail === 'string' ? result.detail
         : '这次没读出来，可以再试一次',
     )
   return result as T

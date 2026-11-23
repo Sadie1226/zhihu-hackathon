@@ -1,22 +1,23 @@
 'use client'
 
-import type { Assembly } from '@/contracts/types'
+import type { StoredAssembly } from '@/contracts/types'
 import { useAppShell } from './shell'
 import s from './shell.module.css'
+import { isLegacyAssembly } from '@/contracts/assembly'
 
 export const assetRoot = '/assets/a5-v25'
 export function DogArt({
   assembly,
   wardrobe = false,
 }: {
-  assembly: Assembly
+  assembly: StoredAssembly
   wardrobe?: boolean
 }) {
   const { bindings, reducedMotion } = useAppShell()
   const Renderer = bindings.Dog
   if (Renderer)
     return <Renderer assembly={assembly} reducedMotion={reducedMotion} />
-  if (wardrobe)
+  if (wardrobe && isLegacyAssembly(assembly))
     return (
       <span className={s.dogArt} role="img" aria-label="试验穿搭预览">
         <img

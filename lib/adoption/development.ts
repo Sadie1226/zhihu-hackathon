@@ -7,7 +7,8 @@ import {
   INTEREST_CATEGORIES,
   checkPersonalityTags,
 } from '../../contracts/types.ts'
-import type { Assembly } from '../../contracts/types.ts'
+import { isTspfAssembly, isLegacyAssembly, parseStoredAssembly } from '../../contracts/assembly.ts'
+import type { TspfAssembly } from '../../contracts/assembly.ts'
 import type {
   AdoptionDraft,
   CreateDogInput,
@@ -106,26 +107,9 @@ export function generateDevelopment(draft: AdoptionDraft): GenerationView {
   }
 }
 
-function parseAssembly(value: unknown): Assembly {
-  const input = record(value)
-  if (Object.keys(input).sort().join(',') !== 'cloth,face,glasses,hat')
-    invalid('外观需要四项选择')
-  const allowed = {
-    cloth: ['hoodie', 'jacket', 'sweater', 'raincoat', 'apron', 'scarf-coat'],
-    hat: ['beanie', 'cap', 'straw', 'none', null],
-    glasses: ['round', 'square', 'sun', 'none', null],
-    face: ['happy', 'tired', 'hopeful', 'waiting'],
-  }
-  for (const key of Object.keys(allowed) as (keyof Assembly)[]) {
-    if (!(allowed[key] as unknown[]).includes(input[key]))
-      invalid('外观选项不符合四键装配单')
-  }
-  return {
-    cloth: input.cloth,
-    hat: input.hat,
-    glasses: input.glasses,
-    face: input.face,
-  } as Assembly
+function parseAssembly(value: unknown): TspfAssembly {
+  if (!isTspfAssembly(value)) invalid('请按新版套装、衣服、饰品和表情重新选择穿搭')
+  return value as TspfAssembly
 }
 
 export function ownedDog(
@@ -148,7 +132,7 @@ export function ownedDog(
           row.interest_categories === null
             ? null
             : JSON.parse(String(row.interest_categories)),
-        assembly: JSON.parse(String(row.assembly)),
+        assembly: parseStoredAssembly(String(row.assembly)),
         isSample: row.is_sample === 1,
       }
     : null
@@ -182,10 +166,14 @@ export function createDevelopmentDog(
   if (typeof requestId !== 'string' || !/^[a-f0-9-]{36}$/i.test(requestId)) {
     return invalid('请保留本次创建标识后重试')
   }
-  const assembly = parseAssembly(input.assembly)
+  const legacy = isLegacyAssembly(input.assembly) ? input.assembly : null
+  // Old receipts remain replayable with their original normalized hash; new legacy writes stay rejected.
+  const assembly = legacy ? { cloth: legacy.cloth, hat: legacy.hat, glasses: legacy.glasses, face: legacy.face }
+    : parseAssembly(input.assembly)
   const receipt = { id: requestId, hash: digest([draft, assembly, mockProfile.version]) }
   try {
     const id = recordAdoption(db, ownerId, receipt, (dogId, timestamp) => {
+      if (legacy) invalid('请按新版套装、衣服、饰品和表情重新选择穿搭')
       db.prepare(
         `INSERT INTO dog(id,name,session_id,owner_id,personality_tags,interest_categories,assembly,created_at)
       VALUES(?,?,?,?,?,?,?,?)`,

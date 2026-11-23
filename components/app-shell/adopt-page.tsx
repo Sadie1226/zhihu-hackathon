@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   EXCLUSIVE_PAIRS,
   INTEREST_CATEGORIES,
-  type Assembly,
+  type TspfAssembly,
   type InterestCategory,
 } from '@/contracts/types'
 import type {
@@ -15,14 +15,17 @@ import type {
 } from '@/lib/adoption/view'
 import { api, useAppShell } from './shell'
 import { useFeedback } from './use-feedback'
+import { isTspfAssembly } from '@/contracts/assembly'
+import { chooseWear, wardrobeCatalogue, wardrobeDefault, wardrobeThumbnail } from '@/lib/adoption/wardrobe'
+import { createRequestId } from '@/lib/adoption/request-id'
+import { resolveTspfPlan } from '@/lib/appearance/tspf-plan'
+import { wardrobeRoot } from '@/lib/adoption/wardrobe'
 import {
   A,
   Frame,
   World,
   Stationery,
-  catalogue,
   cssVars,
-  defaultAssembly,
   type AdoptionStep,
 } from '@/components/v25/presentation'
 
@@ -82,7 +85,7 @@ export default function AdoptPage() {
   const [auth, setAuth] = useState<AuthState>('entry')
   const [profile, setProfile] = useState<ProfileView | null>(null)
   const [draft, setDraft] = useState<AdoptionDraft>(emptyDraft)
-  const [assembly, setAssembly] = useState<Assembly>(defaultAssembly)
+  const [assembly, setAssembly] = useState<TspfAssembly>(wardrobeDefault)
   const [generation, setGeneration] = useState<GenerationView | null>(null)
   const [generatedState, setGeneratedState] = useState<ResultState>('loading')
   const [creationState, setCreationState] = useState<ResultState>('loading')
@@ -91,7 +94,7 @@ export default function AdoptPage() {
   const [notice, setNotice] = useState('')
   const [attempted, setAttempted] = useState(false)
   const [interestError, setInterestError] = useState('')
-  const [tab, setTab] = useState<keyof Assembly>('cloth')
+  const [tab, setTab] = useState<keyof TspfAssembly>('cloth')
   const [feedback, setFeedback] = useState<{
     i: number
     value: number
@@ -128,7 +131,7 @@ export default function AdoptPage() {
     setProfile(null)
     setGeneration(null)
     setDraft(emptyDraft)
-    setAssembly(defaultAssembly)
+    setAssembly(wardrobeDefault)
     requestId.current = null
     if (scope)
       try {
@@ -151,14 +154,9 @@ export default function AdoptPage() {
               )))
         ) {
           setDraft(raw.draft)
-          if (
-            raw.assembly &&
-            Object.entries(catalogue).every(([k, c]) =>
-              c.items.some(([v]) => v === raw.assembly[k]),
-            )
-          )
-            setAssembly(raw.assembly)
-          if (typeof raw.requestId === 'string')
+          if (raw.version === 'tspf-r2-v1' && isTspfAssembly(raw.assembly)) setAssembly(raw.assembly)
+          else setNotice('穿搭已更新，请重新选择；名字和兴趣已保留。')
+          if (raw.version === 'tspf-r2-v1' && isTspfAssembly(raw.assembly) && typeof raw.requestId === 'string')
             requestId.current = raw.requestId
         }
       } catch {
@@ -172,6 +170,7 @@ export default function AdoptPage() {
         sessionStorage.setItem(
           `v25-adoption:${scope}`,
           JSON.stringify({
+            version: 'tspf-r2-v1',
             draft: nextDraft,
             assembly: nextAssembly,
             requestId: requestId.current,
@@ -301,9 +300,17 @@ export default function AdoptPage() {
     setNotice('')
     setCreationState('loading')
     go('creation')
-    requestId.current ??= crypto.randomUUID()
-    persist()
     try {
+      requestId.current ??= createRequestId()
+      persist()
+      await Promise.all(resolveTspfPlan(assembly).layers.map(layer => new Promise<void>((resolve, reject) => {
+        const image = new Image()
+        const timeout = window.setTimeout(() => reject(new Error('穿搭图像读取超时，请保留选择后重试。')), 10000)
+        image.onload = () => { window.clearTimeout(timeout); resolve() }
+        image.onerror = () => { window.clearTimeout(timeout); reject(new Error('穿搭图像未能载入，请保留选择后重试。')) }
+        image.src = `${wardrobeRoot}/${layer.path}`
+      })))
+      if (!mounted.current || stamp !== operation.current) return
       const result = await api<{ dog: DogView }>('/api/dogs', {
         ...draft,
         assembly,
@@ -658,13 +665,13 @@ export default function AdoptPage() {
                 <div className="trait-labels">
                   <span
                     className="trait-end left"
-                    style={cssVars({ '--trait-size': `${size(-offset)}px` })}
+                    style={cssVars({ '--trait-size': `${size(-offset)}px`, '--trait-scale': size(-offset) / 24 })}
                   >
                     {left}
                   </span>
                   <span
                     className="trait-end right"
-                    style={cssVars({ '--trait-size': `${size(offset)}px` })}
+                    style={cssVars({ '--trait-size': `${size(offset)}px`, '--trait-scale': size(offset) / 24 })}
                   >
                     {right}
                   </span>
@@ -712,9 +719,9 @@ export default function AdoptPage() {
             )
           })}
         </div>
-        <p id="slider-help" className="mini">
+        <details className="slider-instructions"><summary>操作说明</summary><p id="slider-help" className="mini">
           拖向哪一端，哪一端的字就大一点。可点击轨道或用方向键调节。
-        </p>
+        </p></details>
         <Stationery
           id="trait-feedback"
           title={
@@ -839,7 +846,7 @@ export default function AdoptPage() {
     )
   } else if (step === 'wardrobe') {
     variant = 'character'
-    const c = catalogue[tab]
+    const c = wardrobeCatalogue[tab]
     body = (
       <>
         <div className="eyebrow">由你挑选 · 05</div>
@@ -848,13 +855,13 @@ export default function AdoptPage() {
           性格没有指定的制服。挑一件衣服，再加一点自己的偏爱。
         </p>
         <div className="wardrobe-tabs" role="group" aria-label="穿搭分类">
-          {(Object.keys(catalogue) as (keyof Assembly)[]).map((key) => (
+          {(Object.keys(wardrobeCatalogue) as (keyof TspfAssembly)[]).map((key) => (
             <button
               key={key}
               aria-pressed={tab === key}
               onClick={() => setTab(key)}
             >
-              {catalogue[key].label}
+              {wardrobeCatalogue[key].label}
             </button>
           ))}
         </div>
@@ -869,16 +876,17 @@ export default function AdoptPage() {
               key={value}
               className="outfit-option"
               aria-pressed={assembly[tab] === value}
-              disabled={tab === 'hat' && assembly.cloth === 'raincoat'}
+              disabled={tab === 'accessory' && assembly.outfit !== null}
               onClick={() => {
-                const next = { ...assembly, [tab]: value }
+                const next = chooseWear(assembly, tab, value)
+                if (JSON.stringify(next) === JSON.stringify(assembly)) return
                 setAssembly(next)
                 requestId.current = null
                 persist(draft, next)
               }}
             >
               <img
-                src={`${A}wardrobe/${value === 'none' ? `${tab}-none-icon` : `icon-${tab}-${value}`}.png`}
+                src={wardrobeThumbnail(value)}
                 width="96"
                 height="96"
                 alt=""
@@ -889,10 +897,10 @@ export default function AdoptPage() {
           ))}
         </div>
         <p className="hint" role="status">
-          当前使用参考看山，选项只保留草稿，暂停叠加服装素材。
+          {assembly.outfit ? '套装不能叠加饰品，请先选一件衣服。' : '预览与保存使用同一套穿搭。'}
         </p>
         <Stationery title="是你选的，就是它的样子。" appearance="success">
-          衣服、帽子、眼镜和表情都由你选择；不按标签自动换装。
+          套装或衣服必须选一件，饰品最多一件；不按标签自动换装。
         </Stationery>
         {actions(
           button('← 看看三个词', () => go('tags')),
@@ -957,10 +965,10 @@ export default function AdoptPage() {
             </strong>
             <span>穿搭</span>
             <strong>
-              {(Object.keys(catalogue) as (keyof Assembly)[])
+              {(Object.keys(wardrobeCatalogue) as (keyof TspfAssembly)[])
                 .map(
                   (key) =>
-                    catalogue[key].items.find(
+                    wardrobeCatalogue[key].items.find(
                       ([v]) => v === assembly[key],
                     )?.[1],
                 )

@@ -1,5 +1,6 @@
 import type {
-  Assembly,
+  StoredAssembly,
+  TspfAssembly,
   Dog,
   InterestCategory,
   PersonalityTag,
@@ -13,9 +14,8 @@ export type DogView = Pick<
   | 'name'
   | 'personalityTags'
   | 'interestCategories'
-  | 'assembly'
   | 'isSample'
->
+> & { assembly: StoredAssembly }
 export type SessionView = {
   provider: 'development' | 'zhihu' | 'unavailable'
   authenticated: boolean
@@ -46,7 +46,7 @@ export type GenerationView = {
   source: 'mock' | 'zhihu'
 }
 export type CreateDogInput = AdoptionDraft & {
-  assembly: Assembly
+  assembly: TspfAssembly
   fingerprint: string
   requestId: string
 }

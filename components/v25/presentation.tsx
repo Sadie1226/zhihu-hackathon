@@ -2,7 +2,7 @@
 
 import { useEffect, useId, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
-import type { Assembly } from '@/contracts/types'
+import type { StoredAssembly } from '@/contracts/types'
 import { useAppShell } from '@/components/app-shell/shell'
 import { useFeedback } from '@/components/app-shell/use-feedback'
 import './theme.css'
@@ -40,6 +40,7 @@ export function Frame({
           <span>一点点认识，一起过日子</span>
         </header>
         <nav id="steps" aria-label="领养步骤">
+          <strong className="step-caption">领养流程 · 当前：{['知乎授权', '名字兴趣', '性格倾向', '三个词', '穿搭', '成为伙伴', '小屋'][steps.indexOf(step)]}</strong>
           {[
             '知乎授权',
             '名字兴趣',
@@ -91,7 +92,7 @@ export function Stationery({
       />
       <div className="stationery-copy">
         <strong>{title}</strong>
-        <span>{children}</span>
+        <div>{children}</div>
       </div>
     </div>
   )
@@ -101,7 +102,7 @@ export function ReferenceActor({
   assembly,
   pose = 'stand',
 }: {
-  assembly: Assembly
+  assembly: StoredAssembly
   pose?: 'stand' | 'sit'
 }) {
   const { bindings, reducedMotion } = useAppShell()
@@ -155,7 +156,7 @@ export function World({
   motion,
 }: {
   greeting: string
-  assembly: Assembly
+  assembly: StoredAssembly
   variant?: 'room' | 'character' | 'entry'
   motion?: ReactNode
 }) {
@@ -172,7 +173,7 @@ export function World({
         {variant === 'room' ? (
           <img
             className="room"
-            src={`${A}AI素材组合.png`}
+            src={`${A}${encodeURIComponent('AI素材组合.png')}`}
             width="630"
             height="684"
             alt="窗边的刘看山站在暖色蓝纹地毯上，身旁有花盆和书本"
@@ -255,7 +256,7 @@ export const catalogue = {
     ],
   },
 } as const
-export const defaultAssembly: Assembly = {
+export const defaultAssembly: StoredAssembly = {
   cloth: 'hoodie',
   hat: 'none',
   glasses: 'none',

@@ -1,0 +1,3 @@
+.dog { position: relative; display: block; width: 100%; aspect-ratio: 1; isolation: isolate; }
+.dog > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.dog > span { position: absolute; inset: auto 0 0; font: 12px/1.4 sans-serif; }

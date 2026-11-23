@@ -8,6 +8,8 @@ import { TestBadge } from './visuals'
 import { useCurrentTrip } from './use-trip'
 import { orderFinds } from './content-reader'
 import type { TripContent } from './ports'
+import { actorPlacement } from '@/lib/appearance/trip-geometry'
+import { isTspfAssembly } from '@/contracts/assembly'
 import s from './shell.module.css'
 
 type ReadState<T> = { phase: 'unavailable' | 'loading' | 'failed' } | { phase: 'ready'; value: T }
@@ -79,24 +81,35 @@ function TripPageBody() {
   const { session, bindings, reducedMotion } = useAppShell()
   const { trip, loading, error, retry } = useCurrentTrip(session?.dog?.id)
   const [archive, setArchive] = useState<string | null>(null)
+  const [sceneError, setSceneError] = useState<string | null>(null)
+  const [sceneRetry, setSceneRetry] = useState(0)
   const returned = trip?.status === 'done'
   const interrupted = trip?.status === 'failed' || trip?.status === 'timeout'
-  const visual = returned ? bindings.tripVisuals?.done : trip?.status === 'running' ? bindings.tripVisuals?.running : undefined
+  const visualFinds = useRead<Find[]>(trip?.id ?? '', trip?.status === 'done' ? bindings.readFinds : undefined)
+  const visual = returned && visualFinds.phase === 'ready' && bindings.resolveTripVisual
+    ? bindings.resolveTripVisual(visualFinds.value)
+    : returned ? bindings.tripVisuals?.done : trip?.status === 'running' ? bindings.tripVisuals?.running : undefined
   const scene = visual?.src ?? (returned ? bindings.tripScenes?.done : trip?.status === 'running' ? bindings.tripScenes?.running : undefined)
   const Dog = bindings.Dog
+  const canvas = visual?.canvas ?? { width: 750, height: 640 }
+  const placement = actorPlacement(visual?.foot ?? { x: 50, y: 88, width: 27 },
+    session?.dog && isTspfAssembly(session.dog.assembly) ? { x: 522, y: 950 } : { x: 512, y: 1024 }, canvas)
   return <main className={s.page}>
     <Link href="/home">← 回小屋</Link><TestBadge />
     <h1>{loading ? '读一读路上的消息' : error ? trip ? '上次读到的旅途记录' : '暂时读不到它的近况' : tripCaption(trip)}</h1>
     {error && <p role="alert">{error} <button onClick={retry}>重新读取</button></p>}
     {error && trip && <p>以下是本次页面先前读到的记录，当前状态尚未确认。</p>}
-    <div className={`${s.stage} ${s.tripStage}`}>
-      {scene && <img className={s.tripBackdrop} src={scene} style={{ objectPosition: visual?.objectPosition }} alt={returned ? '归来场景' : '旅途场景'} />}
-      {Dog && session?.dog && (returned || trip?.status === 'running') && <div className={s.tripActor} style={{ left: `${visual?.foot?.x ?? 50}%`, top: `${visual?.foot?.y ?? 88}%`, width: `${visual?.foot?.width ?? 27}%` }}>
+    <div className={`${s.stage} ${s.tripStage}`} style={{ aspectRatio: `${canvas.width}/${canvas.height}` }}>
+      {scene && <img key={`${scene}:${sceneRetry}`} className={s.tripBackdrop} src={scene} style={{ objectPosition: visual?.objectPosition }}
+        onLoad={() => setSceneError(null)} onError={() => setSceneError(scene)} alt={returned ? '归来场景' : '旅途场景'} />}
+      {Dog && scene && session?.dog && (returned || trip?.status === 'running') && <div className={s.tripActor} style={{ left: `${placement.left}%`, top: `${placement.top}%`, width: `${placement.width}%` }}>
         <Dog assembly={session.dog.assembly} reducedMotion={reducedMotion} />
       </div>}
       {!scene && <div><p>{loading || (error && !trip) ? '等出行记录读出来，再看看它的近况。' : returned ? '它已经回来了。' : interrupted ? '这趟没有正常结束，出行记录仍会保留。' : trip ? '给路上的它留一点安静。' : '它还在家里。'}</p>
         <p className={s.muted}>开发预览 · 旅途画面仍在准备中</p></div>}
     </div>
+    {scene && sceneError === scene && <p role="alert">场景暂时没载入。<button onClick={() => setSceneRetry(v => v + 1)}>重试场景</button></p>}
+    {scene && visual?.illustrative && <p className={s.muted}>示意背景 · 不代表本趟实际地点</p>}
     {returned && trip && <StoredContent key={trip.id} trip={trip} normalReturn={!error} />}
     {interrupted && trip && <>
       <button onClick={() => setArchive(previous => previous === trip.id ? null : trip.id)}>查看已保存记录</button>

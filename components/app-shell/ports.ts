@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
 import type {
-  Assembly,
+  StoredAssembly,
   Find,
   InvitationView,
   Message,
@@ -41,7 +41,7 @@ export type FeedbackAdapter = (event: Feedback & { dogId?: string }, context: {
   signal: AbortSignal; reducedMotion: boolean
 }) => void
 export type RouteContext = { origin: Origin; returnTo: string }
-export type TripVisual = { src: string; objectPosition?: string; foot?: { x: number; y: number; width: number } }
+export type TripVisual = { src: string; objectPosition?: string; illustrative?: boolean; canvas?: { width: number; height: number }; foot?: { x: number; y: number; width: number } }
 export type Feature = {
   id: string
   label: string
@@ -49,6 +49,7 @@ export type Feature = {
 }
 export type TripContent = { finds: Find[]; message: Message | null }
 export type ShellBindings = {
+  resolveTripVisual?: (finds: readonly Find[]) => TripVisual
   ChatPanel?: ComponentType<PanelContext>
   WishPanel?: ComponentType<PanelContext>
   Invitations?: ComponentType<{
@@ -57,7 +58,7 @@ export type ShellBindings = {
     origin: 'trip'
     returnTo: string
   }>
-  Dog?: ComponentType<{ assembly: Assembly; reducedMotion: boolean }>
+  Dog?: ComponentType<{ assembly: StoredAssembly; reducedMotion: boolean }>
   tripScenes?: { running: string; done: string }
   tripVisuals?: { running?: TripVisual; done?: TripVisual }
   /** Each block is independent. Missing reader means unavailable, never an empty result. */
