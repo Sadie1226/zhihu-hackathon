@@ -169,6 +169,18 @@ function check(name: string, fn: () => void): void {
   }
 }
 
+/**
+ * 让出一次宏任务之后才跑的断言。
+ *
+ * 为什么需要：`Promise.resolve(thenable)` 里对 `then` 的调用是**微任务**，不是同步。
+ * 「拒绝时有没有把 thenable 执行掉」这件事，在同一段同步代码里是看不见的 ——
+ * 必须等一拍再看。第 20b 条就挂在这上面：老写法在同步段看起来完全正常。
+ */
+const afterTick: Array<{ name: string; fn: () => void }> = []
+function checkAfterTick(name: string, fn: () => void): void {
+  afterTick.push({ name, fn })
+}
+
 const exchangeRow = (id: string, giftName: string) => ({
   id,
   fromDog: A,
@@ -354,11 +366,109 @@ for (const scene of [memoryScene(), sqliteScene()]) {
     assert.equal(scene.countExchange(), exBefore, '外层写没撤 —— 错误没传出去时整笔必须回滚')
     assert.equal(store.readExchange('ex_nest_all_outer'), null)
   })
+
+  // 17—19. 事务回调必须同步。C8 最可能的写法错误就是「在事务里 await 一下」，
+  // 而那种写法**不会报错**：async 回调在第一个 await 就交出控制权，外层照样 COMMIT，
+  // 真正的写落在事务外面。三条用例把这个坑钉死，两套实现必须同样拒。
+  check('17 事务回调是 async → 抛 ASYNC_TRANSACTION，且已写的被回滚', () => {
+    const exBefore = scene.countExchange()
+    let code: string | undefined
+    try {
+      // 故意写成 async：这正是要拦的形状
+      store.transaction(async () => {
+        store.insertExchange(exchangeRow('ex_async_drop', '异步里写的'))
+      })
+    } catch (err) {
+      code = (err as { code?: string }).code
+    }
+    assert.equal(code, 'ASYNC_TRANSACTION', '异步回调没被拒 —— 事务会提前提交，写落在事务外')
+    assert.equal(scene.countExchange(), exBefore, '拒了却留下了写 —— 回滚没走到')
+    assert.equal(store.readExchange('ex_async_drop'), null)
+  })
+
+  check('18 返回 thenable（不是真 Promise）同样拒 —— 不靠 instanceof', () => {
+    let code: string | undefined
+    try {
+      store.transaction(() => ({ then: () => undefined }))
+    } catch (err) {
+      code = (err as { code?: string }).code
+    }
+    assert.equal(code, 'ASYNC_TRANSACTION')
+  })
+
+  check('19 内层 async 被拒、外层接住 → 只撤内层，外层写留', () => {
+    const exBefore = scene.countExchange()
+    store.transaction(() => {
+      store.insertExchange(exchangeRow('ex_async_outer_keep', '外层同步写的'))
+      try {
+        store.transaction(async () => {
+          store.insertExchange(exchangeRow('ex_async_inner_drop', '内层异步写的'))
+        })
+      } catch {
+        // 外层明确接住：内层做不成、外层继续
+      }
+    })
+    assert.equal(store.readExchange('ex_async_outer_keep') !== null, true, '外层写被一起撤了')
+    assert.equal(store.readExchange('ex_async_inner_drop'), null, '内层异步写没被撤')
+    assert.equal(scene.countExchange(), exBefore + 1)
+  })
+
+  // 20a/20b. 守卫只读形状、不执行内容（A 11-22 指出的副作用）。
+  //
+  // 老写法用 `Promise.resolve(value).catch(...)` 想「顺手收掉这个 Promise」，
+  // 但 `Promise.resolve(thenable)` 会**调用 then** —— 那段本该被拒掉的异步操作
+  // 反而真的跑了一次。用一个会记账的 thenable 把这件事变成可断言的：
+  // 拒绝要成立，then 的调用次数必须是 0。
+  //
+  // 拆两条是因为调用发生在微任务里，同步段看不见：20a 验「拒得掉」，
+  // 20b 让出一拍再验「拒了之后没顺手把它跑了」。老写法只有 20b 会红。
+  const probe = {
+    thenCalls: 0,
+    // 模拟「一被执行就产生副作用」的回调体：真发请求、真写库都是这个形状。
+    // 签名故意不收 resolve/reject —— 本用例只关心它有没有被调用，不关心后续。
+    then(): void {
+      probe.thenCalls += 1
+      store.insertExchange(exchangeRow('ex_async_side_effect', '不该被写进去'))
+    },
+  }
+  const sideEffectExBefore = scene.countExchange()
+  let probeCode: string | undefined
+
+  check('20a 返回副作用型 thenable → 抛 ASYNC_TRANSACTION，事务不留写', () => {
+    try {
+      store.transaction(() => probe)
+    } catch (err) {
+      probeCode = (err as { code?: string }).code
+    }
+    assert.equal(probeCode, 'ASYNC_TRANSACTION', 'thenable 没被拒')
+    assert.equal(scene.countExchange(), sideEffectExBefore, '拒了却留下了写')
+  })
+
+  checkAfterTick('20b 拒绝之后 then 一次都没被调用 —— 老写法（Promise.resolve）会在这里红', () => {
+    assert.equal(probe.thenCalls, 0, '检查动作把 then 调了 —— 守卫在执行它本该拒绝的东西')
+    assert.equal(store.readExchange('ex_async_side_effect'), null, '副作用真的发生了：事务失败之后又写了一条')
+    assert.equal(scene.countExchange(), sideEffectExBefore)
+  })
+
+  check('21 then 不是函数 → 不误判，正常放行', () => {
+    // 业务对象上带一个叫 then 的普通字段（比如「然后呢」这类文案键）不该炸。
+    // 判据是「then 可调用」，不是「有 then 这个键」。
+    const results = [
+      store.transaction(() => ({ then: '下一步' })),
+      store.transaction(() => ({ then: undefined })),
+      store.transaction(() => 42),
+    ]
+    assert.equal(results.length, 3)
+  })
 }
 
 // ===========================================================================
 // 汇总
 // ===========================================================================
+
+// 先让出一拍，把「要等微任务才看得见」的断言跑掉（第 20b 条）。
+await new Promise<void>((resolve) => setImmediate(resolve))
+for (const pending of afterTick) check(pending.name, pending.fn)
 
 console.log('\n' + '─'.repeat(56))
 console.log(`通过 ${pass} 条，失败 ${fail} 条`)
