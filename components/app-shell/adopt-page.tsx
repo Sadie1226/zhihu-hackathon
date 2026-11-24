@@ -60,14 +60,6 @@ const sayings = [
   ['喜欢的事，我会直接告诉你。', '我想换个温柔的说法。'],
   ['先收好今天这一束光。', '旧故事，也值得再听一遍。'],
 ]
-const motions = [
-  ['探头望向窗外', '坐回小垫子'],
-  ['抬手打招呼', '小幅低头，偷偷看你'],
-  ['冒出两三个小对话泡', '留一个安静的省略号'],
-  ['看向窗边植物', '转头看向你'],
-  ['我想去看看。', '要不要，一起看看？'],
-  ['接住窗边飘来的叶子', '看一眼旁边的小相片'],
-]
 const emptyDraft: AdoptionDraft = {
   name: '',
   interestCategories: null,
@@ -774,9 +766,6 @@ export default function AdoptPage() {
             busy,
           ),
         )}
-        <p className="fine">
-          当前展示静止画面；角色动作接口保留，尚未启用动画。
-        </p>
       </>
     )
   } else if (step === 'tags') {
@@ -1032,19 +1021,6 @@ export default function AdoptPage() {
           greeting={greeting}
           assembly={assembly}
           variant={variant}
-          motion={
-            step === 'traits' && feedback?.release ? (
-              <div id="motion-preview">
-                <span className="motion-tag">松手动作预留 · 静态说明</span>
-                <strong>
-                  {feedback.value === 50
-                    ? '保持自然站姿'
-                    : motions[feedback.i][feedback.value > 50 ? 1 : 0]}
-                </strong>
-                <span>当前角色保持站姿，未播放动画</span>
-              </div>
-            ) : undefined
-          }
         />
         <section id="paper">{body}</section>
       </main>
