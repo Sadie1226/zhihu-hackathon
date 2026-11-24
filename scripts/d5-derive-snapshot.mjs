@@ -166,7 +166,17 @@ function report(results, { compact = false } = {}) {
     `小计：有真实旅途 ${withTrips.length} 只 / 无 ${results.length - withTrips.length} 只；` +
       `有在等的回音 ${withWaiting.length} 只`,
   )
-  return { withTrips, withWaiting }
+  // A 11-24 的口径：已存版本不覆盖 ≠ 历史固定。这份报告必须自己先说清是哪一种。
+  const unfixed = results.filter((r) => !r.evidence.historyFixed)
+  if (unfixed.length) {
+    console.log(
+      `\n⚠ 历史未固定：${unfixed.length} 只的摘要取自「此刻的事件模板」（${unfixed.map((r) => r.evidence.dogId).join(' ')}）。` +
+        '\n  同一个旧 trip 在文案改过后会跟着变 —— 这份派生只能当诊断，不能当「当时发生了什么」。',
+    )
+  } else {
+    console.log('\n历史固定：全部摘要来自发生当时固定下来的那份，不随改文案变化。')
+  }
+  return { withTrips, withWaiting, unfixed }
 }
 
 // ---------------------------------------------------------------------------
@@ -322,7 +332,10 @@ function selftest() {
     eq([t.event.id, t.event.code], ['evt_a', 'test_a'], 'event 二元组')
     if (!t.event.happenedAt) throw new Error('happened_at 丢了')
     eq(r.evidence.textSource, 'event.text', '文本来源标注')
-    eq(r.evidence.textMutable, true, '可变性标注')
+    eq(r.evidence.textMutable, true, '可变性标注（没接固定事实时）')
+    eq(r.evidence.historyFixed, false, '没接固定事实 → 不许自称历史已固定')
+    eq(t.textSource, 'template_current', '逐趟也要标出来源')
+    eq(t.factSourceId, null, '模板态没有来源标识')
   })
   check('S15 派生结果过统一 validateSnapshot；超 40 字由它拒，不是本地常量', () => {
     assertSnapshotShape(r.body, { dogId: D, createdAt: T(1) })
@@ -388,6 +401,67 @@ function selftest() {
     for (const [re, why] of banned) if (re.test(src)) throw new Error(`${why} —— 主人原文/聊天内容不许进公开快照`)
   })
 
+  check('S19 接了「发生当时事实」→ 改模板不动旧趟（接缝的第一半）', () => {
+    // 造一张**测试用**的固定事实表。这不是给 C 的 schema 提案 —— 只是把读取器接上去，
+    // 证明「只要 C 给出那份事实，派生就能不随改文案而变」。
+    const d6 = new DatabaseSync(':memory:')
+    d6.exec('PRAGMA foreign_keys = ON')
+    d6.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d6.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    mkTrips(d6, `('h1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}')`)
+    d6.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_h','test_h','当时那句：猫在窗台上。','any','any','any','[]')`)
+    d6.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('h1','evt_h','${D}','${T(1)}:10')`)
+    d6.exec(`CREATE TABLE fixture_occurrence (trip_id TEXT, dog_id TEXT, text TEXT, source_id TEXT, captured_at TEXT)`)
+    d6.exec(`INSERT INTO fixture_occurrence VALUES ('h1','${D}','当时那句：猫在窗台上。','evt_h@v1','${T(1)}:10')`)
+    const reader = (db, tripId, dogId) =>
+      db
+        .prepare(`SELECT text, source_id, captured_at FROM fixture_occurrence WHERE trip_id = ? AND dog_id = ?`)
+        .get(tripId, dogId) ?? null
+    const withFact = (db) =>
+      deriveSnapshot(db, D, {
+        occurrenceFacts: (db2, tripId, dogId) => {
+          const row = reader(db2, tripId, dogId)
+          return row ? { text: row.text, sourceId: row.source_id, capturedAt: row.captured_at } : null
+        },
+      })
+
+    const before = withFact(d6)
+    eq(before.body.recentTrips, ['当时那句：猫在窗台上。'], '摘录取固定事实')
+    eq(before.evidence.historyFixed, true, '接上固定事实 → historyFixed')
+    eq(before.evidence.trips[0].factSourceId, 'evt_h@v1', '来源标识透传进证据')
+
+    // 改模板 —— 旧趟不该跟着变
+    d6.exec(`UPDATE event SET text = '改过之后：完全另一句话。' WHERE id = 'evt_h'`)
+    const after = withFact(d6)
+    eq(after.body.recentTrips, ['当时那句：猫在窗台上。'], '改文案后旧趟必须不变')
+    eq(after.evidence.trips[0].summary, '当时那句：猫在窗台上。', '逐趟摘要不变')
+    d6.close()
+  })
+  check('S20 有事件但当时没固定下来 → 诚实标未固定，不假装有历史', () => {
+    const d7 = new DatabaseSync(':memory:')
+    d7.exec('PRAGMA foreign_keys = ON')
+    d7.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d7.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    mkTrips(d7, `('g1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}')`)
+    d7.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_g','test_g','存量记录只有模板。','any','any','any','[]')`)
+    d7.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('g1','evt_g','${D}','${T(1)}:10')`)
+    // 读取器在，但这趟查不到固定事实（存量）→ 返回 null
+    const legacy = deriveSnapshot(d7, D, { occurrenceFacts: () => null })
+    eq(legacy.evidence.historyFixed, false, '存量记录不许自称已固定')
+    eq(legacy.evidence.trips[0].textSource, 'template_current', '来源标注如实')
+    eq(legacy.body.recentTrips, ['存量记录只有模板。'], '退回模板是诚实的降级，不是编历史')
+    // 反证：如果连事件都没有，就不该被判成「未固定」——没有可变文本进过快照
+    const d8 = new DatabaseSync(':memory:')
+    d8.exec('PRAGMA foreign_keys = ON')
+    d8.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d8.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    eq(deriveSnapshot(d8, D).evidence.historyFixed, true, '没有旅途 = 没有被可变文本污染')
+    d8.close()
+    d7.close()
+  })
+
   console.log(`\n自检 ${pass} 过 / ${fail} 败`)
   console.log('（这是「证据生成器」的验证，不是 D5 完成 —— 这里的数据是造的，不是它走出来的。）')
   db.close()
@@ -399,12 +473,19 @@ function selftest() {
 // ---------------------------------------------------------------------------
 
 function loadJsonEvidence(results, dbLabel) {
+  const unfixed = results.filter((r) => !r.evidence.historyFixed).map((r) => r.evidence.dogId)
   return {
     generatedAt: new Date().toISOString(),
     db: dbLabel,
     readOnly: true,
     note: '本文件是只读派生的证据，不含可执行 SQL；版本号由 C 的分配器给，D 不写库。',
     textSource: { column: 'event.text', mutable: true },
+    historyFixed: unfixed.length === 0,
+    historyUnfixedDogs: unfixed,
+    historyNote:
+      unfixed.length === 0
+        ? '全部摘要来自发生当时固定下来的事实。'
+        : '有摘要取自此刻的事件模板；改文案后同一旧 trip 会跟着变 —— 只作诊断，不作正式记录。',
     dogs: results.map(({ body, evidence }) => ({ body, evidence })),
   }
 }
@@ -451,6 +532,18 @@ if (has('--selftest')) {
         console.error('\n--sql-out 必须同时给 --version：版本号没有默认值，写死 1 会把旧经历改掉。')
         process.exit(1)
       }
+      // A 11-24：未固定文本的派生先作为诊断，不挂正式生成链。SQL 是「要进库」的那一步，
+      // 所以门禁设在这里 —— 报告照出，写库的产物不给。
+      const mutable = results.filter((r) => !r.evidence.historyFixed)
+      if (mutable.length && !has('--allow-unfixed-history')) {
+        console.error(
+          `\n拒出 SQL：${mutable.length} 只（${mutable.map((r) => r.evidence.dogId).join(' ')}）的摘要取自可变的事件模板。\n` +
+            '  这不是格式问题，是内容问题：今天写进去的那句话，明天改文案就对不上「当时发生了什么」。\n' +
+            '  等 C 交不可变事件事实、把 occurrenceFacts 读取器接上之后再出正式 SQL。\n' +
+            '  如果只是做诊断，显式加 --allow-unfixed-history（产物自带未固定标注）。',
+        )
+        process.exit(1)
+      }
       const version = Number(versionArg)
       if (!Number.isInteger(version) || version < 1) {
         console.error(`--version 必须是 ≥1 的整数，收到 ${versionArg}`)
@@ -467,6 +560,12 @@ if (has('--selftest')) {
         `-- ${stmts.length} 只狗，其中 ${skipped.length} 只该版本已存在 → 已 SKIP。`,
         '-- 版本号应由 C 的分配器逐狗给出；本文件的 version 是调用时显式传入的，不是默认值。',
         '-- 本文件不含任何 UPSERT / ON CONFLICT：旧版本不随重跑变化。',
+        ...(mutable.length
+          ? [
+              `-- ⚠ 诊断产物：${mutable.length} 只的摘要取自可变事件模板（--allow-unfixed-history），`,
+              '--   不可作为「当时发生了什么」的正式记录，只用于观察形态。',
+            ]
+          : ['-- 摘要来源：发生当时固定下来的那份（historyFixed）。']),
         '',
       ].join('\n')
       fs.writeFileSync(path.resolve(sqlOut), header + '\n' + stmts.map((s) => s.sql).join('\n\n') + '\n')

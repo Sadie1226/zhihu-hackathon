@@ -28,10 +28,17 @@
  *
  * 一条**做不到**的事，写在最前面免得被当成已解决：
  *   `event.text` 是可变列。本文件读到的永远是「此刻」的文本，不是「那趟出发时」的文本。
- *   所以 evidence 里带 `textSource` / `textMutable` 两个标注，且本文件**只用于生成新版本**。
+ *   所以 evidence 里带 `textSource` / `textMutable` / `historyFixed` 三个标注。
  *   旧版本的冻结靠 snapshot 主键 `(dog_id, version)` + 只插入不改写，
  *   不靠「重新派生一次得到同样的话」—— 那件事在文案被改过之后就不成立了。
- *   等 C 定了不可变事件版本（或 trip_event 落一份当时摘要），这里改成读那份、标注随之去掉。
+ *
+ * 11-24 A 复核指出：**已存版本不覆盖 ≠ 历史固定**。同一旧 trip 在文案改过之后，
+ * 进「下一次新快照」时仍会跟着变。这不是标注能盖住的，要改成读「发生当时固定下来的
+ * 那份文本」。那份事实由 C 维护（契约 / 迁移 / 写入都在 C 侧），D 只改读取。
+ *
+ * 所以这里留了一个**注入式接缝** `OccurrenceFactReader`：D 不猜 C 的表结构、不猜列名、
+ * 不碰 `trip_event`。C 交契约之后，把读取实现成一个函数传进来即可，本文件其余部分不动。
+ * 没传就退回读模板，并如实标 `historyFixed: false`（诊断态，不挂正式生成链）。
  */
 
 import type { DatabaseSync } from 'node:sqlite'
@@ -88,6 +95,14 @@ export interface TripEvidence {
   event: { id: string; code: string; happenedAt: string; text: string } | null
   /** 真正进 recent_trips 的那一句；没有事件就是 null */
   summary: string | null
+  /**
+   * 这句摘要从哪儿读来的。
+   *   `occurrence`        —— 发生当时固定下来的那份（**唯一可以进正式快照的来源**）
+   *   `template_current`  —— 事件模板的**此刻**文本，会随改文案而变（诊断态）
+   */
+  textSource: 'occurrence' | 'template_current'
+  /** 固定事实的来源标识（事件版本 id / 记录 id，具体形状由 C 定）。模板态恒为 null。 */
+  factSourceId: string | null
   /** 这趟有没有 Find。只给 id / kind / source_mode —— 标题与摘要不进证据。 */
   finds: { id: string; kind: string; sourceMode: string | null }[]
 }
@@ -109,15 +124,62 @@ export interface SnapshotEvidence {
   waiting: WaitingEvidence | null
   /** 除选中那条外，还有几条已到达未回应。不进快照，只让人知道「不止一条」。 */
   otherPendingWaiting: number
-  /** 摘要文本取自哪一列、是不是可变。见文件头最后一段。 */
-  textSource: 'event.text'
-  textMutable: true
+  /** 摘要文本取自哪一列、是不是可变。见文件头最后两段。 */
+  textSource: 'occurrence' | 'event.text'
+  textMutable: boolean
+  /**
+   * 这一批摘要里，是不是**没有一句**来自「此刻的模板」。
+   *
+   * 没有事件时也算固定（没有任何可变文本进过快照）。只要有一句来自模板就是 false ——
+   * A 11-24 的口径：`textMutable: true` 只是诚实标注，`historyFixed: false` 才决定
+   * 这份派生能不能算正式结果。
+   */
+  historyFixed: boolean
   findCoverage: { tripsWithFind: number; tripsWithoutFind: number }
 }
 
 export interface DeriveResult {
   body: SnapshotBody
   evidence: SnapshotEvidence
+}
+
+/**
+ * 「发生当时固定下来的公开事实」。
+ *
+ * 这是 D 侧唯一需要 C 提供的东西，**不是**一张表的完整形状：
+ * 给一趟旅途，告诉我当时那句话、以及它的来源标识。存哪儿、叫什么列、怎么迁，
+ * 都由 C 的契约决定，D 不猜也不碰 `trip_event`。
+ */
+export interface OccurrenceFact {
+  /** 当时进快照的公开文本（不是主人原话，是事件里那句公开叙述） */
+  text: string
+  /** 来源标识：事件版本 id / 记录 id / code+版本号，形状由 C 定，D 只透传进证据 */
+  sourceId: string
+  /** 固定时刻（写下这条事实的时间） */
+  capturedAt: string
+}
+
+/**
+ * 读取器：给 (db, tripId, dogId)，返回这趟事件发生时固定的那份事实；没有就返回 null。
+ *
+ * 为什么用「注入函数」而不是直接写 SQL：
+ *   · C 的 schema 还没定。写死一个 JOIN 等于替 C 定表结构，契约一改就返工；
+ *   · 更重要的是**没有实现时不能悄悄退回读模板** —— 退回了会被当成已固定。
+ *     所以这里没有默认实现：不传就是「没有固定事实」，并如实标 `historyFixed: false`。
+ *
+ * `null` 的两种含义要分清，调用方按 `capturedAt`/`sourceId` 区分：
+ *   · 这趟本来就没事件 → 根本不会调用本函数；
+ *   · 有事件但当时没固定下文本（存量记录）→ 返回 null，快照里**不许**用今天的文本顶替。
+ */
+export type OccurrenceFactReader = (
+  db: DatabaseSync,
+  tripId: string,
+  dogId: string,
+) => OccurrenceFact | null
+
+export interface DeriveOptions {
+  /** C 交契约后传进来。不传 = 模板态（诊断，不挂正式生成链）。 */
+  occurrenceFacts?: OccurrenceFactReader
 }
 
 // ===========================================================================
@@ -220,8 +282,11 @@ const pendingWaiting = (db: DatabaseSync, dogId: string) =>
  * 派生一只狗的 snapshot 内容 + 证据。
  *
  * 只读：调用方给 db（可以是 C 事务里的那个连接），本函数不 BEGIN / 不 COMMIT / 不写。
+ *
+ * `opts.occurrenceFacts` 不传时，摘要来自**此刻的事件模板**，证据里 `historyFixed: false`。
+ * 那种结果只能当诊断，不能当成「这趟当时发生了什么」的正式记录。
  */
-export function deriveSnapshot(db: DatabaseSync, dogId: string): DeriveResult {
+export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOptions = {}): DeriveResult {
   const dog = db
     .prepare(`SELECT id, personality_tags, interest_categories FROM dog WHERE id = ?`)
     .get(dogId) as { id: string; personality_tags: string; interest_categories: string | null } | undefined
@@ -232,15 +297,22 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string): DeriveResult {
   const tripEvidence: TripEvidence[] = []
   const summaries: string[] = []
   let withFind = 0
+  let fromTemplate = 0
 
   for (const t of trips) {
     const ev = earliestEvent(db, t.id, dogId)
     const finds = findsOf(db, t.id)
     if (finds.length > 0) withFind += 1
 
-    // 摘要就是 event.text 本身。不改写、不拼接、不套话：
+    // 有事件才需要「当时那句话」。没事件的趟不调读取器 —— 那是「没发生」，不是「丢了」。
+    const fact = ev ? (opts.occurrenceFacts?.(db, t.id, dogId) ?? null) : null
+    const summary = fact ? fact.text : (ev?.text ?? null)
+    // 只有「有事件但读不到固定事实」才算退到模板 —— 那正好是需要报警的那种。
+    if (ev && !fact) fromTemplate += 1
+
+    // 摘要就是那句话本身。不改写、不拼接、不套话：
     // 一旦在这里加一句「它看见了」，那就不再是「发生了什么」，而是 d 替它叙述。
-    if (ev) summaries.push(ev.text)
+    if (summary !== null) summaries.push(summary)
 
     tripEvidence.push({
       tripId: t.id,
@@ -250,7 +322,9 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string): DeriveResult {
       endedAt: t.ended_at,
       eventCount: countEvents(db, t.id, dogId),
       event: ev ? { id: ev.event_id, code: ev.code, happenedAt: ev.happened_at, text: ev.text } : null,
-      summary: ev ? ev.text : null,
+      summary,
+      textSource: fact ? 'occurrence' : 'template_current',
+      factSourceId: fact ? fact.sourceId : null,
       finds: finds.map((f) => ({ id: f.id, kind: f.kind, sourceMode: f.source_mode })),
     })
   }
@@ -281,8 +355,10 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string): DeriveResult {
         }
       : null,
     otherPendingWaiting: Math.max(0, waits.length - 1),
-    textSource: 'event.text',
-    textMutable: true,
+    // 有没有一句话来自「此刻的模板」。一句都没有 = 这份派生可以当正式结果。
+    textSource: fromTemplate > 0 ? 'event.text' : 'occurrence',
+    textMutable: fromTemplate > 0,
+    historyFixed: fromTemplate === 0,
     findCoverage: { tripsWithFind: withFind, tripsWithoutFind: tripEvidence.length - withFind },
   }
 
@@ -290,9 +366,9 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string): DeriveResult {
 }
 
 /** 一次读完所有种子狗。同一份证据、同一个读视角。 */
-export function deriveAllSnapshots(db: DatabaseSync): DeriveResult[] {
+export function deriveAllSnapshots(db: DatabaseSync, opts: DeriveOptions = {}): DeriveResult[] {
   const dogs = db.prepare(`SELECT id FROM dog WHERE is_sample = 1 ORDER BY id`).all() as { id: string }[]
-  return dogs.map((d) => deriveSnapshot(db, d.id))
+  return dogs.map((d) => deriveSnapshot(db, d.id, opts))
 }
 
 // ===========================================================================
