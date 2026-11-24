@@ -700,7 +700,7 @@ fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenance
 ## 七、事件数据库契约（2026-11-18，内部数据访问，不新增 HTTP 路由）
 
 `event` 是 D 维护的候选池，尚未发生，不得当作 `find` 或真实出行经历。
-`trip_event` 是 C 独占写入的历史事实，D 只读。本轮只交数据库基础，未实现 pickEvent、抽签、冷却判断或渲染。
+`trip_event` 是 C 独占写入的历史事实，D 只读。
 
 ### event：固定 12 列
 
@@ -721,13 +721,20 @@ fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenance
 
 **没有 created_at。** 所有列非 NULL。JSON 在数据库中为 TEXT，读取边界解析为数组/对象，snake_case 映射为 camelCase。JSON 元素在插入和更新时均由触发器检查；不能只校验 JSON 语法。
 
-`place_tags=[]` 表示无地点限制，不能用来表示「素材尚未填」。非空数组与 `availablePlaces` 有非空交集时才匹配；当 `availablePlaces=[]` 时只有不限地点的候选适用。找不到匹配事件返回 `null`，属于正常结果，不是错误，也不制造替代事件。这里只确定后续选择器的语义，本轮没有运行筛选或加权随机。
+`place_tags=[]` 表示无粗地点标签限制。非空数组必须与 `availablePlaces` 相交。所有候选还须通过逐条事件的场景语义限制。
 
 `match_tags` 复用「自然风景、城市角落、手作与食物、人与故事、动物与植物、冷知识」，不引入新的兴趣字典。`asset_refs` 的对象内部结构待 E2c 的素材引用对齐；不得为凑素材清空 place_tags。
 
 ### trip_event：固定 4 列
 
 `trip_id` → trip.id；`event_id` → event.id；`dog_id` → dog.id；`happened_at` 为 UTC ISO-8601 TEXT。四列非空，主键 `(trip_id,event_id)`，索引 `idx_trip_event_dog(dog_id,happened_at)`。不新增独立 id 或其他时间列，不设置级联删除。C 后续写入时必须使用该 trip 所属 dog；外键校验三条引用存在，业务归属由 C 的写入方检查。
+
+### C7 内部运行时
+
+- `resolveSceneContext(sceneFile)` 只接受 E2c `scene-map.json` 的相对文件键。未知场景返回 `null`。粗标签来自 A 核准的 D 映射，事件级兼容还要看场景与已审文本。
+- `createTripEventSelector(db)(input)` 由可信 Trip 执行器调用。输入为 `dogId`、`tripId`、服务端 C4 归属键 `sessionId` 和 `conditions`。条件包含 `sceneFile`、`season`、`weather` 和 `timeOfDay`。缺失可信条件可传 `null`。`any` 只用于事件候选条件。
+- 按启用、时间和天气、粗标签、语义、兴趣与屏蔽主题、同狗冷却顺序筛选；`match_tags=[]` 不限制兴趣，`interest_categories=NULL` 表示主人跳过，匹配不受六类限制，存储仍为 NULL。冷却按 UTC 经过时长计算，满 `cooldown_days × 24h` 可再选。
+- 校验 running Trip、归属、抽签和写入在同一同步事务。已记录唯一事件的 running Trip 重试返回原四字段记录。无匹配返回 `null`，旅途继续。数据库或历史一致性错误回滚并抛出。既有 start/finish 及页面接入由后续执行器联调。
 
 ### 初始化与 D 导入
 

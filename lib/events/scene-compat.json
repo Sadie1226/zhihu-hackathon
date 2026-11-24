@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "source": {
+    "commit": "bb0841f7453445f3bdd4682e25b9ac128fda204a",
+    "path": "team/2026-11-23/d/scene-place-compat.json",
+    "blob": "addef0059cc2e2bfc791b477d2f9b12747a5abc5",
+    "sha256": "05ce0cb3a6072a1472a940da64b2934794395b89d9008e61abb887e31a885638",
+    "approvalCommit": "d77e59abce9e2393e72c50f10254c3c4a4b806bf"
+  },
+  "scenes": {
+    "scenes/changbai.png": [
+      "riverside"
+    ],
+    "scenes/kanas.png": [
+      "riverside"
+    ],
+    "scenes/sanya.png": [
+      "riverside"
+    ],
+    "scenes/nantou.png": [
+      "street",
+      "stall"
+    ],
+    "scenes/late-night-corner.png": [
+      "street",
+      "stall"
+    ],
+    "scenes/dunhuang-mingsha.png": [],
+    "scenes/greater-khingan-birch.png": [],
+    "scenes/panjin-red-beach.png": [
+      "riverside"
+    ],
+    "scenes/guilin-li-river.png": [
+      "riverside"
+    ],
+    "scenes/beijing-road.png": [
+      "street",
+      "stall"
+    ],
+    "scenes/city-community-park.png": [
+      "street"
+    ],
+    "scenes/corner-tavern-interior.png": []
+  }
+}
