@@ -93,14 +93,16 @@ export interface TripEvidence {
   /** 这趟落了几条 trip_event；取的是最早那条 */
   eventCount: number
   event: { id: string; code: string; happenedAt: string; text: string } | null
-  /** 真正进 recent_trips 的那一句；没有事件就是 null */
+  /** 真正进 recent_trips 的那一句；没有事件或历史不可验证就是 null */
   summary: string | null
   /**
    * 这句摘要从哪儿读来的。
    *   `occurrence`        —— 发生当时固定下来的那份（**唯一可以进正式快照的来源**）
    *   `template_current`  —— 事件模板的**此刻**文本，会随改文案而变（诊断态）
+   *   `unverifiable`     —— 有事件但固定事实缺失，摘要留空
+   *   `none`             —— 这趟没有事件
    */
-  textSource: 'occurrence' | 'template_current'
+  textSource: 'occurrence' | 'template_current' | 'unverifiable' | 'none'
   /** 固定事实的来源标识（事件版本 id / 记录 id，具体形状由 C 定）。模板态恒为 null。 */
   factSourceId: string | null
   /** 这趟有没有 Find。只给 id / kind / source_mode —— 标题与摘要不进证据。 */
@@ -125,12 +127,12 @@ export interface SnapshotEvidence {
   /** 除选中那条外，还有几条已到达未回应。不进快照，只让人知道「不止一条」。 */
   otherPendingWaiting: number
   /** 摘要文本取自哪一列、是不是可变。见文件头最后两段。 */
-  textSource: 'occurrence' | 'event.text'
+  textSource: 'occurrence' | 'event.text' | 'unverifiable'
   textMutable: boolean
   /**
-   * 这一批摘要里，是不是**没有一句**来自「此刻的模板」。
+   * 每个有事件的旅途是否都取得了发生时固定事实。
    *
-   * 没有事件时也算固定（没有任何可变文本进过快照）。只要有一句来自模板就是 false ——
+   * 没有事件时也算固定。有事件但事实缺失，即使摘要留空也必须为false。
    * A 11-24 的口径：`textMutable: true` 只是诚实标注，`historyFixed: false` 才决定
    * 这份派生能不能算正式结果。
    */
@@ -297,7 +299,8 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
   const tripEvidence: TripEvidence[] = []
   const summaries: string[] = []
   let withFind = 0
-  let fromTemplate = 0
+  let missingFacts = 0
+  const hasFactReader = opts.occurrenceFacts !== undefined
 
   for (const t of trips) {
     const ev = earliestEvent(db, t.id, dogId)
@@ -306,9 +309,10 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
 
     // 有事件才需要「当时那句话」。没事件的趟不调读取器 —— 那是「没发生」，不是「丢了」。
     const fact = ev ? (opts.occurrenceFacts?.(db, t.id, dogId) ?? null) : null
-    const summary = fact ? fact.text : (ev?.text ?? null)
-    // 只有「有事件但读不到固定事实」才算退到模板 —— 那正好是需要报警的那种。
-    if (ev && !fact) fromTemplate += 1
+    // 显式null表示历史不可验证，不能拿今天的模板补过去。
+    // 未接读取器的旧调用仍可诊断，但不能通过正式转换入口。
+    const summary = fact ? fact.text : hasFactReader ? null : (ev?.text ?? null)
+    if (ev && !fact) missingFacts += 1
 
     // 摘要就是那句话本身。不改写、不拼接、不套话：
     // 一旦在这里加一句「它看见了」，那就不再是「发生了什么」，而是 d 替它叙述。
@@ -323,7 +327,7 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
       eventCount: countEvents(db, t.id, dogId),
       event: ev ? { id: ev.event_id, code: ev.code, happenedAt: ev.happened_at, text: ev.text } : null,
       summary,
-      textSource: fact ? 'occurrence' : 'template_current',
+      textSource: fact ? 'occurrence' : !ev ? 'none' : hasFactReader ? 'unverifiable' : 'template_current',
       factSourceId: fact ? fact.sourceId : null,
       finds: finds.map((f) => ({ id: f.id, kind: f.kind, sourceMode: f.source_mode })),
     })
@@ -355,10 +359,9 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
         }
       : null,
     otherPendingWaiting: Math.max(0, waits.length - 1),
-    // 有没有一句话来自「此刻的模板」。一句都没有 = 这份派生可以当正式结果。
-    textSource: fromTemplate > 0 ? 'event.text' : 'occurrence',
-    textMutable: fromTemplate > 0,
-    historyFixed: fromTemplate === 0,
+    textSource: missingFacts > 0 ? hasFactReader ? 'unverifiable' : 'event.text' : 'occurrence',
+    textMutable: missingFacts > 0 && !hasFactReader,
+    historyFixed: missingFacts === 0,
     findCoverage: { tripsWithFind: withFind, tripsWithoutFind: tripEvidence.length - withFind },
   }
 
@@ -383,7 +386,8 @@ export function deriveAllSnapshots(db: DatabaseSync, opts: DeriveOptions = {}): 
  * 那样一来，`snapshot.ts` 的白名单、标签维度互斥、兴趣 2–3 项这些判断全被绕过了 ——
  * 复制常量看起来等价，实际只复制了它记得住的那一条。
  *
- * 不过就抛错，不降级、不截断：这是**写库前**，不是展示时。
+ * 不过就抛错，不降级、不截断。本函数只验形状；正式出发必须使用下方toFixedSnapshot，
+ * 不能把本函数当成历史固定校验。
  */
 export function toSnapshot(
   body: SnapshotBody,
@@ -407,10 +411,28 @@ export function toSnapshot(
 }
 
 /**
+ * 正式出发绑定使用此入口，必须保留完整派生证据。
+ * toSnapshot仅检查形状，保留给旧调用和诊断；不能独自证明历史固定。
+ * 调用方在同一写事务内调用本函数后再分配/保存/绑定并投递，失败整体回滚。
+ */
+export function toFixedSnapshot(
+  result: DeriveResult,
+  meta: { dogId: string; version: number; createdAt: string },
+): Snapshot {
+  if (result.evidence.historyFixed !== true) {
+    throw new Error('HISTORY_UNVERIFIABLE: 事件发生时的固定事实缺失，不能生成正式快照')
+  }
+  if (result.evidence.dogId !== meta.dogId) {
+    throw new Error('SNAPSHOT_DOG_MISMATCH: 派生证据与快照归属不一致')
+  }
+  return toSnapshot(result.body, meta)
+}
+
+/**
  * 只验形状、不落库时用（报告里逐只过一遍）。
  *
  * version 用 1 占位：真实版本由 C 的分配器给，这里只借 `validateSnapshot` 验其余六项
- * 与键集合。**不要拿这个函数的返回值去写库** —— 写库走 `toSnapshot(body, {version})`。
+ * 与键集合。**不要拿这个函数的返回值去写库**；正式出发走toFixedSnapshot(result, meta)。
  */
 export function assertSnapshotShape(body: SnapshotBody, meta: { dogId: string; createdAt: string }): void {
   toSnapshot(body, { dogId: meta.dogId, version: 1, createdAt: meta.createdAt })

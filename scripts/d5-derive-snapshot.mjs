@@ -450,8 +450,8 @@ function selftest() {
     // 读取器在，但这趟查不到固定事实（存量）→ 返回 null
     const legacy = deriveSnapshot(d7, D, { occurrenceFacts: () => null })
     eq(legacy.evidence.historyFixed, false, '存量记录不许自称已固定')
-    eq(legacy.evidence.trips[0].textSource, 'template_current', '来源标注如实')
-    eq(legacy.body.recentTrips, ['存量记录只有模板。'], '退回模板是诚实的降级，不是编历史')
+    eq(legacy.evidence.trips[0].textSource, 'unverifiable', '明确标出缺失的历史事实')
+    eq(legacy.body.recentTrips, [], '显式缺失事实不拿今天的模板补过去')
     // 反证：如果连事件都没有，就不该被判成「未固定」——没有可变文本进过快照
     const d8 = new DatabaseSync(':memory:')
     d8.exec('PRAGMA foreign_keys = ON')
@@ -479,13 +479,13 @@ function loadJsonEvidence(results, dbLabel) {
     db: dbLabel,
     readOnly: true,
     note: '本文件是只读派生的证据，不含可执行 SQL；版本号由 C 的分配器给，D 不写库。',
-    textSource: { column: 'event.text', mutable: true },
+    textSource: { sources: [...new Set(results.map((r) => r.evidence.textSource))], mutable: results.some((r) => r.evidence.textMutable) },
     historyFixed: unfixed.length === 0,
     historyUnfixedDogs: unfixed,
     historyNote:
       unfixed.length === 0
         ? '全部摘要来自发生当时固定下来的事实。'
-        : '有摘要取自此刻的事件模板；改文案后同一旧 trip 会跟着变 —— 只作诊断，不作正式记录。',
+        : '有事件缺少发生时固定事实（或仍处于模板诊断模式）；不作正式记录。',
     dogs: results.map(({ body, evidence }) => ({ body, evidence })),
   }
 }
@@ -537,7 +537,7 @@ if (has('--selftest')) {
       const mutable = results.filter((r) => !r.evidence.historyFixed)
       if (mutable.length && !has('--allow-unfixed-history')) {
         console.error(
-          `\n拒出 SQL：${mutable.length} 只（${mutable.map((r) => r.evidence.dogId).join(' ')}）的摘要取自可变的事件模板。\n` +
+          `\n拒出 SQL：${mutable.length} 只（${mutable.map((r) => r.evidence.dogId).join(' ')}）的事件历史尚未固定或不可验证。\n` +
             '  这不是格式问题，是内容问题：今天写进去的那句话，明天改文案就对不上「当时发生了什么」。\n' +
             '  等 C 交不可变事件事实、把 occurrenceFacts 读取器接上之后再出正式 SQL。\n' +
             '  如果只是做诊断，显式加 --allow-unfixed-history（产物自带未固定标注）。',
