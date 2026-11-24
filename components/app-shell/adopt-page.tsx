@@ -18,6 +18,7 @@ import { useFeedback } from './use-feedback'
 import { isTspfAssembly } from '@/contracts/assembly'
 import { chooseWear, wardrobeCatalogue, wardrobeDefault, wardrobeThumbnail } from '@/lib/adoption/wardrobe'
 import { createRequestId } from '@/lib/adoption/request-id'
+import { createDraftSave } from '@/lib/adoption/draft-save'
 import { resolveTspfPlan } from '@/lib/appearance/tspf-plan'
 import { wardrobeRoot } from '@/lib/adoption/wardrobe'
 import {
@@ -72,6 +73,12 @@ const emptyDraft: AdoptionDraft = {
   interestCategories: null,
   tendencies: [0, 0, 0, 0, 0, 0],
 }
+type StoredDraft = {
+  version: 'tspf-r2-v1'
+  draft: AdoptionDraft
+  assembly: TspfAssembly
+  requestId: string | null
+}
 export default function AdoptPage() {
   const { session, error, refresh } = useAppShell()
   const emitFeedback = useFeedback()
@@ -106,19 +113,32 @@ export default function AdoptPage() {
   const mounted = useRef(true)
   const loggingIn = useRef(false)
   const draftScope = useRef<string | null>(null)
+  const [draftSave] = useState(() => createDraftSave<StoredDraft>((scope, value) => {
+    sessionStorage.setItem(`v25-adoption:${scope}`, JSON.stringify(value))
+  }))
   useEffect(() => {
     mounted.current = true
+    const flush = () => draftSave.flush()
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', hidden)
     return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', hidden)
+      draftSave.flush()
       mounted.current = false
       operation.current++
     }
-  }, [])
+  }, [draftSave])
   useEffect(() => {
     if (session?.dog && !created) router.replace('/home')
   }, [session, created, router])
   useEffect(() => {
     const scope = session?.draftScope ?? null
     if (scope === draftScope.current) return
+    draftSave.setScope(scope)
     draftScope.current = scope
     if (!loggingIn.current) {
       operation.current++
@@ -162,35 +182,27 @@ export default function AdoptPage() {
       } catch {
         /* Invalid/local storage is optional; the server validates all submitted data. */
       }
-  }, [session?.draftScope])
-  function persist(nextDraft = draft, nextAssembly = assembly) {
-    const scope = draftScope.current
-    if (scope)
-      try {
-        sessionStorage.setItem(
-          `v25-adoption:${scope}`,
-          JSON.stringify({
-            version: 'tspf-r2-v1',
-            draft: nextDraft,
-            assembly: nextAssembly,
-            requestId: requestId.current,
-          }),
-        )
-      } catch {
-        /* In-memory steps continue if storage is unavailable. */
-      }
+  }, [session?.draftScope, draftSave])
+  function persist(nextDraft = draft, nextAssembly = assembly, deferred = false) {
+    draftSave.save({
+      version: 'tspf-r2-v1',
+      draft: nextDraft,
+      assembly: nextAssembly,
+      requestId: requestId.current,
+    }, deferred)
   }
   function go(next: AdoptionStep) {
+    draftSave.flush()
     setNotice('')
     setStep(next)
     window.scrollTo(0, 0)
   }
-  function change(next: AdoptionDraft) {
+  function change(next: AdoptionDraft, deferred = false) {
     version.current++
     setDraft(next)
     setGeneration(null)
     requestId.current = null
-    persist(next)
+    persist(next, assembly, deferred)
   }
   const nameError = () =>
     !draft.name.trim()
@@ -695,12 +707,15 @@ export default function AdoptPage() {
                       tendencies: draft.tendencies.map((x, j) =>
                         i === j ? (value - 50) / 25 : x,
                       ),
-                    })
+                    }, true)
                     traitFeedback(i, value, false)
                   }}
-                  onPointerUp={(e) =>
+                  onPointerUp={(e) => {
+                    draftSave.flush()
                     traitFeedback(i, Number(e.currentTarget.value), true)
-                  }
+                  }}
+                  onPointerCancel={() => draftSave.flush()}
+                  onBlur={() => draftSave.flush()}
                   onKeyUp={(e) => {
                     if (
                       [
@@ -711,8 +726,10 @@ export default function AdoptPage() {
                         'Home',
                         'End',
                       ].includes(e.key)
-                    )
+                    ) {
+                      draftSave.flush()
                       traitFeedback(i, Number(e.currentTarget.value), true)
+                    }
                   }}
                 />
               </div>
