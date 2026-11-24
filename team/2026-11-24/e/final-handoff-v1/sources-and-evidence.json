@@ -1,0 +1,91 @@
+{
+  "comparisonSources": [
+    {
+      "source": "WB uploaded document",
+      "name": "1124-E-E5修复候选真机复测-v1.md",
+      "sha256": "e5a502894ea62e5d8f314672b46df9ca39df3f77955e8a2244369a6e5c456f62",
+      "remoteRef": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "remotePath": "team/2026-11-24/e/e5-fix-retest/1124-E-E5修复候选真机复测-v1.md",
+      "matchesRemoteBytes": true
+    },
+    {
+      "source": "WB uploaded document",
+      "name": "1124-E-E6依赖更新说明-v1.md",
+      "sha256": "b8f4df0bd42462933bb4e9c2cdb28971878b3ee0175d7f357a0e09b52f984969",
+      "remoteRef": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "remotePath": "team/2026-11-24/e/e6-mailbox/1124-E-E6依赖更新说明-v1.md",
+      "matchesRemoteBytes": true
+    },
+    {
+      "source": "WB uploaded document",
+      "name": "1124-E-E7手账骨架准备-v1.md",
+      "sha256": "1ad18edda5b8f9bfbf7c71f734a100b452e501cffb53008045e01b89fb6cee05",
+      "remoteRef": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "remotePath": "team/2026-11-24/e/e7-journal/1124-E-E7手账骨架准备-v1.md",
+      "matchesRemoteBytes": true
+    },
+    {
+      "source": "WB uploaded document",
+      "name": "1124-E-给A的交付汇总-v1.md",
+      "sha256": "ebcddd725ecd65e8461762606a7506e0e376d88365228222603cc2533ba3a030",
+      "remoteRef": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "remotePath": "team/2026-11-24/e/1124-E-给A的交付汇总-v1.md",
+      "matchesRemoteBytes": true
+    },
+    {
+      "source": "ChatGPT prior document",
+      "path": "team/2026-11-24/e/e6-mailbox/1124-E-E6-只读状态与D6进展补充-v1.md",
+      "sha256": "33c337aff0ae01b34cee0907bf9b27dedf227c8d982a2a23d98c23c4f98844f9",
+      "localCommit": "c9d59bac1fd2671ff48ba3dc37e20b2c9081f80c"
+    },
+    {
+      "source": "ChatGPT prior document",
+      "path": "team/2026-11-24/e/adoption-handoff/1124-E-给A-书店与E11采用入口清单-v1.md",
+      "sha256": "ec71bdcc38c3a54e6224806e0e9e5ff113e99fac4b1161f560dcc3fdab71c48e",
+      "localCommit": "c9d59bac1fd2671ff48ba3dc37e20b2c9081f80c"
+    }
+  ],
+  "evidence": [
+    {
+      "file": "evidence/desktop/slider-00-start.png",
+      "type": "WB desktop emulation",
+      "sourceCommit": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "sourcePath": "team/2026-11-24/e/e5-fix-retest/evidence/slider-00-start.png",
+      "sha256": "d39001a9c8f5e2d95cfa93eb21a84fedd92bac824a1c8966226b7980a0913fa2"
+    },
+    {
+      "file": "evidence/desktop/slider-01-traits.png",
+      "type": "WB desktop emulation",
+      "sourceCommit": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "sourcePath": "team/2026-11-24/e/e5-fix-retest/evidence/slider-01-traits.png",
+      "sha256": "bc878cc2975b8df8970e4da44d63ae126af9f78dea0d27f6b0992e35337f2622"
+    },
+    {
+      "file": "evidence/desktop/slider-02-after-drag.png",
+      "type": "WB desktop emulation",
+      "sourceCommit": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "sourcePath": "team/2026-11-24/e/e5-fix-retest/evidence/slider-02-after-drag.png",
+      "sha256": "c1bdf24c72a88e82972ddc0c113e0a0c2e892a3293183140bb5c6cc5987947cf"
+    },
+    {
+      "file": "evidence/desktop/smoke-home-390x844.png",
+      "type": "WB desktop emulation",
+      "sourceCommit": "13e7f815196aeb40f6cda3c572fc7c13c6652fb8",
+      "sourcePath": "team/2026-11-24/e/e5-fix-retest/evidence/smoke-home-390x844.png",
+      "sha256": "20e2cc527f8f0dbe75a258b678c49759b8771862f7ba2c058714312dbd3e80a3"
+    },
+    {
+      "file": "evidence/user/phone-screenshot-01.png",
+      "type": "user supplied phone screenshot; no slider-crash recording",
+      "sourceFilename": "image(20261124-085005).png",
+      "sha256": "f8bd9b2b040b9893c57b54e0daceec229665a1b682bd37d44d2f26b3e3745f9a"
+    },
+    {
+      "file": "evidence/user/phone-screenshot-02.png",
+      "type": "user supplied phone screenshot; no slider-crash recording",
+      "sourceFilename": "image(20261124-085238).png",
+      "sha256": "78762086f4dc180fb00d217046ef5fbcff7811dab02e9932d92f0d44de974473"
+    }
+  ],
+  "verificationScope": "Document, Git ancestry/tree, source bytes and asset hashes only. No rerun of prior UI/real-device/business tests."
+}
