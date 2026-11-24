@@ -4,6 +4,8 @@ import { TRIPS_PER_DAY_MAX, TRIP_MIN_GAP_HOURS } from '../../contracts/types.ts'
 import type { Trip, TripStatus, TripTrigger, Find, Exchange } from '../../contracts/types.ts'
 import { deliverOnTripStart } from '../mailbox/deliver.mjs'
 import { selectActiveWish } from '../wishes/contract.ts'
+import { bindDepartureSnapshot } from './departure-snapshot.ts'
+import type { BuildDepartureSnapshot } from './departure-snapshot.ts'
 
 export class TripError extends Error {
   code: 'NOT_FOUND' | 'CONFLICT'
@@ -35,7 +37,7 @@ function transaction<T>(db: DatabaseSync, action: () => T): T {
     db.exec('COMMIT')
     return value
   } catch (error) {
-    db.exec('ROLLBACK')
+    if (db.isTransaction) db.exec('ROLLBACK')
     throw error
   }
 }
@@ -46,7 +48,11 @@ export function startsOnShanghaiDay(db: DatabaseSync, dogId: string, at: string)
     AND started_at IS NOT NULL AND date(started_at, '+8 hours') = date(?, '+8 hours')`).get(dogId, at)!.n)
 }
 
-export function createTripService(db: DatabaseSync, options: { now?: () => Date; newId?: () => string } = {}) {
+export function createTripService(db: DatabaseSync, options: {
+  now?: () => Date
+  newId?: () => string
+  buildDepartureSnapshot?: BuildDepartureSnapshot
+} = {}) {
   const timestamp = () => (options.now ?? (() => new Date()))().toISOString()
   function ownedDog(dogId: string, sessionId: string) {
     if (!db.prepare('SELECT 1 FROM dog WHERE id = ? AND session_id = ?').get(dogId, sessionId)) missing()
@@ -112,6 +118,7 @@ export function createTripService(db: DatabaseSync, options: { now?: () => Date;
         if (last && Date.parse(at) - Date.parse(String(last.started_at)) < TRIP_MIN_GAP_HOURS * 3600000) {
           conflict('两次出发需要间隔至少 6 小时')
         }
+        if (options.buildDepartureSnapshot) bindDepartureSnapshot(db, trip, at, options.buildDepartureSnapshot)
         // Resolve at actual departure, under this write lock, so a wish revoked
         // while pending cannot become the provenance of a future trip.
         const wish = trip.trigger === 'wish' ? selectActiveWish(db, trip.dogId, sessionId) : null
