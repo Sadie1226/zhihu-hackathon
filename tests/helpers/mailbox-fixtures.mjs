@@ -4,18 +4,23 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { Worker } from 'node:worker_threads'
+import { DatabaseSync } from 'node:sqlite'
 import { fixtureSession } from './owner-session.mjs'
-import { openDatabase } from '../../lib/db/bootstrap.ts'
+import { initializeDatabase, openDatabase } from '../../lib/db/bootstrap.ts'
 import { createTripService } from '../../lib/trips/service.ts'
 
 export const createdAt = '2026-11-21T00:00:00Z'
 export const gift = { kind: 'gift', giftName: '小纸船', note: null, imagePath: null }
 
-export function mailboxDatabase(t) {
+export function mailboxDatabase(t, versions, schema) {
   const root = resolve(tmpdir())
   const directory = mkdtempSync(join(root, 'c8-mailbox-'))
   const path = join(directory, 'mailbox.sqlite')
-  const db = openDatabase(path)
+  const db = schema ? new DatabaseSync(path) : openDatabase(path, versions)
+  if (schema) {
+    db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000')
+    initializeDatabase(db, () => schema, versions)
+  }
   t.after(() => {
     if (db.isOpen) db.close()
     assert.ok(directory.startsWith(root + sep))

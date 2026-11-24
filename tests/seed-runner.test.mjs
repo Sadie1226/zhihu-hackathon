@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { Worker } from 'node:worker_threads'
 import { sessionCookieName } from '../lib/auth/session.ts'
-import { openDatabase } from '../lib/db/bootstrap.ts'
+import { initializeDatabase, openDatabase } from '../lib/db/bootstrap.ts'
+import { migrations } from '../lib/db/migrations.ts'
 import { handleTripRequest } from '../lib/trips/http.ts'
 import { createSeedTripRunner } from '../lib/trips/seed-runner.ts'
 import { insertExchange, mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
@@ -19,8 +20,11 @@ const exchange = (db, id) => ({ ...db.prepare(
   'SELECT delivered_at, replied_at, read_at FROM exchange WHERE id = ?').get(id) })
 
 function setup(t) {
-  const { db, path } = mailboxDatabase(t)
+  const { db, path } = mailboxDatabase(t, migrations.filter(m => m.version <= 5),
+    readFileSync('tests/fixtures/schema-v1.sql', 'utf8'))
   db.exec(seedSql)
+  // Preserve the original seed roster bytes through the real v5 -> v6 migration.
+  initializeDatabase(db, () => { throw new Error('existing schema must not be reread') })
   assert.equal(db.prepare('SELECT count(*) n FROM dog WHERE is_sample = 1 AND owner_id IS NULL').get().n, 20)
   assert.deepEqual(tripRows(db), [])
   const clock = { at: firstAt }

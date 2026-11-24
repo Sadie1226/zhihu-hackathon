@@ -43,7 +43,7 @@ function setup(t) {
     const sessionId = `owner-${name}`
     db.prepare('INSERT OR IGNORE INTO owner VALUES(?,?,?,?,?)').run(sessionId, 'zhihu', 'zhihu', name, at)
     db.prepare(`INSERT OR IGNORE INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
-      VALUES(?,?,?, '["好奇","看物","直给"]', '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}', ?)`)
+      VALUES(?,?,?, '["好奇","看物","直给"]', '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', ?)`)
       .run(dogId, sessionId, sessionId, at)
     const trips = createTripService(db, { now: date(at) })
     const tripId = trips.create(dogId, sessionId, 'auto').id

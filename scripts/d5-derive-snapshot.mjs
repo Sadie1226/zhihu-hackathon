@@ -21,6 +21,7 @@
 //   4. 摘要走统一的 `validateSnapshot`，不再自己复制「≤40 字」常量。
 
 import fs from 'node:fs'
+import { initializeDiagnosticSeeds } from './d5-diagnostic-seeds.mjs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -186,8 +187,7 @@ function report(results, { compact = false } = {}) {
 function selftest() {
   const db = new DatabaseSync(':memory:')
   db.exec('PRAGMA foreign_keys = ON')
-  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-  db.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+  initializeDiagnosticSeeds(db)
 
   const D = 'dog_seed_07' // 青椒
   const OTHER = 'dog_seed_01'
@@ -278,8 +278,7 @@ function selftest() {
   check('S11 最近 3 趟全无事件 → recentTrips 为 []，不补旧趟', () => {
     const d2 = new DatabaseSync(':memory:')
     d2.exec('PRAGMA foreign_keys = ON')
-    d2.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d2.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d2)
     mkTrips(
       d2,
       `('x1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}'),
@@ -298,8 +297,7 @@ function selftest() {
   check('S12 failed 不算「回来过」，但要在证据里露出来', () => {
     const d3 = new DatabaseSync(':memory:')
     d3.exec('PRAGMA foreign_keys = ON')
-    d3.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d3.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d3)
     mkTrips(
       d3,
       `('f1','${D}',1,'failed','auto','${T(1)}','${T(1)}','${T(2)}'),
@@ -316,8 +314,7 @@ function selftest() {
   check('S13 没有 trip 也能有 waiting —— 两项独立派生', () => {
     const d4 = new DatabaseSync(':memory:')
     d4.exec('PRAGMA foreign_keys = ON')
-    d4.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d4.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d4)
     d4.exec(`INSERT INTO exchange (id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at,delivered_at)
              VALUES ('ex_only','${D}','${OTHER}','co_owner_message','${payload('co_owner_message')}',1,'${T(1)}','${T(2)}')`)
     const z = deriveSnapshot(d4, D)
@@ -365,8 +362,7 @@ function selftest() {
   check('S17 SQL 只插不改：已存在的版本被执行后仍是旧值', () => {
     const d5 = new DatabaseSync(':memory:')
     d5.exec('PRAGMA foreign_keys = ON')
-    d5.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d5.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d5)
     const body = { personalityTags: ['话痨', '好奇', '看物'], interestCategories: null, recentTrips: ['旧的一句话。'], waitingFor: null }
     // 先落一条 version 1（模拟「已经固定下来的旧经历」）
     d5.prepare(
@@ -406,8 +402,7 @@ function selftest() {
     // 证明「只要 C 给出那份事实，派生就能不随改文案而变」。
     const d6 = new DatabaseSync(':memory:')
     d6.exec('PRAGMA foreign_keys = ON')
-    d6.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d6.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d6)
     mkTrips(d6, `('h1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}')`)
     d6.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
              VALUES ('evt_h','test_h','当时那句：猫在窗台上。','any','any','any','[]')`)
@@ -441,8 +436,7 @@ function selftest() {
   check('S20 有事件但当时没固定下来 → 诚实标未固定，不假装有历史', () => {
     const d7 = new DatabaseSync(':memory:')
     d7.exec('PRAGMA foreign_keys = ON')
-    d7.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d7.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d7)
     mkTrips(d7, `('g1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}')`)
     d7.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
              VALUES ('evt_g','test_g','存量记录只有模板。','any','any','any','[]')`)
@@ -455,8 +449,7 @@ function selftest() {
     // 反证：如果连事件都没有，就不该被判成「未固定」——没有可变文本进过快照
     const d8 = new DatabaseSync(':memory:')
     d8.exec('PRAGMA foreign_keys = ON')
-    d8.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-    d8.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    initializeDiagnosticSeeds(d8)
     eq(deriveSnapshot(d8, D).evidence.historyFixed, true, '没有旅途 = 没有被可变文本污染')
     d8.close()
     d7.close()
@@ -581,8 +574,7 @@ if (has('--selftest')) {
   // 那是把本地内存库当成了业务库 —— 两件事完全不同（见报告末尾三条依赖）。
   const db = new DatabaseSync(':memory:')
   db.exec('PRAGMA foreign_keys = ON')
-  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-  db.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+  initializeDiagnosticSeeds(db)
   console.log('未指定 --db：本地内存库（schema + 20 只种子狗装配单，一行 trip 都没有）。\n')
   const results = deriveAllSnapshots(db)
   report(results, { compact: true })

@@ -12,10 +12,9 @@ import { insertDog, insertExchange, mailboxDatabase, ownedDog } from './helpers/
 
 const at = '2026-11-24T00:00:00.000Z'
 const clock = () => new Date(at)
-// Only this temporary test database uses a neutral v6 placeholder. No production migration is registered.
-const testV6 = { version: 6, name: 'test-only reserved version', sql: 'SELECT 1;' }
 const proposedV7 = { version: 7, name: 'trip history', sql: TRIP_HISTORY_V7_SQL }
-const versions = [...migrations, testV6, proposedV7]
+// The joint interface base already includes the real K v6. Never register v6 twice.
+const versions = [...migrations, proposedV7]
 
 function install(db) {
   db.exec('BEGIN IMMEDIATE')
@@ -49,10 +48,10 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
   db.close()
 
   const bad = { ...proposedV7, sql: TRIP_HISTORY_V7_SQL + '\n INVALID SQL;' }
-  assert.throws(() => openDatabase(path, [...migrations, testV6, bad]), /syntax error/)
+  assert.throws(() => openDatabase(path, [...migrations, bad]), /syntax error/)
   const afterFailure = openDatabase(path)
   try {
-    assert.equal(afterFailure.prepare('PRAGMA user_version').get().user_version, 5)
+    assert.equal(afterFailure.prepare('PRAGMA user_version').get().user_version, 6)
     assert.equal(afterFailure.prepare("SELECT 1 FROM sqlite_schema WHERE name = 'trip_event_fact'").get(), undefined)
     assert.equal(afterFailure.prepare('SELECT count(*) n FROM trip_event').get().n, 1)
   } finally {

@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { deriveSnapshot, toFixedSnapshot } from '../lib/social/snapshot-derive.ts'
+import { insertDog } from './helpers/mailbox-fixtures.mjs'
 
 const dogId = 'dog_seed_07'
 const meta = { dogId, version: 100, createdAt: '2026-11-24T02:00:00Z' }
@@ -10,7 +11,7 @@ function database(t, withEvent = true) {
   const db = new DatabaseSync(':memory:')
   t.after(() => db.close())
   db.exec(readFileSync('contracts/schema.sql', 'utf8'))
-  db.exec(readFileSync('team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql', 'utf8'))
+  insertDog(db, dogId, 'seed', 1)
   db.exec(`INSERT INTO trip(id,dog_id,seq,status,trigger,created_at,started_at,ended_at)
     VALUES('history_trip','${dogId}',1,'done','auto','2026-11-24T00:00:00Z','2026-11-24T00:00:00Z','2026-11-24T01:00:00Z')`)
   if (withEvent) {

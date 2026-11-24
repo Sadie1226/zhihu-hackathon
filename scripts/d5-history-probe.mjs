@@ -22,6 +22,7 @@
 // 只有 ①② 同时成立才算修好。①成立不能拿来交差。
 
 import fs from 'node:fs'
+import { initializeDiagnosticSeeds } from './d5-diagnostic-seeds.mjs'
 import os from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -58,8 +59,7 @@ const EDITED = '（改过的文案）路口的风很大。'
 
 const db = new DatabaseSync(DB)
 db.exec('PRAGMA foreign_keys = ON')
-db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-db.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+initializeDiagnosticSeeds(db)
 
 // ── 1. 一趟真实形状的旅途发生，写下当时那句话 ────────────────────────────────
 db.exec(`INSERT INTO trip (id,dog_id,seq,status,trigger,created_at,started_at,ended_at)
