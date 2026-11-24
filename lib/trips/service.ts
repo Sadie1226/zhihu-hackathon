@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { TRIPS_PER_DAY_MAX, TRIP_MIN_GAP_HOURS } from '../../contracts/types.ts'
 import type { Trip, TripStatus, TripTrigger, Find, Exchange } from '../../contracts/types.ts'
@@ -48,18 +48,32 @@ export function startsOnShanghaiDay(db: DatabaseSync, dogId: string, at: string)
     AND started_at IS NOT NULL AND date(started_at, '+8 hours') = date(?, '+8 hours')`).get(dogId, at)!.n)
 }
 
-export function createTripService(db: DatabaseSync, options: {
+type TripOptions = {
   now?: () => Date
   newId?: () => string
   buildDepartureSnapshot?: BuildDepartureSnapshot
-} = {}) {
+}
+type OwnerScope = { kind: 'owner'; sessionId: string }
+type SampleScope = { kind: 'sample'; dogId: string; tripId: string }
+type TripScope = OwnerScope | SampleScope
+
+function tripService(db: DatabaseSync, options: TripOptions) {
   const timestamp = () => (options.now ?? (() => new Date()))().toISOString()
-  function ownedDog(dogId: string, sessionId: string) {
-    if (!db.prepare('SELECT 1 FROM dog WHERE id = ? AND session_id = ?').get(dogId, sessionId)) missing()
+  function ownedDog(dogId: string, scope: TripScope) {
+    if (scope.kind === 'sample' && dogId !== scope.dogId) missing()
+    const dog = scope.kind === 'sample'
+      ? db.prepare('SELECT 1 FROM dog WHERE id = ? AND is_sample = 1 AND owner_id IS NULL').get(dogId)
+      : db.prepare('SELECT 1 FROM dog WHERE id = ? AND session_id = ?').get(dogId, scope.sessionId)
+    if (!dog) missing()
   }
-  function ownedTrip(id: string, sessionId: string): Trip {
-    const row = db.prepare(`SELECT t.* FROM trip t JOIN dog d ON d.id = t.dog_id
-      WHERE t.id = ? AND d.session_id = ?`).get(id, sessionId) as TripRow | undefined
+  function ownedTrip(id: string, scope: TripScope): Trip {
+    if (scope.kind === 'sample' && id !== scope.tripId) return missing()
+    const row = (scope.kind === 'sample'
+      ? db.prepare(`SELECT t.* FROM trip t JOIN dog d ON d.id = t.dog_id
+          WHERE t.id = ? AND t.dog_id = ? AND t.trigger = 'auto' AND d.is_sample = 1 AND d.owner_id IS NULL`)
+        .get(id, scope.dogId)
+      : db.prepare(`SELECT t.* FROM trip t JOIN dog d ON d.id = t.dog_id
+          WHERE t.id = ? AND d.session_id = ?`).get(id, scope.sessionId)) as TripRow | undefined
     return row ? tripDto(row) : missing()
   }
   function quota(dogId: string, at: string) {
@@ -72,43 +86,48 @@ export function createTripService(db: DatabaseSync, options: {
       FROM find WHERE trip_id = ? ORDER BY created_at, id`).all(trip.id) as unknown as Find[]
     return { trip, finds, message: null }
   }
-  function finishInside(id: string, sessionId: string, status: TerminalStatus, at: () => string) {
-    const trip = ownedTrip(id, sessionId)
+  function finishInside(id: string, scope: TripScope, status: TerminalStatus, at: () => string) {
+    const trip = ownedTrip(id, scope)
     if (trip.status === status) return finishResult(trip)
     if (trip.status !== 'running') conflict('这次出行的状态不能这样更改')
     const endedAt = at()
     if (Date.parse(endedAt) < Date.parse(trip.startedAt!)) conflict('结束时间不能早于出发时间')
     db.prepare('UPDATE trip SET status = ?, ended_at = ? WHERE id = ?').run(status, endedAt, id)
-    return finishResult(ownedTrip(id, sessionId))
+    return finishResult(ownedTrip(id, scope))
   }
   return {
     get: ownedTrip,
-    list(dogId: string, sessionId: string, limit = 10): Trip[] {
-      ownedDog(dogId, sessionId)
+    list(dogId: string, scope: OwnerScope, limit = 10): Trip[] {
+      ownedDog(dogId, scope)
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) conflict('limit 应为 1 到 100 的整数')
       return (db.prepare('SELECT * FROM trip WHERE dog_id = ? ORDER BY seq DESC LIMIT ?')
         .all(dogId, limit) as TripRow[]).map(tripDto)
     },
-    create(dogId: string, sessionId: string, trigger: TripTrigger): Trip {
+    create(dogId: string, scope: TripScope, trigger: TripTrigger): Trip {
       return transaction(db, () => {
-        ownedDog(dogId, sessionId)
+        ownedDog(dogId, scope)
         if (!['auto', 'wish', 'friend'].includes(trigger)) conflict('trigger 应为 auto、wish 或 friend')
+        if (scope.kind === 'sample' && db.prepare('SELECT 1 FROM trip WHERE id = ?').get(scope.tripId)) {
+          return ownedTrip(scope.tripId, scope)
+        }
         if (db.prepare("SELECT 1 FROM trip WHERE dog_id = ? AND status IN ('pending','running')").get(dogId)) {
           conflict('上一次出行还没有结束')
         }
         const at = timestamp()
         quota(dogId, at)
         const seq = Number(db.prepare('SELECT COALESCE(MAX(seq), 0) + 1 n FROM trip WHERE dog_id = ?').get(dogId)!.n)
-        const id = options.newId?.() ?? `trip_${randomUUID()}`
+        const id = scope.kind === 'sample' ? scope.tripId : (options.newId?.() ?? `trip_${randomUUID()}`)
         db.prepare(`INSERT INTO trip(id,dog_id,seq,status,trigger,created_at)
           VALUES(?,?,?,'pending',?,?)`).run(id, dogId, seq, trigger, at)
-        return ownedTrip(id, sessionId)
+        return ownedTrip(id, scope)
       })
     },
-    start(id: string, sessionId: string): { trip: Trip; delivered: Exchange[] } {
+    start(id: string, scope: TripScope): { trip: Trip; delivered: Exchange[] } {
       return transaction(db, () => {
-        const trip = ownedTrip(id, sessionId)
-        if (trip.status === 'running') return { trip, delivered: [] }
+        const trip = ownedTrip(id, scope)
+        if (trip.status === 'running' || (scope.kind === 'sample' && isTerminal(trip.status))) {
+          return { trip, delivered: [] }
+        }
         if (trip.status !== 'pending') conflict('只有待出发的任务可以开始')
         const at = timestamp()
         if (Date.parse(at) < Date.parse(trip.createdAt)) conflict('出发时间不能早于创建时间')
@@ -121,7 +140,8 @@ export function createTripService(db: DatabaseSync, options: {
         if (options.buildDepartureSnapshot) bindDepartureSnapshot(db, trip, at, options.buildDepartureSnapshot)
         // Resolve at actual departure, under this write lock, so a wish revoked
         // while pending cannot become the provenance of a future trip.
-        const wish = trip.trigger === 'wish' ? selectActiveWish(db, trip.dogId, sessionId) : null
+        const wish = scope.kind === 'owner' && trip.trigger === 'wish'
+          ? selectActiveWish(db, trip.dogId, scope.sessionId) : null
         db.prepare("UPDATE trip SET status = 'running', started_at = ?, wish_id = ? WHERE id = ?")
           .run(at, wish?.id ?? null, id)
         const { deliveredIds } = deliverOnTripStart(db, trip.dogId, trip.seq, at)
@@ -132,25 +152,55 @@ export function createTripService(db: DatabaseSync, options: {
             FROM exchange WHERE id = ?`).get(exchangeId)!
           return { ...row, payload: JSON.parse(String(row.payload)) } as unknown as Exchange
         })
-        return { trip: ownedTrip(id, sessionId), delivered }
+        return { trip: ownedTrip(id, scope), delivered }
       })
     },
-    finish(id: string, sessionId: string, status: TerminalStatus) {
+    finish(id: string, scope: TripScope, status: TerminalStatus) {
       if (!isTerminal(status)) conflict('status 应为 done、failed 或 timeout')
-      return transaction(db, () => finishInside(id, sessionId, status, timestamp))
+      return transaction(db, () => finishInside(id, scope, status, timestamp))
     },
     /** Internal executor hook. Undefined duration disables elapsed-time termination; no scheduler here. */
-    timeoutIfDue(id: string, sessionId: string, timeoutMs?: number) {
+    timeoutIfDue(id: string, scope: OwnerScope, timeoutMs?: number) {
       if (timeoutMs !== undefined && (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0)) {
         throw new Error('timeoutMs must be a positive integer')
       }
       return transaction(db, () => {
-        const trip = ownedTrip(id, sessionId)
+        const trip = ownedTrip(id, scope)
         if (timeoutMs === undefined || trip.status !== 'running') return null
         const at = timestamp()
         if (Date.parse(at) - Date.parse(trip.startedAt!) < timeoutMs) return null
-        return finishInside(id, sessionId, 'timeout', () => at)
+        return finishInside(id, scope, 'timeout', () => at)
       })
     },
+  }
+}
+
+export function createTripService(db: DatabaseSync, options: TripOptions = {}) {
+  const service = tripService(db, options)
+  const owner = (sessionId: string): OwnerScope => ({ kind: 'owner', sessionId })
+  return {
+    get: (id: string, sessionId: string) => service.get(id, owner(sessionId)),
+    list: (dogId: string, sessionId: string, limit?: number) => service.list(dogId, owner(sessionId), limit),
+    create: (dogId: string, sessionId: string, trigger: TripTrigger) => service.create(dogId, owner(sessionId), trigger),
+    start: (id: string, sessionId: string) => service.start(id, owner(sessionId)),
+    finish: (id: string, sessionId: string, status: TerminalStatus) => service.finish(id, owner(sessionId), status),
+    timeoutIfDue: (id: string, sessionId: string, timeoutMs?: number) => service.timeoutIfDue(id, owner(sessionId), timeoutMs),
+  }
+}
+
+/** Internal C4 capability for a single sample dog and a single scheduled trip. */
+export function sampleTripLifecycle(db: DatabaseSync, dogId: string, intentId: string, options: Pick<TripOptions, 'now' | 'buildDepartureSnapshot'>) {
+  if (typeof dogId !== 'string' || !dogId.trim() ||
+      typeof intentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(intentId)) {
+    conflict('种子狗出行意图无效')
+  }
+  const hash = createHash('sha256').update(JSON.stringify([dogId, intentId])).digest('hex')
+  const tripId = `trip_seed_intent_${hash}`
+  const scope: SampleScope = { kind: 'sample', dogId, tripId }
+  const service = tripService(db, options)
+  return {
+    create: () => service.create(dogId, scope, 'auto'),
+    start: () => service.start(tripId, scope),
+    finish: (status: TerminalStatus) => service.finish(tripId, scope, status),
   }
 }

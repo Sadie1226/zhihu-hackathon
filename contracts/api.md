@@ -214,7 +214,7 @@ POST /api/dogs/:id/trips
 POST /api/trips/:id/start    入：{ }   出：{ trip: Trip, delivered: Exchange[] }
 ```
 
-**这个接口是全系统唯一会写 `delivered_at` 的地方。** 它做两件事，一个事务里：
+**C4 的 start 通过既有投递器写入 `delivered_at`。** 出发和投递在同一事务内完成：
 
 1. 把 `status` 改成 `running`，写 `started_at`
 2. **投递**：找出所有 `to_dog = 这只狗`、`delivered_at IS NULL`、`deliver_after_trip_seq <= 本次 seq` 的 exchange，逐条写 `delivered_at`
@@ -243,6 +243,12 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 - `timeout` 可显式结束；自动超时毫秒数未获裁定，不设置默认值。服务端执行器可传 `timeoutIfDue(id, sessionId, timeoutMs)`，未传即禁用；C4 不启动调度器，不在 GET 中隐式结束任务。
 - 共用会话：`lib/auth/session.ts` 的 `ensureAnonymousSession` 给 A 领养使用，`readSessionId` 给服务端鉴权使用。cookie 为随机 32 字节，HttpOnly、SameSite=Lax、Path=/，生产 Secure；数据库只存 SHA-256 派生 sessionId，不向客户端暴露 sessionId。
 - 前端调用 `lib/trips/poll.ts` 的 `pollTrip(id, { onTrip, onError, signal? })`；立即读一次，之后每次响应后 700ms 再读，无重叠请求；三个终态停止，HTTP/网络错误回调后停止，返回停止函数供卸载清理。
+
+#### 种子狗内部出行
+
+- 可信服务端执行器通过 `createSeedTripRunner(db)(dogId, intentId)` 取得同一调度意图的 `create()`、`start()`、`finish(status)`。只允许数据库中 `is_sample=1` 且无 owner 的狗。内部能力不接收 Cookie 或 sessionId，现有 HTTP 路由继续要求真人 owner 归属。
+- 调用方为同一意图始终传相同 `intentId`，长度 1–128，首字符为 ASCII 字母或数字，其余可用字母、数字、点、下划线、冒号或连字符。相同狗和意图绑定同一 Trip ID，重启可恢复。另一意图在该狗已有 pending/running 时收到 `CONFLICT`。
+- 各阶段使用 C4 独立事务。创建返回已存在的同一意图记录。开始沿用每日配额、6 小时间隔及出发投递，失败可重试原 pending。重复开始返回既有 running 或终态 Trip，`delivered: []`。结束遵守既有终态规则。事件和自动调度由后续执行器接入。
 
 ### 4. 发现（c 实现）
 
