@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "date": "2026-11-23",
+  "owner": "d",
+  "purpose": "e2c 的 12 张具体场景 → event.place_tags 四值的换算表。a 算 availablePlaces 时用它，别拿具体地名的字符串去和 street/stall/riverside/bookstore 求交集（那样交集恒为空）。",
+  "source": {
+    "scenes": "E2c scene-map.json（team/2026-11-22/e/e2c/），12 张 750×640 PNG，附脚底点",
+    "events": "team/2026-11-18/d/1118-d2c-事件池三十条-v1.sql，30 条",
+    "tagVocabulary": "contracts/types.ts PlaceTag = street | stall | riverside | bookstore",
+    "delivered": "E 11/23 分支 e5-scene-crop-20261123 的 bookstore-backgrounds-v1/（两图 SHA256 已核，与 E 的检查记录一致）；status=delivered-review 表示未进正式清单"
+  },
+  "tagDefinitions": {
+    "street": "有可走的室外路面（街、巷、步道），且街面上会有人/车/门面可看",
+    "stall": "有正在营业的摊、铺或门面，能发生买卖、递东西、讨价还价",
+    "riverside": "有水岸或水面，能看水、沿水走、听水声",
+    "bookstore": "有书架、书报、能翻的东西"
+  },
+  "scenes": [
+    {
+      "place": "长白山天池",
+      "file": "scenes/changbai.png",
+      "tags": [
+        "riverside"
+      ],
+      "why": "火山口湖面 + 岸线卵石坡，有连续低纹理空地；无街面、无摊、无书"
+    },
+    {
+      "place": "阿勒泰·喀纳斯",
+      "file": "scenes/kanas.png",
+      "tags": [
+        "riverside"
+      ],
+      "why": "湖岸草甸与水边空地；无街面、无摊、无书"
+    },
+    {
+      "place": "三亚海滩",
+      "file": "scenes/sanya.png",
+      "tags": [
+        "riverside"
+      ],
+      "why": "海岸线与沙滩，遮阳伞与木箱在画内；无街面、无书架"
+    },
+    {
+      "place": "深圳南头古城",
+      "file": "scenes/nantou.png",
+      "tags": [
+        "street",
+        "stall"
+      ],
+      "why": "石板街巷可走 + 沿街门面与灯笼，能发生买卖"
+    },
+    {
+      "place": "深夜街角",
+      "file": "scenes/late-night-corner.png",
+      "tags": [
+        "street",
+        "stall"
+      ],
+      "why": "斑马线与路面 + 便利店门面（营业中），夜市型街角"
+    },
+    {
+      "place": "敦煌鸣沙山",
+      "file": "scenes/dunhuang-mingsha.png",
+      "tags": [],
+      "why": "纯沙丘，画面里没有街面、摊、水、书；只能承载不限地点的事件"
+    },
+    {
+      "place": "大兴安岭白桦林",
+      "file": "scenes/greater-khingan-birch.png",
+      "tags": [],
+      "why": "林间小径，无街面（贴寻狗启事、屋檐躲雨都不成立）、无摊、无水"
+    },
+    {
+      "place": "盘锦红海滩",
+      "file": "scenes/panjin-red-beach.png",
+      "tags": [
+        "riverside"
+      ],
+      "why": "湿地水道与碱蓬滩涂，沿水可走"
+    },
+    {
+      "place": "桂林漓江",
+      "file": "scenes/guilin-li-river.png",
+      "tags": [
+        "riverside"
+      ],
+      "why": "江岸卵石与水面，能沿水走、听水"
+    },
+    {
+      "place": "广州北京路",
+      "file": "scenes/beijing-road.png",
+      "tags": [
+        "street",
+        "stall"
+      ],
+      "why": "步行街可走 + 沿街商户与灯笼，能发生买卖"
+    },
+    {
+      "place": "城市社区公园",
+      "file": "scenes/city-community-park.png",
+      "tags": [
+        "street"
+      ],
+      "why": "园路可走、有长椅与人；无营业摊面、无水、无书"
+    },
+    {
+      "place": "街角小酒馆内景",
+      "file": "scenes/corner-tavern-interior.png",
+      "variant": "indoor",
+      "tags": [],
+      "eventAllow": [],
+      "eventAllowNote": "0 条，这是结论不是遗漏。室内吧台与桌凳：28 条带地点的事件要街/摊/水/书，一条都不成立；剩下两条 place_tags=[] 的（autumn_birds / any_moon_ring）要室外天空，室内不成立。按 c 的口径「无合适事件就不展示事件，旅途继续」。",
+      "why": "室内吧台与桌凳。四值里没有「室内」，给 stall 就会让烤红薯摊开在吧台边；而 [] 只表示「地点维度不限制」，不等于「连室内外都不限」—— 两条天空事件必须在这里排除（A 11/23 裁定第 3 条）。"
+    },
+    {
+      "place": "街角书店外景",
+      "file": "scenes/bookstore-exterior-750w.png",
+      "sourceDir": "team/2026-11-23/e/bookstore-backgrounds-v1",
+      "sourceRef": "origin/e5-scene-crop-20261123",
+      "status": "delivered-review",
+      "variant": "outdoor",
+      "tags": [
+        "bookstore"
+      ],
+      "foot": [
+        370,
+        550
+      ],
+      "eventAllow": [
+        "summer_bookstore_ac",
+        "autumn_book_box",
+        "any_shop_cat",
+        "autumn_birds",
+        "any_moon_ring"
+      ],
+      "eventAllowNote": "5 条。鸟与月亮留着：这是门口，抬头就是天。这与「内景只有 1 条」的差别，正是本表要表达的东西。",
+      "why": "门面 + 橱窗 + 门口盆栽与 A 字立牌 + 人行道；玻璃后面能看到一排书，但没有店内纵深、没有角落。所以「冷气从门口漏出来」「门口摆了个纸箱」「店门口的猫」成立，「最里面的角落有张椅子」不成立"
+    },
+    {
+      "place": "街角书店内景",
+      "file": "scenes/bookstore-interior-750w.png",
+      "sourceDir": "team/2026-11-23/e/bookstore-backgrounds-v1",
+      "sourceRef": "origin/e5-scene-crop-20261123",
+      "status": "delivered-review",
+      "variant": "indoor",
+      "tags": [
+        "bookstore"
+      ],
+      "foot": [
+        400,
+        550
+      ],
+      "eventAllow": [
+        "winter_bookstore_chair"
+      ],
+      "eventAllowNote": "只 1 条。内景排除两条天空事件（autumn_birds / any_moon_ring）—— 它们要室外天空，隔着玻璃看月亮不算看见；A 11/23 裁定第 3 条已明确。",
+      "why": "纵深书架 + 木地板 + 窗，角落有一把扶手椅和盆栽 —— 那正是「最里面的角落有张椅子，椅背上搭着一件外套」的画面。反过来「门口的纸箱」「冷气从门口漏出来」「店门口的猫」在店里不成立，鸟与月亮也不成立（室内）"
+    }
+  ],
+  "matchingBoundary": {
+    "tagsAreNecessaryNotSufficient": "place_tags 是必要条件，不是充分条件。本表的条数是「地点候选数」，不是「读通的事件数」—— 季节/天气/时段/冷却/语义条件由 c 的第二层继续筛，数字只会更少。",
+    "eventAllowIsNotEnforcedByTags": "eventAllow 是给 c 的条件层用的逐张白名单，不是标签能自动算出来的东西。只做 place_tags 交集（EXISTS 任一命中）时，同为 [bookstore] 的两张图彼此等价：那是 OR/并集，不是 AND；再加一个标签写成 [bookstore, indoor] 也一样，因为 EXISTS 仍是「任一命中」—— 隔不开门口与店里。**不要为此新增第五个 place_tag 值**（A 11/23 裁定）。",
+    "emptyPlaceTags": "place_tags=[] 只表示「地点维度不限制」，不等于「连室内外都不限」：autumn_birds / any_moon_ring 两条仍需室外天空，室内场景（酒馆内景、书店内景）必须排除（A 11/23 裁定第 3 条）。",
+    "indoorOutdoorIsSceneLevel": "室内外是场景级的属性，不是事件级的字段：同一个 code 在不同场景里成立与否由这张图决定。正式方案（event 侧加 space 或第五个标签）待 C 定，在定之前本表就是唯一落点。"
+  },
+  "gaps": {
+    "noSceneFor": [],
+    "unusedScenes": [
+      "敦煌鸣沙山",
+      "大兴安岭白桦林",
+      "街角小酒馆内景"
+    ],
+    "note": "标签是必要条件不是充分条件：四值只保证「这个场景装得下这一类事」，具体某条事件读着自不自然，由 40 字文本自己撑，不靠标签。**室内外这一维四值表达不了**：书店门口与店里同为 bookstore 却空间互斥，酒馆是室内却没有任何标签可给。本表用 eventAllow 逐张写死「这张图能出哪几条」，**但这份白名单只有在 c 的条件层真的读它时才生效** —— 只做标签交集的话两张图仍然串事件（见 matchingBoundary）。正式方案待 C 定。",
+    "pendingSceneMap": [
+      "街角书店外景",
+      "街角书店内景"
+    ]
+  }
+}
