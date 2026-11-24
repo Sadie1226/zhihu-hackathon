@@ -1,42 +1,42 @@
 #!/usr/bin/env node
 // d5 · 从真实 trip / trip_event / exchange 派生 snapshot（只读，不改库）
 //
+// 规则在 `lib/social/snapshot-derive.ts` 里，本文件只做三件事：跑自检、出报告、出分离的 SQL 文件。
+// 分工：D 定规则 → C 在出发事务里分配版本并写 → A 只读验收。
+//
 // 用法：
-//   node scripts/d5-derive-snapshot.mjs --db <path>      # 对真库派生，输出报告
-//   node scripts/d5-derive-snapshot.mjs --db <path> --sql # 额外输出可执行 UPSERT
-//   node scripts/d5-derive-snapshot.mjs --selftest        # 内存库造 3 趟，验证机制
+//   node scripts/d5-derive-snapshot.mjs                        # 本地内存库跑一遍（只证空库起点）
+//   node scripts/d5-derive-snapshot.mjs --db <path>            # 对演练库只读派生，出报告
+//   node scripts/d5-derive-snapshot.mjs --db <path> --out <f>  # 另存结构化 JSON 证据
+//   node scripts/d5-derive-snapshot.mjs --db <path> --sql-out <f> --version 1
+//                                                              # SQL 单独落文件，只插不改
+//   node scripts/d5-derive-snapshot.mjs --selftest             # 内存库造数据，验机制
 //
-// 为什么要有这个脚本：A 11/23 要的是「5 只实际旅途 / Find 来源到摘要的证据」。
-// 手写五条摘要能过形状校验，但那只是样例，不是「它真的走过」。所以把派生写成代码：
-// 每一句摘要都必须指回一个 trip.id 和一条 event.code，指不回去的就输出空，不编。
-//
-// 三条口径（都能在 self test 里看到反例）：
-//   1) 3 是**趟次数**不是条数。最近 3 趟都在超时，recentTrips 就该是 []，
-//      不能往前捞「最近三次有收获的」—— 那等于把没发生的经历补上。
-//   2) timeout 算一趟（契约原话：超时是正常结束，不是空状态），failed 不算
-//      （那是系统故障，主人看到的是重试，不是「它回来了」）。
-//   3) 摘要用 event.text，不用 message.text。event.text 是「发生了什么」，
-//      第三方可见；message.text 是「它对主人说的话」，进快照就把主人语境带出去了。
+// 11-23 晚按 A 的复核意见改的四处（每条都有用例兜住）：
+//   1. `waiting_for` 方向：**寄件方**视角（`from_dog`），不是收件方。首版写反了。
+//   2. 旧版本不可覆盖：删掉「version 写死 1 + ON CONFLICT DO UPDATE」，SQL 只在显式给
+//      `--version` 且另存文件时产出，语句自带 `NOT EXISTS`，已存在的版本拒改。
+//   3. 一致读取与可追溯：`--db` 走只读连接 + 单次读事务；证据落到 trip.id / seq / status /
+//      started_at、event.id / code / happened_at，以及这趟的 find.id / source_mode。
+//   4. 摘要走统一的 `validateSnapshot`，不再自己复制「≤40 字」常量。
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-const MAX_TRIPS = 3
-const TRIP_SUMMARY_MAX = 40 // 与 snapshot.recent_trips 的单条上限一致
-const WAITING_FOR_MAX = 40
-
-// 算「回来过」的终点状态。failed 故意不在内。
-const COUNTED_STATUS = ['done', 'timeout']
-
-// 会留下「我在等回音」的交换种类。find / greeting 不需要回应，不产生等待。
-const WAITING_KIND = {
-  gift: '等一份礼物的回音',
-  co_owner_message: '等一句回话',
-}
+// 规则本体在 TS 里（C 也要 import 同一份，不能有两套）。Node 22.18+ 默认剥类型。
+const DERIVE_SRC = path.join(ROOT, 'lib/social/snapshot-derive.ts')
+const {
+  COUNTED_TRIP_STATUS,
+  TRIPS_LOOKBACK,
+  deriveSnapshot,
+  deriveAllSnapshots,
+  toSnapshot,
+  assertSnapshotShape,
+} = await import(pathToFileURL(DERIVE_SRC).href)
 
 const args = process.argv.slice(2)
 const has = (flag) => args.includes(flag)
@@ -45,234 +45,179 @@ const valueOf = (flag) => {
   return i >= 0 ? args[i + 1] : undefined
 }
 
-function openMemory() {
-  const db = new DatabaseSync(':memory:')
-  db.exec('PRAGMA foreign_keys = ON')
-  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
-  return db
-}
-
-function loadSeedDogs(db) {
-  const p = path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql')
-  if (!fs.existsSync(p)) return
-  db.exec(fs.readFileSync(p, 'utf8'))
-}
-
 // ---------------------------------------------------------------------------
-// 派生
+// 输出格式（SQL 与报告分家，见 emitInsertSql 的注释）
 // ---------------------------------------------------------------------------
+
+const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`
 
 /**
- * 摘要能不能原样塞进快照。
+ * 生成**只插入、不覆盖**的 SQL。
  *
- * 现在两侧都是 40 字（event.text 的 CHECK 与 snapshot.recent_trips 的单条上限），
- * 所以这一关正常情况下不会响。留着是因为它防的不是「现在」，是「哪天 C 把事件文本放宽」：
- * 那时候如果这里悄悄截断，快照上的话就跟事件原文对不上了，而这种不一致在界面上看起来完全正常。
- * **不截断，报错，让人来对齐两处口径。**
+ * 首版是 `INSERT … ON CONFLICT(dog_id, version) DO UPDATE SET …`，配合写死的 `version = 1`：
+ * 那不是「重跑一次」，那是「把已经固定下来的旧经历改成今天的样子」。
+ * 现在两条都堵上：
+ *   · 版本必须由调用方显式给（`--version`），没有默认值；
+ *   · 语句自带 `NOT EXISTS`，同版本已存在时影响 0 行；生成前还会先查一遍并标 SKIP。
  */
-function assertSummaryFits(text, code) {
-  if (text.length <= TRIP_SUMMARY_MAX) return
-  throw new Error(
-    `${code} 的文本 ${text.length} 字，超过快照单条上限 ${TRIP_SUMMARY_MAX}；` +
-      `event.text 与 snapshot.recent_trips 的口径已经不一致，请先对齐再派生。`,
-  )
+function emitInsertSql(results, { version, existing }) {
+  const now = new Date().toISOString()
+  return results.map(({ body, evidence }) => {
+    const tag = JSON.stringify(body.personalityTags)
+    const inter = body.interestCategories === null ? 'NULL' : sqlQuote(JSON.stringify(body.interestCategories))
+    const trips = sqlQuote(JSON.stringify(body.recentTrips))
+    const waiting = body.waitingFor === null ? 'NULL' : sqlQuote(body.waitingFor)
+    const src = evidence.trips
+      .filter((t) => t.event)
+      .map((t) => `seq${t.seq}:${t.event.code}(${t.tripId})`)
+      .join(' ')
+
+    if (existing.has(`${evidence.dogId}#${version}`)) {
+      return {
+        dogId: evidence.dogId,
+        skipped: true,
+        reason: `${evidence.dogId} 已有 version ${version}`,
+        sql: `-- SKIP ${evidence.dogId}：version ${version} 已存在，拒改（旧经历不随重跑变化）`,
+      }
+    }
+
+    return {
+      dogId: evidence.dogId,
+      skipped: false,
+      sql: [
+        `-- ${evidence.dogId}：${evidence.tripsConsidered} 趟 / ${body.recentTrips.length} 条摘要` +
+          `${src ? ' / 来源 ' + src : ''}` +
+          `${evidence.waiting ? ` / 等待来自 ${evidence.waiting.exchangeId}` : ''}`,
+        `INSERT INTO snapshot (dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)`,
+        `SELECT id, ${version}, ${sqlQuote(tag)}, ${inter}, ${trips}, ${waiting}, ${sqlQuote(now)}`,
+        `  FROM dog`,
+        ` WHERE id = ${sqlQuote(evidence.dogId)}`,
+        `   AND NOT EXISTS (SELECT 1 FROM snapshot s WHERE s.dog_id = dog.id AND s.version = ${version});`,
+      ].join('\n'),
+    }
+  })
 }
 
-/** 最近 MAX_TRIPS 趟「回来过」的出行，按 seq 倒序（最近的在前）。 */
-function recentTrips(db, dogId) {
-  return db
-    .prepare(
-      `SELECT id, seq, status, ended_at, started_at
-         FROM trip
-        WHERE dog_id = ? AND status IN (${COUNTED_STATUS.map(() => '?').join(',')})
-        ORDER BY seq DESC
-        LIMIT ?`,
+// ---------------------------------------------------------------------------
+// 报告
+// ---------------------------------------------------------------------------
+
+function printDog({ body, evidence }, { compact }) {
+  if (compact) {
+    const w = evidence.waiting
+    console.log(
+      `  ${evidence.dogId}  ${String(evidence.tripsConsidered).padStart(2)} 趟·${body.recentTrips.length} 条摘要` +
+        `  ${body.waitingFor === null ? 'waiting null' : `waiting 「${body.waitingFor}」← ${w.exchangeId}`}`,
     )
-    .all(dogId, ...COUNTED_STATUS, MAX_TRIPS)
-}
+    return
+  }
 
-/** 这一趟里最早发生的那条事件；没有就返回 null（超时趟就是这种）。 */
-function earliestEvent(db, tripId, dogId) {
-  return (
-    db
-      .prepare(
-        `SELECT te.event_id, te.happened_at, e.code, e.text
-           FROM trip_event te JOIN event e ON e.id = te.event_id
-          WHERE te.trip_id = ? AND te.dog_id = ?
-          ORDER BY te.happened_at ASC, te.event_id ASC
-          LIMIT 1`,
-      )
-      .get(tripId, dogId) ?? null
+  // 既没旅途也没挂念的狗折成一行：20 只里 19 只这样时，逐只铺开会把有证据的那只埋掉
+  if (evidence.tripsConsidered === 0 && evidence.waiting === null) {
+    console.log(
+      `${evidence.dogId}  —— 0 趟·无挂念（无 done/timeout 的 trip，也没有自己寄出待回应的礼物/捎话）`,
+    )
+    return
+  }
+
+  console.log(`${evidence.dogId}  标签 ${body.personalityTags.join('/')}  兴趣 ${body.interestCategories ? body.interestCategories.length + '类' : 'null'}`)
+  console.log(
+    `  回来过 ${evidence.tripsConsidered} 趟（最多看 ${TRIPS_LOOKBACK} 趟，${COUNTED_TRIP_STATUS.join(' / ')}），摘要 ${body.recentTrips.length} 条` +
+      `${evidence.failedTripsIgnored ? `；另有 ${evidence.failedTripsIgnored} 趟 failed 没算` : ''}`,
   )
-}
-
-/** 已到达、还没被回应的最早一条礼物或捎话。 */
-function pendingWaiting(db, dogId) {
-  return (
-    db
-      .prepare(
-        `SELECT id, kind, created_at, delivered_at
-           FROM exchange
-          WHERE to_dog = ?
-            AND delivered_at IS NOT NULL
-            AND replied_at IS NULL
-            AND kind IN (${Object.keys(WAITING_KIND).map(() => '?').join(',')})
-          ORDER BY created_at ASC, id ASC
-          LIMIT 1`,
-      )
-      .get(dogId, ...Object.keys(WAITING_KIND)) ?? null
-  )
-}
-
-function deriveDog(db, dog) {
-  const trips = recentTrips(db, dog.id)
-
-  const picked = []
-  for (const t of trips) {
-    const ev = earliestEvent(db, t.id, dog.id)
-    picked.push({ trip: t, event: ev })
-  }
-
-  // 摘要按「趟」推进（最近的在前），每趟最多一条；没有事件的趟贡献 0 条。
-  const summaries = []
-  const provenance = []
-  for (const { trip, event } of picked) {
-    if (!event) {
-      provenance.push({ tripId: trip.id, seq: trip.seq, status: trip.status, eventCode: null, text: null })
-      continue
-    }
-    assertSummaryFits(event.text, event.code)
-    summaries.push(event.text)
-    provenance.push({ tripId: trip.id, seq: trip.seq, status: trip.status, eventCode: event.code, text: event.text })
-  }
-
-  const wait = pendingWaiting(db, dog.id)
-  let waitingFor = null
-  let waitingFrom = null
-  if (wait) {
-    waitingFor = WAITING_KIND[wait.kind]
-    waitingFrom = { exchangeId: wait.id, kind: wait.kind, deliveredAt: wait.delivered_at }
-    if (waitingFor.length > WAITING_FOR_MAX) {
-      throw new Error(`waiting_for 模板超过 ${WAITING_FOR_MAX} 字，改模板前先改这里`)
-    }
-  }
-
-  return {
-    dogId: dog.id,
-    personalityTags: JSON.parse(dog.personality_tags),
-    interestCategories: dog.interest_categories === null ? null : JSON.parse(dog.interest_categories),
-    tripsConsidered: trips.length,
-    recentTrips: summaries,
-    waitingFor,
-    waitingFrom,
-    provenance,
-    // 「有没有经历」的判断：一趟都没回来过，就别说自己有经历。
-    hasRealTrips: trips.length > 0,
-  }
-}
-
-function deriveAll(db) {
-  const dogs = db
-    .prepare(`SELECT id, personality_tags, interest_categories FROM dog WHERE is_sample = 1 ORDER BY id`)
-    .all()
-  return dogs.map((d) => deriveDog(db, d))
-}
-
-// ---------------------------------------------------------------------------
-// 输出
-// ---------------------------------------------------------------------------
-
-function sqlQuote(s) {
-  return `'${String(s).replace(/'/g, "''")}'`
-}
-
-function toUpsertSql(row, version) {
-  const tags = JSON.stringify(row.personalityTags)
-  const inter = row.interestCategories === null ? 'NULL' : sqlQuote(JSON.stringify(row.interestCategories))
-  const trips = sqlQuote(JSON.stringify(row.recentTrips))
-  const waiting = row.waitingFor === null ? 'NULL' : sqlQuote(row.waitingFor)
-  const src = row.provenance
-    .filter((p) => p.eventCode)
-    .map((p) => `${p.seq}:${p.eventCode}`)
-    .join(' ')
-  return [
-    `-- ${row.dogId}：${row.tripsConsidered} 趟 / ${row.recentTrips.length} 条摘要${src ? ' / 来源 ' + src : ''}` +
-      (row.waitingFrom ? ` / 等待来自 ${row.waitingFrom.exchangeId}` : ''),
-    `INSERT INTO snapshot (dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)`,
-    `SELECT id, ${version}, personality_tags, interest_categories, ${trips}, ${waiting}, ${sqlQuote(new Date().toISOString())}`,
-    `  FROM dog WHERE id = ${sqlQuote(row.dogId)}`,
-    `ON CONFLICT(dog_id, version) DO UPDATE SET recent_trips = excluded.recent_trips, waiting_for = excluded.waiting_for;`,
-  ].join('\n')
-}
-
-function report(rows, { withSql = false, compact = false } = {}) {
-  console.log(`种子狗 ${rows.length} 只\n`)
-  let noTrips = 0
-  for (const r of rows) {
-    if (!r.hasRealTrips) noTrips += 1
-    if (compact) {
+  for (const t of evidence.trips) {
+    const head = `    ${t.tripId} seq${t.seq} ${t.status.padEnd(7)} ${t.startedAt}→${t.endedAt}`
+    if (t.event) {
+      console.log(`${head}`)
       console.log(
-        `  ${r.dogId}  ${String(r.tripsConsidered).padStart(2)} 趟·${r.recentTrips.length} 条摘要` +
-          `  ${r.waitingFor === null ? 'waiting null' : 'waiting 「' + r.waitingFor + '」'}`,
+        `      event ${t.event.id} ${t.event.code} @ ${t.event.happenedAt}` +
+          `${t.eventCount > 1 ? `（本趟共 ${t.eventCount} 条，取最早）` : ''}`,
       )
-      continue
+      console.log(`      摘要 「${t.summary}」`)
+    } else {
+      console.log(`${head}  —— 这趟没有 trip_event，不补、不往前捞`)
     }
-    const head = `${r.dogId}  标签 ${r.personalityTags.join('/')}  兴趣 ${r.interestCategories ? r.interestCategories.length + '类' : 'null'}`
-    console.log(head)
-    console.log(`  回来过 ${r.tripsConsidered} 趟（最多看 ${MAX_TRIPS} 趟），摘要 ${r.recentTrips.length} 条`)
-    for (const p of r.provenance) {
-      if (p.eventCode) console.log(`    seq${p.seq} ${p.status.padEnd(7)} ${p.eventCode.padEnd(26)} ${p.text}`)
-      else console.log(`    seq${p.seq} ${p.status.padEnd(7)} —— 这趟没有事件，不补、不往前捞`)
+    if (t.finds.length) {
+      console.log(`      find ${t.finds.map((f) => `${f.id}[${f.kind}/${f.sourceMode ?? '-'}]`).join(' ')}`)
     }
-    console.log(
-      `  waiting_for  ${r.waitingFor === null ? 'null（没有已到达未回应的礼物或捎话）' : `${r.waitingFor}   ← ${r.waitingFrom.kind} ${r.waitingFrom.exchangeId}`}`,
-    )
-    console.log()
   }
-  const withTrips = rows.length - noTrips
-  console.log(`小计：有真实旅途 ${withTrips} 只 / 0 趟 ${noTrips} 只`)
-  if (noTrips > 0) {
-    console.log(
-      `\n⚠ ${noTrips} 只没有可用的 trip：它们的 recent_trips 只能是 []，waiting_for 只能是 null。\n` +
-        `  这不叫「做完 d5」，叫「机制就位、缺真实数据」。真实 trip 只有 c8 能写。`,
-    )
+  const w = evidence.waiting
+  console.log(
+    `  waiting_for  ${body.waitingFor === null ? 'null（没有自己寄出、已到达、还没被回应的礼物/捎话）' : `「${body.waitingFor}」← ${w.kind} ${w.exchangeId}（${w.deliveredAt} 到达）`}`,
+  )
+  if (evidence.otherPendingWaiting > 0) {
+    console.log(`  （另有 ${evidence.otherPendingWaiting} 条也在等，只作证据、不进快照）`)
   }
-  if (withSql) {
-    console.log('\n-- ===== 可执行 SQL（版本号请人工确认后再定）=====\n')
-    for (const r of rows) console.log(toUpsertSql(r, 1) + '\n')
-  }
+  console.log(
+    `  Find 覆盖  ${evidence.findCoverage.tripsWithFind} 趟有 / ${evidence.findCoverage.tripsWithoutFind} 趟无 —— 事件链不等于 Find 链`,
+  )
+  console.log()
+}
+
+function report(results, { compact = false } = {}) {
+  console.log(`种子狗 ${results.length} 只\n`)
+  const withTrips = results.filter((r) => r.evidence.tripsConsidered > 0)
+  const withWaiting = results.filter((r) => r.evidence.waiting !== null)
+
+  if (compact) for (const r of results) printDog(r, { compact })
+  else for (const r of results) printDog(r, { compact: false })
+
+  console.log(
+    `小计：有真实旅途 ${withTrips.length} 只 / 无 ${results.length - withTrips.length} 只；` +
+      `有在等的回音 ${withWaiting.length} 只`,
+  )
+  return { withTrips, withWaiting }
 }
 
 // ---------------------------------------------------------------------------
-// 自检：机制对不对，用造出来的数据验；这不是 D5 证据，是「验证据生成器」
+// 自检：机制对不对，用造出来的数据验。**这不是 D5 证据，是「验证据生成器」。**
 // ---------------------------------------------------------------------------
 
 function selftest() {
-  const db = openMemory()
-  loadSeedDogs(db)
-  const dogId = 'dog_seed_07'
+  const db = new DatabaseSync(':memory:')
+  db.exec('PRAGMA foreign_keys = ON')
+  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+  db.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+
+  const D = 'dog_seed_07' // 青椒
+  const OTHER = 'dog_seed_01'
   const T = (h) => `2026-11-23T0${h}:00:00Z`
+  const payload = (kind) =>
+    kind === 'gift'
+      ? '{"kind":"gift","giftName":"x","note":null,"imagePath":null,"sourceFindId":null,"sourceMode":null}'
+      : '{"kind":"co_owner_message","message":"m","fromOwnerOf":"dog_seed_01"}'
 
-  db.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
-           VALUES ('evt_a','test_a','楼下。猫在。','any','any','any','[]'),
-                  ('evt_b','test_b','听见有人在楼道里练琴。','any','any','any','[]'),
-                  ('evt_c','test_c','门口有人蹲下系鞋带，系了很久。','any','any','any','[]')`)
+  const mkEvents = (d) =>
+    d.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+            VALUES ('evt_a','test_a','楼下。猫在。','any','any','any','[]'),
+                   ('evt_b','test_b','听见有人在楼道里练琴。','any','any','any','[]'),
+                   ('evt_c','test_c','门口有人蹲下系鞋带，系了很久。','any','any','any','[]')`)
 
-  // 三趟：seq1 done（两条事件）、seq2 timeout（没有事件）、seq3 done（一条）
-  db.exec(`INSERT INTO trip (id,dog_id,seq,status,trigger,created_at,started_at,ended_at) VALUES
-    ('t1','${dogId}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}'),
-    ('t2','${dogId}',2,'timeout','auto','${T(3)}','${T(3)}','${T(4)}'),
-    ('t3','${dogId}',3,'done','auto','${T(5)}','${T(5)}','${T(6)}')`)
+  const mkTrips = (d, rows) => d.exec(`INSERT INTO trip (id,dog_id,seq,status,trigger,created_at,started_at,ended_at) VALUES ${rows}`)
+
+  mkEvents(db)
+  // 三趟：seq1 done（两条事件）、seq2 timeout（有事件，走到一半回来了）、seq3 done（一条）
+  mkTrips(
+    db,
+    `('t1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}'),
+     ('t2','${D}',2,'timeout','auto','${T(3)}','${T(3)}','${T(4)}'),
+     ('t3','${D}',3,'done','auto','${T(5)}','${T(5)}','${T(6)}')`,
+  )
   db.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES
-    ('t1','evt_b','${dogId}','${T(1)}:30'),
-    ('t1','evt_a','${dogId}','${T(1)}:10'),
-    ('t3','evt_c','${dogId}','${T(5)}:20')`)
+    ('t1','evt_b','${D}','${T(1)}:30'),
+    ('t1','evt_a','${D}','${T(1)}:10'),
+    ('t2','evt_a','${D}','${T(3)}:10'),
+    ('t3','evt_c','${D}','${T(5)}:20')`)
 
-  // 一条已到达未回应的礼物；一条没到达的（不该进 waiting）；一条不需要回应的 find
+  // 甲寄乙：ex_gift 由 OTHER 寄给 D（D 是收件方）；ex_out 由 D 寄给 OTHER（D 是寄件方）
   db.exec(`INSERT INTO exchange (id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at,delivered_at) VALUES
-    ('ex_gift','dog_seed_01','${dogId}','gift','{"kind":"gift","giftName":"x","note":null,"imagePath":null,"sourceFindId":null,"sourceMode":null}',3,'${T(1)}','${T(5)}'),
-    ('ex_notyet','dog_seed_02','${dogId}','gift','{"kind":"gift","giftName":"y","note":null,"imagePath":null,"sourceFindId":null,"sourceMode":null}',9,'${T(2)}',NULL),
-    ('ex_find','dog_seed_04','${dogId}','find','{"kind":"find","findTitle":"t","findExcerpt":"e","sourceUrl":null,"sourceFindId":null,"sourceMode":null}',1,'${T(2)}','${T(3)}')`)
+    ('ex_in','${OTHER}','${D}','gift','${payload('gift')}',3,'${T(1)}','${T(5)}'),
+    ('ex_out','${D}','${OTHER}','gift','${payload('gift')}',1,'${T(2)}','${T(3)}'),
+    ('ex_out2','${D}','${OTHER}','co_owner_message','${payload('co_owner_message')}',1,'${T(3)}','${T(4)}'),
+    ('ex_notyet','${D}','${OTHER}','gift','${payload('gift')}',9,'${T(2)}',NULL),
+    ('ex_replied','${D}','${OTHER}','co_owner_message','${payload('co_owner_message')}',1,'${T(3)}','${T(4)}'),
+    ('ex_find','${OTHER}','${D}','find','{"kind":"find","findTitle":"t","findExcerpt":"e","sourceUrl":null,"sourceFindId":null,"sourceMode":null}',1,'${T(2)}','${T(3)}')`)
+  db.exec(`UPDATE exchange SET replied_at = '${T(6)}' WHERE id = 'ex_replied'`)
 
   let pass = 0
   let fail = 0
@@ -290,74 +235,184 @@ function selftest() {
     if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg}：期望 ${JSON.stringify(b)}，实际 ${JSON.stringify(a)}`)
   }
 
-  const row = deriveDog(db, db.prepare('SELECT * FROM dog WHERE id=?').get(dogId))
+  const r = deriveSnapshot(db, D)
 
-  check('S1 三趟都算（含 timeout），不是「三条有收获的」', () => eq(row.tripsConsidered, 3, '趟数'))
-  check('S2 超时趟不贡献摘要，也不往前捞（最近在前）', () =>
-    eq(row.recentTrips, ['门口有人蹲下系鞋带，系了很久。', '楼下。猫在。'], '摘要'),)
-  check('S3 每趟取最早一条事件（seq1 里 evt_b 比 evt_a 晚）', () =>
-    eq(row.provenance[2].eventCode, 'test_a', 'seq1 取的事件'),)
-  check('S4 超时趟在 provenance 里留痕（eventCode=null）', () =>
-    eq(row.provenance[1].eventCode, null, 'seq2'),)
-  check('S5 waiting 只认「已到达 + 未回应 + 礼物/捎话」', () => {
-    eq(row.waitingFor, '等一份礼物的回音', '模板')
-    eq(row.waitingFrom.exchangeId, 'ex_gift', '来源')
+  check('S1 三趟都算（含 timeout），不是「三条有收获的」', () => eq(r.evidence.tripsConsidered, 3, '趟数'))
+  check('S2 每趟取最早一条；超时趟有事件就照给（不能一概当没摘要）', () =>
+    eq(r.body.recentTrips, ['门口有人蹲下系鞋带，系了很久。', '楼下。猫在。', '楼下。猫在。'], '摘要（最近在前）'),)
+  check('S3 seq1 里 evt_b 比 evt_a 晚 → 取 evt_a', () => eq(r.evidence.trips[2].event.code, 'test_a', 'seq1 取的事件'))
+  check('S4 timeout 趟在 evidence 里留痕，状态如实', () => {
+    eq(r.evidence.trips[1].status, 'timeout', 'seq2 状态')
+    eq(r.evidence.trips[1].event.code, 'test_a', 'seq2 事件')
   })
-  check('S6 没到达的不算等待（ex_notyet 被排除）', () =>
-    eq(row.waitingFrom.exchangeId === 'ex_notyet', false, '不该选没到的'),)
-  check('S7 find 不产生等待（不需要回应）', () =>
-    eq(row.waitingFrom.exchangeId === 'ex_find', false, '不该选 find'),)
-  check('S8 最近 3 趟全无事件 → recentTrips 为 []，不补旧趟', () => {
-    const db2 = openMemory()
-    loadSeedDogs(db2)
-    db2.exec(`INSERT INTO trip (id,dog_id,seq,status,trigger,created_at,started_at,ended_at) VALUES
-      ('x1','${dogId}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}'),
-      ('x2','${dogId}',2,'timeout','auto','${T(3)}','${T(3)}','${T(4)}'),
-      ('x3','${dogId}',3,'timeout','auto','${T(5)}','${T(5)}','${T(6)}'),
-      ('x4','${dogId}',4,'timeout','auto','${T(7)}','${T(7)}','${T(8)}')`)
-    db2.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
-              VALUES ('evt_old','test_old','很久以前那趟的收获。','any','any','any','[]')`)
-    db2.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at)
-              VALUES ('x1','evt_old','${dogId}','${T(1)}:10')`)
-    const r = deriveDog(db2, db2.prepare('SELECT * FROM dog WHERE id=?').get(dogId))
-    eq(r.tripsConsidered, 3, '只看最近三趟')
-    eq(r.recentTrips, [], '最近三趟都没收获，就是空的')
-    db2.close()
+  check('S5 waiting 只认「自己寄出 + 已到达 + 未回应 + 礼物/捎话」', () => {
+    eq(r.body.waitingFor, '等一份礼物的回音', '模板（取最早到达那条）')
+    eq(r.evidence.waiting.exchangeId, 'ex_out', '来源')
+    eq(r.evidence.otherPendingWaiting, 1, '另一条也在等，只作证据')
   })
-  check('S9 failed 趟不算「回来过」', () => {
-    const db3 = openMemory()
-    loadSeedDogs(db3)
-    db3.exec(`INSERT INTO trip (id,dog_id,seq,status,trigger,created_at,started_at,ended_at) VALUES
-      ('f1','${dogId}',1,'failed','auto','${T(1)}','${T(1)}','${T(2)}'),
-      ('f2','${dogId}',2,'done','auto','${T(3)}','${T(3)}','${T(4)}')`)
-    db3.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
-              VALUES ('evt_d','test_d','回来了，带了点东西。','any','any','any','[]')`)
-    db3.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('f2','evt_d','${dogId}','${T(3)}:10')`)
-    const r = deriveDog(db3, db3.prepare('SELECT * FROM dog WHERE id=?').get(dogId))
-    eq(r.tripsConsidered, 1, 'failed 不计入')
-    db3.close()
+  check('S6 方向：D 是收件方时不算等待（ex_in 不收）', () =>
+    eq(r.evidence.waiting.exchangeId === 'ex_in', false, '收件方不该产生等待'),)
+  check('S7 没到达的不算（ex_notyet）', () => eq(r.evidence.waiting.exchangeId === 'ex_notyet', false, '不该选没到的'))
+  check('S8 已回应的不算（ex_replied 有 replied_at）', () => eq(r.evidence.waiting.exchangeId === 'ex_replied', false, '不该选已回应的'))
+  check('S9 find 不产生等待（不需要回应）', () => eq(r.evidence.waiting.exchangeId === 'ex_find', false, '不该选 find'))
+  check('S10 甲/乙双向：各等自己寄出的那条，不替对方等', () => {
+    const other = deriveSnapshot(db, OTHER)
+    // ex_in 是甲（OTHER）寄给 D 的、已到达未回应 → 甲在等
+    eq(other.body.waitingFor, '等一份礼物的回音', '甲等自己寄出的礼物回音')
+    eq(other.evidence.waiting.exchangeId, 'ex_in', '甲等的正是 ex_in')
+    // ex_out / ex_out2 是 D 寄给甲的：甲只是收件方，不该等
+    eq(other.evidence.waiting.exchangeId === 'ex_out', false, '甲不替收件方等 ex_out')
+    // 反过来 D 也不该等 ex_in
+    eq(r.evidence.waiting.exchangeId === 'ex_in', false, 'D 不替寄件方等 ex_in')
   })
-  // 库里 event.text 有 CHECK ≤40，造不出超长行 —— 所以直接测守卫本身。
-  check('S10 摘要超 40 字报错不截断，40 字放行', () => {
-    assertSummaryFits('很'.repeat(TRIP_SUMMARY_MAX), 'ok')
+  check('S11 最近 3 趟全无事件 → recentTrips 为 []，不补旧趟', () => {
+    const d2 = new DatabaseSync(':memory:')
+    d2.exec('PRAGMA foreign_keys = ON')
+    d2.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d2.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    mkTrips(
+      d2,
+      `('x1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}'),
+       ('x2','${D}',2,'timeout','auto','${T(3)}','${T(3)}','${T(4)}'),
+       ('x3','${D}',3,'timeout','auto','${T(5)}','${T(5)}','${T(6)}'),
+       ('x4','${D}',4,'timeout','auto','${T(7)}','${T(7)}','${T(8)}')`,
+    )
+    d2.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_old','test_old','很久以前那趟的收获。','any','any','any','[]')`)
+    d2.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('x1','evt_old','${D}','${T(1)}:10')`)
+    const x = deriveSnapshot(d2, D)
+    eq(x.evidence.tripsConsidered, 3, '只看最近三趟')
+    eq(x.body.recentTrips, [], '最近三趟都没收获，就是空的')
+    d2.close()
+  })
+  check('S12 failed 不算「回来过」，但要在证据里露出来', () => {
+    const d3 = new DatabaseSync(':memory:')
+    d3.exec('PRAGMA foreign_keys = ON')
+    d3.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d3.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    mkTrips(
+      d3,
+      `('f1','${D}',1,'failed','auto','${T(1)}','${T(1)}','${T(2)}'),
+       ('f2','${D}',2,'done','auto','${T(3)}','${T(3)}','${T(4)}')`,
+    )
+    d3.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_d','test_d','回来了，带了点东西。','any','any','any','[]')`)
+    d3.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('f2','evt_d','${D}','${T(3)}:10')`)
+    const y = deriveSnapshot(d3, D)
+    eq(y.evidence.tripsConsidered, 1, 'failed 不计入')
+    eq(y.evidence.failedTripsIgnored, 1, 'failed 露出来')
+    d3.close()
+  })
+  check('S13 没有 trip 也能有 waiting —— 两项独立派生', () => {
+    const d4 = new DatabaseSync(':memory:')
+    d4.exec('PRAGMA foreign_keys = ON')
+    d4.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d4.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    d4.exec(`INSERT INTO exchange (id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at,delivered_at)
+             VALUES ('ex_only','${D}','${OTHER}','co_owner_message','${payload('co_owner_message')}',1,'${T(1)}','${T(2)}')`)
+    const z = deriveSnapshot(d4, D)
+    eq(z.evidence.tripsConsidered, 0, '没有旅途')
+    eq(z.body.recentTrips, [], '经历为空')
+    eq(z.body.waitingFor, '等一句回话', '但挂念不为空')
+    d4.close()
+  })
+  check('S14 证据可追溯：trip.id / seq / status + event.id / code / happened_at', () => {
+    const t = r.evidence.trips[2]
+    eq([t.tripId, t.seq, t.status], ['t1', 1, 'done'], 'trip 三元组')
+    eq([t.event.id, t.event.code], ['evt_a', 'test_a'], 'event 二元组')
+    if (!t.event.happenedAt) throw new Error('happened_at 丢了')
+    eq(r.evidence.textSource, 'event.text', '文本来源标注')
+    eq(r.evidence.textMutable, true, '可变性标注')
+  })
+  check('S15 派生结果过统一 validateSnapshot；超 40 字由它拒，不是本地常量', () => {
+    assertSnapshotShape(r.body, { dogId: D, createdAt: T(1) })
+    const long = { ...r.body, recentTrips: ['很'.repeat(41)] }
     let threw = false
     try {
-      assertSummaryFits('很'.repeat(TRIP_SUMMARY_MAX + 1), 'too_long')
-    } catch {
-      threw = true
+      assertSnapshotShape(long, { dogId: D, createdAt: T(1) })
+    } catch (e) {
+      threw = String(e.message).includes('validateSnapshot') || String(e.message).includes('TOO_LONG')
     }
-    if (!threw) throw new Error('超一个字就该报错，而不是砍成 40 字')
+    if (!threw) throw new Error('41 字该被统一校验拒掉')
+    // 契约外的键也必须被拒（白名单是主防线）
+    const extra = { ...r.body, ownerWords: '主人原话' }
+    let threw2 = false
+    try {
+      toSnapshot(extra, { dogId: D, version: 1, createdAt: T(1) })
+    } catch {
+      threw2 = true
+    }
+    if (!threw2) throw new Error('契约外的键没被拒 —— 白名单失效了')
+  })
+  check('S16 同库连读两次结果一致（版本重读稳定）', () => {
+    const a = deriveAllSnapshots(db)
+    const b = deriveAllSnapshots(db)
+    eq(JSON.stringify(a), JSON.stringify(b), '两次派生应完全一致')
+  })
+  check('S17 SQL 只插不改：已存在的版本被执行后仍是旧值', () => {
+    const d5 = new DatabaseSync(':memory:')
+    d5.exec('PRAGMA foreign_keys = ON')
+    d5.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+    d5.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+    const body = { personalityTags: ['话痨', '好奇', '看物'], interestCategories: null, recentTrips: ['旧的一句话。'], waitingFor: null }
+    // 先落一条 version 1（模拟「已经固定下来的旧经历」）
+    d5.prepare(
+      `INSERT INTO snapshot (dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)
+       VALUES (?, 1, ?, NULL, ?, NULL, ?)`,
+    ).run(D, JSON.stringify(body.personalityTags), JSON.stringify(body.recentTrips), T(1))
+    const existing = new Set(d5.prepare(`SELECT dog_id, version FROM snapshot`).all().map((x) => `${x.dog_id}#${x.version}`))
+    const ready = { dogId: D, tripsConsidered: 1, body: { ...body, recentTrips: ['今天新的一句话。'] }, evidence: { dogId: D, tripsConsidered: 1, waiting: null, trips: [{ seq: 1, tripId: 't9', event: { code: 'x' } }] } }
+    const [out] = emitInsertSql([ready], { version: 1, existing })
+    if (!out.skipped) throw new Error('已存在的版本没被标 SKIP')
+    // 就算无视 SKIP、把「今天的话」硬插一遍，语句里的 NOT EXISTS 也要挡住（影响 0 行）
+    d5.exec(
+      `INSERT INTO snapshot (dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)
+       SELECT id, 1, '["话痨","好奇","看物"]', NULL, '["今天新的一句话。"]', NULL, '${T(9)}'
+         FROM dog WHERE id = ${sqlQuote(D)}
+          AND NOT EXISTS (SELECT 1 FROM snapshot s WHERE s.dog_id = dog.id AND s.version = 1);`,
+    )
+    const kept = d5.prepare(`SELECT recent_trips FROM snapshot WHERE dog_id = ? AND version = 1`).get(D)
+    eq(JSON.parse(kept.recent_trips), ['旧的一句话。'], '旧版本被改了')
+    d5.close()
+  })
+  check('S18 派生模块只读、不碰主人原文（payload / message.text / wish / find 正文）', () => {
+    const src = fs.readFileSync(DERIVE_SRC, 'utf8')
+    const banned = [
+      [/INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM/i, '出现写语句'],
+      [/\bFROM\s+message\b/i, '读了 message 表'],
+      [/\bFROM\s+wish\b/i, '读了 wish 表'],
+      [/\bpayload\b/i, '读了 payload'],
+      [/\bexcerpt\b/i, '读了 find.excerpt'],
+      [/\btitle\b/i, '读了 title'],
+    ]
+    for (const [re, why] of banned) if (re.test(src)) throw new Error(`${why} —— 主人原文/聊天内容不许进公开快照`)
   })
 
   console.log(`\n自检 ${pass} 过 / ${fail} 败`)
-  console.log('（这是「证据生成器」的验证，不是 D5 完成 —— 这里的数据是我造的，不是它走出来的。）')
+  console.log('（这是「证据生成器」的验证，不是 D5 完成 —— 这里的数据是造的，不是它走出来的。）')
   db.close()
   if (fail > 0) process.exitCode = 1
 }
 
 // ---------------------------------------------------------------------------
+// 主流程
+// ---------------------------------------------------------------------------
+
+function loadJsonEvidence(results, dbLabel) {
+  return {
+    generatedAt: new Date().toISOString(),
+    db: dbLabel,
+    readOnly: true,
+    note: '本文件是只读派生的证据，不含可执行 SQL；版本号由 C 的分配器给，D 不写库。',
+    textSource: { column: 'event.text', mutable: true },
+    dogs: results.map(({ body, evidence }) => ({ body, evidence })),
+  }
+}
 
 const dbPath = valueOf('--db')
+const outPath = valueOf('--out')
+const sqlOut = valueOf('--sql-out')
+const versionArg = valueOf('--version')
 
 if (has('--selftest')) {
   selftest()
@@ -367,19 +422,81 @@ if (has('--selftest')) {
     console.error(`找不到库：${abs}`)
     process.exit(1)
   }
-  const db = new DatabaseSync(abs)
+  // 只读连接：写一句就报 `attempt to write a readonly database`，不靠自觉。
+  const db = new DatabaseSync(abs, { readOnly: true })
+  let results
   try {
-    report(deriveAll(db), { withSql: has('--sql') })
+    // 单次读事务：同一只狗的经历和挂念出自同一个时间点，不会读到「写了一半」的中间态。
+    db.exec('BEGIN')
+    try {
+      results = deriveAllSnapshots(db)
+      // 落库前的形状校验，用的是 lib/social/snapshot.ts 那一套
+      const now = new Date().toISOString()
+      for (const r of results) assertSnapshotShape(r.body, { dogId: r.evidence.dogId, createdAt: now })
+      db.exec('COMMIT')
+    } catch (e) {
+      db.exec('ROLLBACK')
+      throw e
+    }
+    console.log(`库：${abs}（只读，单次读事务）\n`)
+    report(results)
+
+    if (outPath) {
+      fs.writeFileSync(path.resolve(outPath), JSON.stringify(loadJsonEvidence(results, abs), null, 2) + '\n')
+      console.log(`证据 JSON：${path.resolve(outPath)}（与报告、SQL 分三个落点）`)
+    }
+
+    if (sqlOut) {
+      if (!versionArg) {
+        console.error('\n--sql-out 必须同时给 --version：版本号没有默认值，写死 1 会把旧经历改掉。')
+        process.exit(1)
+      }
+      const version = Number(versionArg)
+      if (!Number.isInteger(version) || version < 1) {
+        console.error(`--version 必须是 ≥1 的整数，收到 ${versionArg}`)
+        process.exit(1)
+      }
+      const existing = new Set(
+        db.prepare(`SELECT dog_id, version FROM snapshot WHERE version = ?`).all(version).map((x) => `${x.dog_id}#${x.version}`),
+      )
+      const stmts = emitInsertSql(results, { version, existing })
+      const skipped = stmts.filter((s) => s.skipped)
+      const header = [
+        `-- d5 派生 SQL · version ${version} · 只插入、不覆盖`,
+        `-- 生成时间 ${new Date().toISOString()}；库 ${abs}`,
+        `-- ${stmts.length} 只狗，其中 ${skipped.length} 只该版本已存在 → 已 SKIP。`,
+        '-- 版本号应由 C 的分配器逐狗给出；本文件的 version 是调用时显式传入的，不是默认值。',
+        '-- 本文件不含任何 UPSERT / ON CONFLICT：旧版本不随重跑变化。',
+        '',
+      ].join('\n')
+      fs.writeFileSync(path.resolve(sqlOut), header + '\n' + stmts.map((s) => s.sql).join('\n\n') + '\n')
+      console.log(`SQL：${path.resolve(sqlOut)}（${stmts.length} 条，SKIP ${skipped.length} 条；与报告分离，不混在一屏）`)
+    }
   } finally {
     db.close()
   }
 } else {
-  // 没给库：用内存库跑一遍「只有种子狗、没有旅途」的真实起点，
-  // 让人看到此刻的诚实结论是什么，而不是看到五条好看的摘要。
-  const db = openMemory()
-  loadSeedDogs(db)
-  console.log('未指定 --db，用内存库（schema + 20 只种子狗，无任何 trip）跑一遍：\n')
-  report(deriveAll(db), { compact: true })
-  console.log('（20 只都是 0 趟。等 c8 的种子触发能写真 trip，再带 --db 跑一次，那时才有 D5 证据。）')
+  // 没给库：用内存库跑一遍「只有种子狗、没有旅途」的起点。
+  //
+  // **这只是空库起点，不是业务库的调查结果。** 首版在这里写「20 只都是 0 趟」，
+  // 那是把本地内存库当成了业务库 —— 两件事完全不同（见报告末尾三条依赖）。
+  const db = new DatabaseSync(':memory:')
+  db.exec('PRAGMA foreign_keys = ON')
+  db.exec(fs.readFileSync(path.join(ROOT, 'contracts/schema.sql'), 'utf8'))
+  db.exec(fs.readFileSync(path.join(ROOT, 'team/2026-11-17/d/1117-d2b-种子狗装配单-v1.sql'), 'utf8'))
+  console.log('未指定 --db：本地内存库（schema + 20 只种子狗装配单，一行 trip 都没有）。\n')
+  const results = deriveAllSnapshots(db)
+  report(results, { compact: true })
+  console.log(
+    '\n⚠ 这份输出证明的是「派生器在空库上不编造」，' +
+      '**不证明**业务库/演练库里 20 只都是 0 趟 —— 那要 --db 指过去跑。',
+  )
+  console.log(
+    '  而且要分清三件事，它们互相不代替：\n' +
+      '    ① 可信触发（服务端能触发 is_sample=1）—— C8\n' +
+      '    ② 旅行执行（create/start/finish 真跑，含合法 timeout）—— C4 + C8\n' +
+      '    ③ 事件与 Find 落库（trip_event / find 有真行）—— C7 + 场景接入\n' +
+      '  三者都到位，带 --db 跑出来的才是 D5 的实际经历证据。',
+  )
   db.close()
 }

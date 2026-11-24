@@ -12,6 +12,8 @@
 //      否则报的是「补丁前」的数字，等于没改。
 //   4. 分组：已进正式清单的场景（active）与 E 已交但未采用的（delivered-review）分开算。
 //      后者不能算进「当前能出多少条」，不然等于替 A 宣布采用。
+//   5. 室内外：室内场景不许漏进「要室外天空」的两条（鸟 / 月亮）。这一维四值表达不了，
+//      只能靠 eventAllow 逐张写，而且**必须由 C 的条件层读** —— 标签交集隔不开室内外。
 //
 // 用法：
 //   node scripts/d2c-scene-coverage.mjs
@@ -158,7 +160,11 @@ for (const s of compat.scenes) {
   // variant 只记素材事实（室外/室内），不是标签，不参与匹配
   if (s.variant && !['outdoor', 'indoor'].includes(s.variant)) fail(`${s.place} 的 variant 只能是 outdoor/indoor`)
   if (s.eventAllow) {
-    if (!Array.isArray(s.eventAllow) || s.eventAllow.length === 0) fail(`${s.place} 的 eventAllow 必须是非空数组`)
+    if (!Array.isArray(s.eventAllow)) fail(`${s.place} 的 eventAllow 不是数组`)
+    // 空数组是合法结论（「这张图一条都不出」），但必须写明理由 —— 空着不解释最像漏填。
+    if (s.eventAllow.length === 0 && !s.eventAllowNote) {
+      fail(`${s.place} 的 eventAllow 是空数组，必须写 eventAllowNote 说明为什么一条都不出`)
+    }
     for (const code of s.eventAllow) {
       if (!byCode.has(code)) fail(`${s.place} 的 eventAllow 引用了不存在的事件 ${code}`)
     }
@@ -174,10 +180,20 @@ for (const e of events) {
 // ── 算账：每个场景能出哪些事件 ─────────────────────────────────────────────
 // eventAllow 存在时它就是**完整白名单**：这张图能出什么一眼看全，包括「不限地点」的那几条。
 // 为什么需要它：同标签但空间互斥的场景（书店门口 / 书店里）光靠 place_tags 分不开。
+//
+// **它不会自动生效。** 只在 place_tags 上做交集（EXISTS 任一命中）时，同为 [bookstore]
+// 的两张图彼此等价：那是 OR/并集，不是 AND。写成 [bookstore, indoor] 也一样 ——
+// EXISTS 仍是「任一命中」。所以这份白名单必须由 C 的条件层逐张读，不能指望标签算出来；
+// 也不要为此新增第五个 place_tag 值。
 const hits = (scene, ev) => {
   if (scene.eventAllow) return scene.eventAllow.includes(ev.code)
   return ev.placeTags.length === 0 || ev.placeTags.some((t) => scene.tags.includes(t))
 }
+
+// 两条 place_tags=[] 的事件：地点维度不限制，但**要室外天空**。
+// 「不限地点」不等于「连室内外都不限」—— 室内场景（酒馆内景、书店内景）必须排除。
+// A 11/23 裁定第 3 条。11/23 首版把这两条列进书店内景白名单，是把它读成了「任何场景都成立」。
+const SKY_ONLY = ['autumn_birds', 'any_moon_ring']
 
 const trulyFree = events.filter((e) => e.enabled === 1 && e.placeTags.length === 0)
 const rowsOf = (list) =>
@@ -203,6 +219,26 @@ printRows(rowsActive)
 if (rowsReview.length) {
   console.log('\n场景 → 可出事件（E 已交、待 A 采用，暂不计入现行口径）')
   printRows(rowsReview)
+}
+
+// 室内场景不许漏进「要室外天空」的两条。按算账结果查，两条路径（白名单 / 标签）都覆盖。
+for (const { scene, able } of rowsAll) {
+  if (scene.variant !== 'indoor') continue
+  const leaked = able.filter((e) => SKY_ONLY.includes(e.code))
+  if (leaked.length) {
+    fail(
+      `${scene.place} 是室内，却可出 ${leaked.map((e) => e.code).join(' / ')} —— ` +
+        '这两条要室外天空，「不限地点」不等于「室内也成立」',
+    )
+  }
+}
+
+const zeroAble = rowsAll.filter((r) => r.able.length === 0)
+if (zeroAble.length) {
+  console.log('\n一张事件都不出的场景（有意为之，不是漏填）')
+  for (const { scene } of zeroAble) {
+    console.log(`  ${scene.place} ${scene.variant ? `[${scene.variant}]` : ''} —— ${scene.eventAllowNote ?? scene.why}`)
+  }
 }
 
 // 同标签 + 室内外不同 → 必须逐张收敛，而且不能收敛成一样。
