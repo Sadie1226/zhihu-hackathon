@@ -39,6 +39,12 @@
  * 所以这里留了一个**注入式接缝** `OccurrenceFactReader`：D 不猜 C 的表结构、不猜列名、
  * 不碰 `trip_event`。C 交契约之后，把读取实现成一个函数传进来即可，本文件其余部分不动。
  * 没传就退回读模板，并如实标 `historyFixed: false`（诊断态，不挂正式生成链）。
+ *
+ * **11-24 G2 接口基线 READY（`582376e`）之后，接缝已经接上了**：
+ * C 的 `v_trip_event_history` + A 补齐的 `lib/trips/occurrence-facts.ts`（唯一 adapter）。
+ * D 直接 import，不另写一份 SQL 副本 —— 两份 SQL 迟早在「取哪条最早」上分叉。
+ * 同一轮把 `earliestEvent` 的 JOIN 拆掉：它原来读模板的 code/text、按字符串排时间，
+ * 正是 A 说的「摘要固定但来源证据跟着模板变」。
  */
 
 import type { DatabaseSync } from 'node:sqlite'
@@ -92,7 +98,16 @@ export interface TripEvidence {
   endedAt: string
   /** 这趟落了几条 trip_event；取的是最早那条 */
   eventCount: number
-  event: { id: string; code: string; happenedAt: string; text: string } | null
+  /**
+   * 这趟最早发生的那条事件。
+   *
+   * **这里一度是个错位**：id / happenedAt 取自 `trip_event`（发生当时），
+   * code / text 却 JOIN 当前 `event` 表（此刻的模板）。于是摘要固定住了、来源证据还在跟着改文案变 ——
+   * A 11-24 点出来的正是这一处。现在 code / text 只从两个地方来：
+   *   · 正式态：`text` 取冻结事实；`code` 为 **null**（现有 adapter 只透传文本，不拿今天的 code 冒充当时的）
+   *   · 诊断态（未接读取器）：两者都取当前模板，`textSource` 会标 `template_current`
+   */
+  event: { id: string; code: string | null; happenedAt: string; text: string | null } | null
   /** 真正进 recent_trips 的那一句；没有事件或历史不可验证就是 null */
   summary: string | null
   /**
@@ -222,22 +237,37 @@ const countFailed = (db: DatabaseSync, dogId: string): number => {
 }
 
 /**
- * 这一趟里最早发生的那条事件。
+ * 这一趟里最早发生的那条事件 —— **只读 `trip_event`，不 JOIN `event`**。
+ *
+ * 两处修正（A 11-24）：
+ *   · 不再 JOIN 模板。JOIN 一次就等于把「此刻的 code / text」掺进证据，摘要固定了也没用。
+ *   · 排序从 `te.happened_at ASC`（字符串）改成 `julianday(...)`，与 C 的 adapter 一致 ——
+ *     `2026-11-24T03:00:00Z` 和 `2026-11-24 03:00:00` 混着存时，字符串序会把后者排到前面，
+ *     于是 D 取「最早」和 C 取「最早」不是同一条。
  *
  * `timeout` 趟也可能有事件（走到一半超时，但已经看见了东西）——
- * **不能一概当「没摘要」**：有就照给，没有才是空。首版注释写成「超时趟就是这种」，
- * 那是把一种情况说成了全部。
+ * **不能一概当「没摘要」**：有就照给，没有才是空。
  */
-const earliestEvent = (db: DatabaseSync, tripId: string, dogId: string) =>
+const earliestOccurrence = (db: DatabaseSync, tripId: string, dogId: string) =>
   (db
     .prepare(
-      `SELECT te.event_id, te.happened_at, e.code, e.text
-         FROM trip_event te JOIN event e ON e.id = te.event_id
-        WHERE te.trip_id = ? AND te.dog_id = ?
-        ORDER BY te.happened_at ASC, te.event_id ASC
+      `SELECT event_id, happened_at
+         FROM trip_event
+        WHERE trip_id = ? AND dog_id = ?
+        ORDER BY julianday(happened_at), event_id
         LIMIT 1`,
     )
-    .get(tripId, dogId) ?? null) as { event_id: string; happened_at: string; code: string; text: string } | null
+    .get(tripId, dogId) ?? null) as { event_id: string; happened_at: string } | null
+
+/**
+ * 当前模板的 code / text。**只有诊断态才读它** —— 这两列会随改文案而变。
+ * 读它的唯一理由是：没有固定事实时，还得让人看见「这条事件本身长什么样」。
+ */
+const currentTemplate = (db: DatabaseSync, eventId: string) =>
+  (db.prepare(`SELECT code, text FROM event WHERE id = ?`).get(eventId) ?? null) as {
+    code: string
+    text: string
+  } | null
 
 const countEvents = (db: DatabaseSync, tripId: string, dogId: string): number => {
   const row = db
@@ -249,7 +279,7 @@ const countEvents = (db: DatabaseSync, tripId: string, dogId: string): number =>
 /** 这趟的 Find。没有就是空数组 —— 不许拿 event 链充当 Find 链。 */
 const findsOf = (db: DatabaseSync, tripId: string) =>
   db
-    .prepare(`SELECT id, kind, source_mode FROM find WHERE trip_id = ? ORDER BY created_at ASC, id ASC`)
+    .prepare(`SELECT id, kind, source_mode FROM find WHERE trip_id = ? ORDER BY julianday(created_at), id`)
     .all(tripId) as { id: string; kind: string; source_mode: string | null }[]
 
 /**
@@ -257,6 +287,9 @@ const findsOf = (db: DatabaseSync, tripId: string) =>
  *
  * 多个都在等时取最早到达的那条：等得最久的那件事，最像「它还记着」。
  * 其余几条不丢，记在 `otherPendingWaiting` 里，只作证据、不进快照。
+ *
+ * 排序用 `julianday()` 而不是字符串比较：库里 `...T05:00:00Z` 与 `... 05:00:00` 混存时，
+ * 字符串序会把「更晚」排到前面，于是「等得最久」取错人。
  */
 const pendingWaiting = (db: DatabaseSync, dogId: string) =>
   db
@@ -267,7 +300,7 @@ const pendingWaiting = (db: DatabaseSync, dogId: string) =>
           AND delivered_at IS NOT NULL
           AND replied_at IS NULL
           AND kind IN (${WAITING_KINDS.map(() => '?').join(',')})
-        ORDER BY delivered_at ASC, id ASC`,
+        ORDER BY julianday(delivered_at), id`,
     )
     .all(dogId, ...WAITING_KINDS) as {
     id: string
@@ -303,16 +336,18 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
   const hasFactReader = opts.occurrenceFacts !== undefined
 
   for (const t of trips) {
-    const ev = earliestEvent(db, t.id, dogId)
+    const occ = earliestOccurrence(db, t.id, dogId)
     const finds = findsOf(db, t.id)
     if (finds.length > 0) withFind += 1
 
     // 有事件才需要「当时那句话」。没事件的趟不调读取器 —— 那是「没发生」，不是「丢了」。
-    const fact = ev ? (opts.occurrenceFacts?.(db, t.id, dogId) ?? null) : null
+    const fact = occ ? (opts.occurrenceFacts?.(db, t.id, dogId) ?? null) : null
+    // 模板只在**诊断态**读。接了读取器还去读模板，等于给了第二条「看起来正常」的路径。
+    const template = !hasFactReader && occ ? currentTemplate(db, occ.event_id) : null
     // 显式null表示历史不可验证，不能拿今天的模板补过去。
     // 未接读取器的旧调用仍可诊断，但不能通过正式转换入口。
-    const summary = fact ? fact.text : hasFactReader ? null : (ev?.text ?? null)
-    if (ev && !fact) missingFacts += 1
+    const summary = fact ? fact.text : !occ ? null : hasFactReader ? null : (template?.text ?? null)
+    if (occ && !fact) missingFacts += 1
 
     // 摘要就是那句话本身。不改写、不拼接、不套话：
     // 一旦在这里加一句「它看见了」，那就不再是「发生了什么」，而是 d 替它叙述。
@@ -325,9 +360,17 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
       startedAt: t.started_at,
       endedAt: t.ended_at,
       eventCount: countEvents(db, t.id, dogId),
-      event: ev ? { id: ev.event_id, code: ev.code, happenedAt: ev.happened_at, text: ev.text } : null,
+      event: occ
+        ? {
+            id: occ.event_id,
+            happenedAt: occ.happened_at,
+            // 正式态 code 为 null：adapter 只透传文本，不拿今天的 code 冒充当时的
+            code: template?.code ?? null,
+            text: fact ? fact.text : (template?.text ?? null),
+          }
+        : null,
       summary,
-      textSource: fact ? 'occurrence' : !ev ? 'none' : hasFactReader ? 'unverifiable' : 'template_current',
+      textSource: fact ? 'occurrence' : !occ ? 'none' : hasFactReader ? 'unverifiable' : 'template_current',
       factSourceId: fact ? fact.sourceId : null,
       finds: finds.map((f) => ({ id: f.id, kind: f.kind, sourceMode: f.source_mode })),
     })

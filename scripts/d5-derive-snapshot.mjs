@@ -11,6 +11,13 @@
 //   node scripts/d5-derive-snapshot.mjs --db <path> --sql-out <f> --version 1
 //                                                              # SQL 单独落文件，只插不改
 //   node scripts/d5-derive-snapshot.mjs --selftest             # 内存库造数据，验机制
+//   node scripts/d5-derive-snapshot.mjs --db <path> --template-diagnostic
+//                                                              # 诊断态：不读固定事实，摘要取当前模板
+//
+// 11-24 G2 接口基线 READY（`582376e`）之后：
+//   默认就读 C 的固定事实（`lib/trips/occurrence-facts.ts` 那唯一一个 adapter），
+//   不再默认退到模板。库没有 v7 历史视图时会直接报错 —— 报错比「悄悄读模板」好查得多。
+//   要诊断态必须显式 `--template-diagnostic`，产物自带标注、SQL 门禁照拦。
 //
 // 11-23 晚按 A 的复核意见改的四处（每条都有用例兜住）：
 //   1. `waiting_for` 方向：**寄件方**视角（`from_dog`），不是收件方。首版写反了。
@@ -38,6 +45,11 @@ const {
   toSnapshot,
   assertSnapshotShape,
 } = await import(pathToFileURL(DERIVE_SRC).href)
+
+// 固定事实的读取只有一份实现：C 的视图 + A 补齐的 adapter。
+// 这里**不复制 SQL** —— 复制一份就会在「取哪条最早」上和 C 分叉，而那种分叉不报错。
+const FACT_READER_SRC = path.join(ROOT, 'lib/trips/occurrence-facts.ts')
+const { readOccurrenceFact } = await import(pathToFileURL(FACT_READER_SRC).href)
 
 const args = process.argv.slice(2)
 const has = (flag) => args.includes(flag)
@@ -70,7 +82,7 @@ function emitInsertSql(results, { version, existing }) {
     const waiting = body.waitingFor === null ? 'NULL' : sqlQuote(body.waitingFor)
     const src = evidence.trips
       .filter((t) => t.event)
-      .map((t) => `seq${t.seq}:${t.event.code}(${t.tripId})`)
+      .map((t) => `seq${t.seq}:${t.event.code ?? t.event.id}(${t.tripId})`)
       .join(' ')
 
     if (existing.has(`${evidence.dogId}#${version}`)) {
@@ -130,11 +142,12 @@ function printDog({ body, evidence }, { compact }) {
     const head = `    ${t.tripId} seq${t.seq} ${t.status.padEnd(7)} ${t.startedAt}→${t.endedAt}`
     if (t.event) {
       console.log(`${head}`)
+      // code 可能为 null：正式态不拿今天的 code 冒充「当时那条」的 code，只有诊断态才有模板 code
       console.log(
-        `      event ${t.event.id} ${t.event.code} @ ${t.event.happenedAt}` +
+        `      event ${t.event.id} ${t.event.code ?? '(code 不入正式证据)'} @ ${t.event.happenedAt}` +
           `${t.eventCount > 1 ? `（本趟共 ${t.eventCount} 条，取最早）` : ''}`,
       )
-      console.log(`      摘要 「${t.summary}」`)
+      console.log(`      摘要 ${t.summary === null ? 'null（' + t.textSource + '）' : `「${t.summary}」`}`)
     } else {
       console.log(`${head}  —— 这趟没有 trip_event，不补、不往前捞`)
     }
@@ -170,10 +183,16 @@ function report(results, { compact = false } = {}) {
   // A 11-24 的口径：已存版本不覆盖 ≠ 历史固定。这份报告必须自己先说清是哪一种。
   const unfixed = results.filter((r) => !r.evidence.historyFixed)
   if (unfixed.length) {
-    console.log(
-      `\n⚠ 历史未固定：${unfixed.length} 只的摘要取自「此刻的事件模板」（${unfixed.map((r) => r.evidence.dogId).join(' ')}）。` +
-        '\n  同一个旧 trip 在文案改过后会跟着变 —— 这份派生只能当诊断，不能当「当时发生了什么」。',
-    )
+    const tpl = unfixed.filter((r) => r.evidence.textSource === 'event.text')
+    const miss = unfixed.filter((r) => r.evidence.textSource === 'unverifiable')
+    console.log(`\n⚠ 历史未固定：${unfixed.length} 只（${unfixed.map((r) => r.evidence.dogId).join(' ')}）`)
+    if (tpl.length) {
+      console.log(`  · 模板诊断态 ${tpl.length} 只：没接读取器（--template-diagnostic），摘要取此刻的模板，改文案就变`)
+    }
+    if (miss.length) {
+      console.log(`  · 有事件但缺发生时固定事实 ${miss.length} 只：摘要留空，不拿今天的文本补过去`)
+    }
+    console.log('  这两种都不能当「当时发生了什么」，也不能进正式生成链。')
   } else {
     console.log('\n历史固定：全部摘要来自发生当时固定下来的那份，不随改文案变化。')
   }
@@ -455,6 +474,50 @@ function selftest() {
     d7.close()
   })
 
+  check('S21 来源证据也固定：接读取器后改 event.code/text，evidence.event 不跟着变', () => {
+    // A 11-24 指出的错位：摘要固定了、evidence.event 还 JOIN 当前模板。
+    // 这条用例专门盯「证据那一侧」，不然 S19 只盯摘要，错位照样能过。
+    const d9 = new DatabaseSync(':memory:')
+    d9.exec('PRAGMA foreign_keys = ON')
+    initializeDiagnosticSeeds(d9)
+    mkTrips(d9, `('k1','${D}',1,'done','auto','${T(1)}','${T(1)}','${T(2)}')`)
+    d9.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_k','old_code','当时那句。','any','any','any','[]')`)
+    d9.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES ('k1','evt_k','${D}','${T(1)}:10')`)
+    const fact = { text: '当时那句。', sourceId: 'fact:k1', capturedAt: `${T(1)}:10` }
+    const r1 = deriveSnapshot(d9, D, { occurrenceFacts: () => fact })
+    eq(r1.evidence.trips[0].event.text, '当时那句。', '正式态 text 取固定事实')
+    eq(r1.evidence.trips[0].event.code, null, '正式态不拿今天的 code 冒充当时的 code')
+
+    d9.exec(`UPDATE event SET code = 'new_code', text = '改过的另一句。' WHERE id = 'evt_k'`)
+    const r2 = deriveSnapshot(d9, D, { occurrenceFacts: () => fact })
+    eq(r2.evidence.trips[0].event.text, '当时那句。', '改文案后来源证据不变（这是 A 点的那处）')
+    eq(r2.evidence.trips[0].event.code, null, 'code 仍不读模板')
+    eq(r2.evidence.trips[0].event.id, 'evt_k', 'id 还是发生当时那条')
+    eq(r2.evidence.trips[0].factSourceId, 'fact:k1', '来源标识也不受影响')
+    d9.close()
+  })
+
+  check('S22 最早那条按真实时间取：混合 UTC 格式下字符串序会取错', () => {
+    // '2026-11-24 03:00:00'（空格分隔）与 '2026-11-24T02:00:00Z' 混存时：
+    //   字符串序：第 11 位空格 0x20 < 'T' 0x54 → 前者更小 → 取到 03:00（实际更晚）
+    //   julianday：02:00 更早 → 正确
+    const da = new DatabaseSync(':memory:')
+    da.exec('PRAGMA foreign_keys = ON')
+    initializeDiagnosticSeeds(da)
+    mkTrips(da, `('m1','${D}',1,'done','auto','2026-11-24T01:00:00Z','2026-11-24T01:00:00Z','2026-11-24T04:00:00Z')`)
+    da.exec(`INSERT INTO event (id,code,text,season,weather,time_of_day,place_tags)
+             VALUES ('evt_space','space_fmt','空格格式的那条。','any','any','any','[]'),
+                    ('evt_iso','iso_fmt','ISO 格式的那条。','any','any','any','[]')`)
+    da.exec(`INSERT INTO trip_event (trip_id,event_id,dog_id,happened_at) VALUES
+             ('m1','evt_space','${D}','2026-11-24 03:00:00'),
+             ('m1','evt_iso','${D}','2026-11-24T02:00:00Z')`)
+    const r = deriveSnapshot(da, D)
+    eq(r.evidence.trips[0].event.id, 'evt_iso', '按真实时间取 02:00 那条，不是字符串序的 03:00')
+    eq(r.evidence.trips[0].summary, 'ISO 格式的那条。', '摘要跟着同一条')
+    da.close()
+  })
+
   console.log(`\n自检 ${pass} 过 / ${fail} 败`)
   console.log('（这是「证据生成器」的验证，不是 D5 完成 —— 这里的数据是造的，不是它走出来的。）')
   db.close()
@@ -498,12 +561,31 @@ if (has('--selftest')) {
   }
   // 只读连接：写一句就报 `attempt to write a readonly database`，不靠自觉。
   const db = new DatabaseSync(abs, { readOnly: true })
+  // 默认读固定事实。诊断态必须显式要，不能因为「读不到视图」就悄悄退回去。
+  const diagnostic = has('--template-diagnostic')
+  const deriveOpts = diagnostic ? {} : { occurrenceFacts: readOccurrenceFact }
+  const hasHistoryView = !!db
+    .prepare(`SELECT 1 AS ok FROM sqlite_schema WHERE type = 'view' AND name = 'v_trip_event_history'`)
+    .get()
+  if (!diagnostic && !hasHistoryView) {
+    db.close()
+    console.error(
+      `\n这个库没有 v7 历史视图（v_trip_event_history）：${abs}\n` +
+        '  说明它不是 G2 接口基线之后的库（没跑 openD5InterfaceDatabase 升到 v7），\n' +
+        '  或者是个还没升级的 v6 业务库。\n' +
+        '  两种正确做法：\n' +
+        '    · 让 C 用接口入口把库升到 v7，再跑本命令（正式证据只能这样出）；\n' +
+        '    · 只想看形态，显式加 --template-diagnostic（产物标未固定，SQL 会被门禁拦）。\n' +
+        '  这里不会替你降级成「读当前模板」—— 那正是要防的事。',
+    )
+    process.exit(1)
+  }
   let results
   try {
     // 单次读事务：同一只狗的经历和挂念出自同一个时间点，不会读到「写了一半」的中间态。
     db.exec('BEGIN')
     try {
-      results = deriveAllSnapshots(db)
+      results = deriveAllSnapshots(db, deriveOpts)
       // 落库前的形状校验，用的是 lib/social/snapshot.ts 那一套
       const now = new Date().toISOString()
       for (const r of results) assertSnapshotShape(r.body, { dogId: r.evidence.dogId, createdAt: now })
