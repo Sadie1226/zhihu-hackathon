@@ -14,8 +14,11 @@ const v7 = migrations.filter(migration => migration.version <= 7)
 const at = '2026-11-25T02:00:00.000Z'
 const now = () => new Date(at)
 const schemaV1 = () => readFileSync('tests/fixtures/schema-v1.sql', 'utf8')
-const objects = db => db.prepare(`SELECT type,name,sql FROM sqlite_schema
+const rawObjects = db => db.prepare(`SELECT type,name,sql FROM sqlite_schema
   WHERE name LIKE 'trip_discovery_receipt%' ORDER BY type,name`).all()
+const objects = db => rawObjects(db).map(({ type, name, sql }) => ({
+  type, name, sql: sql === null ? null : sql.replace(/\r\n?/g, '\n'),
+}))
 const version = db => db.prepare('PRAGMA user_version').get().user_version
 const seedRecord = db => {
   const owner = ownedDog(db, 'migration-dog')
@@ -91,6 +94,30 @@ test('an error after v8 DDL rolls back objects and version and allows a clean up
     assert.equal(version(upgraded), 8)
     assert.deepEqual(history(upgraded), before)
   } finally { upgraded.close() }
+})
+
+test('sqlite_schema comparison ignores only line endings across fresh and upgraded v8 DDL', t => {
+  const freshSchema = readFileSync('contracts/schema.sql', 'utf8').replace(/\r\n?/g, '\n')
+    .replace(/\n/g, '\r\n')
+  const { db: fresh } = mailboxDatabase(t, migrations, freshSchema)
+  const { db: legacy, path } = mailboxDatabase(t, v7, schemaV1())
+  legacy.close()
+  const ddl = DISCOVERY_RECEIPT_V8_SQL.replace(/\r\n?/g, '\n')
+  const upgrade = [...v7, { ...migrations.find(migration => migration.version === 8), sql: ddl }]
+  const migrated = openDatabase(path, upgrade)
+  try {
+    assert.ok(rawObjects(fresh).some(row => row.sql.includes('\r\n')))
+    assert.ok(rawObjects(migrated).every(row => !row.sql.includes('\r')))
+    assert.notDeepEqual(rawObjects(fresh), rawObjects(migrated))
+    assert.deepEqual(objects(fresh), objects(migrated))
+    const before = objects(migrated)
+    migrated.exec('DROP TRIGGER trip_discovery_receipt_v8_no_update')
+    migrated.exec(ddl.replace("RAISE(ABORT, 'trip discovery receipt is immutable')",
+      "RAISE(FAIL, 'trip discovery receipt is immutable')"))
+    const after = objects(migrated)
+    assert.deepEqual(after.map(({ type, name }) => [type, name]), before.map(({ type, name }) => [type, name]))
+    assert.notDeepEqual(after, before)
+  } finally { migrated.close() }
 })
 
 test('receipt schema enforces foreign keys, valid envelope, unique Trip and immutable rows', t => {
