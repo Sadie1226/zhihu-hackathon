@@ -5,11 +5,15 @@ import { TripError } from './errors.ts'
 import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
 import type { OwnerFindScope } from './find-scope.ts'
 import { createFindStore, isDiscoveryConfirmed } from './finds.ts'
+import { createMemorySearchCache } from './search-cache.ts'
 import { blockedBy, searchForTrip } from './search-proof.ts'
-import type { SearchProvider } from './search-proof.ts'
+import type { SearchCacheOptions, SearchProvider } from './search-proof.ts'
+
+const processCache = createMemorySearchCache()
 
 /** Trusted server configuration supplies the provider. Search only, outside the write lock. */
-export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider) {
+export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider,
+  { cache = processCache, now }: SearchCacheOptions = {}) {
   return async function search(tripId: string, scope: OwnerFindScope) {
     if (db.isTransaction) throw new Error('Trip discovery search requires a committed trip')
     const trip = readOwnerFindTrip(db, tripId, scope)
@@ -38,17 +42,18 @@ export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchPro
       }
     }
     if (!candidate) return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
-    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, ...candidate, blockedTopics }, provider)
+    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, ...candidate, blockedTopics }, provider, { cache, now })
   }
 }
 
 /** Single Find compatibility entry. HTTP callers pass the same request to both phases. */
-export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
-  const search = createTripDiscoverySearch(db, options.provider)
+export function createTripDiscoverer(db: DatabaseSync, options: SearchCacheOptions & { provider?: SearchProvider } = {}) {
+  const search = createTripDiscoverySearch(db, options.provider, options)
   return async function discover(tripId: string, scope: OwnerFindScope) {
     const result = await search(tripId, scope)
     if (!result.ok) return result
     const finds = result.proof ? [createFindStore(db, options).writeVerified(result.proof, scope)] : []
-    return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
+    return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt,
+      ...('degradation' in result && { degradation: result.degradation }) }
   }
 }

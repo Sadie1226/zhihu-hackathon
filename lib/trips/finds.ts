@@ -55,8 +55,10 @@ function normalized(input: FindInput, verified = false, eventCapturedAt?: string
   if (input.voteUpCount !== null && (!Number.isSafeInteger(input.voteUpCount) || input.voteUpCount < 0)) return conflict()
   if (input.assetPath !== null && (typeof input.assetPath !== 'string' || !/^\/(?!\/)/.test(input.assetPath) ||
       /[\\?#%\s]/.test(input.assetPath) || input.assetPath.split('/').some(part => part === '.' || part === '..'))) return conflict()
-  // Ordinary writes remain fixture-only. Only opaque successful C5 proofs authorize live.
-  if (input.kind === 'zhihu' ? input.sourceMode !== (verified ? 'live' : 'fixture') : input.sourceMode !== null) return conflict()
+  if (input.kind === 'zhihu') {
+    const modes = verified ? ['live', 'cache'] : ['fixture']
+    if (input.sourceMode === null || !modes.includes(input.sourceMode)) return conflict()
+  } else if (input.sourceMode !== null) return conflict()
   const url = input.kind === 'zhihu' ? historicalUrl(input.sourceUrl) ?? conflict()
     : input.sourceUrl === null ? null : sourceUrl(input.sourceUrl)
   const key = input.sourceKey
@@ -80,7 +82,7 @@ type BatchContext = { dogId: string; startedAt: string; at: string; blockedTopic
 type SelectCandidates = (trip: BatchContext) => readonly BatchFindCandidate[]
 type EventOmission = 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
 
-type ConfirmedBatch = { ids: Set<string>; candidates: BatchFindCandidate[] }
+type ConfirmedBatch = { ids: Set<string>; candidates: BatchFindCandidate[]; at: string }
 type ConfirmedBatches = Map<string, ConfirmedBatch>
 // Active connections to the same file share replay protection in this process.
 const confirmed = new WeakMap<DatabaseSync, ConfirmedBatches>()
@@ -206,7 +208,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     return transaction(db, true, () => {
       const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
       const trip = runningTrip(tripId, scope)
-      const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics)
+      const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics, trip.at)
         : inputOrProof as FindInput
       const entry = normalized(input, verified)
       const id = findId(entry)
@@ -223,8 +225,9 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     const ordered = candidates.flatMap(candidate => {
       if ('proof' in candidate) {
         if (trip.ownerId === undefined) return conflict()
-        // C9 can extend this proof-backed path while keeping the mode and first saved row intact.
-        const input = eligibleSearchInput(candidate.proof, { ...trip, tripId, ownerId: trip.ownerId }, trip.blockedTopics)
+        // Replay considers the original acceptance time and can only return confirmed rows.
+        const input = eligibleSearchInput(candidate.proof, { tripId, dogId: trip.dogId, ownerId: trip.ownerId },
+          trip.blockedTopics, prior?.at ?? trip.at)
         return input ? [normalized(input, true)] : []
       }
       const { input, topics } = candidate
@@ -248,7 +251,6 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     for (const entry of ordered) {
       const id = findId(entry)
       if (chosen.has(id)) continue
-      chosen.add(id)
       const existing = existingFind(entry, id)
       if (entry.eventCapturedAt !== undefined && existing &&
           (!sameContent(existing, entry.data) ||
@@ -259,10 +261,12 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
       }
       if (prior && (!existing || !prior.ids.has(existing.id))) continue
       if (existing && (!isVisible(existing, trip.blockedTopics) ||
-          (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode))) continue
+          (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode) ||
+          (entry.data.sourceMode === 'cache' && !sameContent(existing, entry.data)))) continue
       // The physical limit includes history. Owners with no proven article can leave one slot open.
       const limit = trip.ownerId !== undefined && !hasRealZhihu && entry.data.kind !== 'zhihu' ? 4 : 5
       if (!existing && count >= limit) continue
+      chosen.add(id)
       finds.push(existing ?? insert(entry, id, trip.at))
       if (!existing) count++
       if (entry.data.kind === 'zhihu') hasRealZhihu = true
@@ -270,7 +274,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     finds.sort((a, b) => priority(a) - priority(b) || compareText(a.createdAt, b.createdAt) || compareText(a.id, b.id))
     const result = finds.slice(0, 5)
     const completion = !prior && result.length >= 3 && (trip.ownerId === undefined || hasRealZhihu)
-      ? { ids: new Set(result.map(row => row.id)), candidates: candidates.map(candidate => 'proof' in candidate
+      ? { at: trip.at, ids: new Set(result.map(row => row.id)), candidates: candidates.map(candidate => 'proof' in candidate
         ? { proof: candidate.proof } : { input: { ...candidate.input }, topics: [...candidate.topics] }) }
       : null
     return { finds: result, eventOmission, completion }
