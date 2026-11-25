@@ -27,7 +27,9 @@
 //      started_at、event.id / code / happened_at，以及这趟的 find.id / source_mode。
 //   4. 摘要走统一的 `validateSnapshot`，不再自己复制「≤40 字」常量。
 
+import crypto from 'node:crypto'
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { initializeDiagnosticSeeds } from './d5-diagnostic-seeds.mjs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -139,7 +141,15 @@ function printDog({ body, evidence }, { compact }) {
       `${evidence.failedTripsIgnored ? `；另有 ${evidence.failedTripsIgnored} 趟 failed 没算` : ''}`,
   )
   for (const t of evidence.trips) {
-    const head = `    ${t.tripId} seq${t.seq} ${t.status.padEnd(7)} ${t.startedAt}→${t.endedAt}`
+    // 绑定版本放在每一趟上，而不是只在末尾汇总：A 要核对的是「这趟绑的是哪一版」，
+    // 和「我算出来这趟该有几条摘要」是两件事，混在一起就看不出绑定错位。
+    const bind =
+      t.boundSnapshotVersion === null
+        ? evidence.schemaHasTripSnapshot
+          ? '未绑快照'
+          : '库无绑定表'
+        : `snapshot v${t.boundSnapshotVersion}`
+    const head = `    ${t.tripId} seq${t.seq} ${t.status.padEnd(7)} ${bind.padEnd(14)} ${t.startedAt}→${t.endedAt}`
     if (t.event) {
       console.log(`${head}`)
       // code 可能为 null：正式态不拿今天的 code 冒充「当时那条」的 code，只有诊断态才有模板 code
@@ -168,7 +178,26 @@ function printDog({ body, evidence }, { compact }) {
   console.log()
 }
 
-function report(results, { compact = false } = {}) {
+/**
+ * 一次只读验收的「身份」：库、schema、代码、读前 hash。
+ * 这四样缺一样，报告就只是「某台机器上的某次输出」，别人没法复现也没法核对。
+ */
+function printRunMeta(meta) {
+  console.log('—— 本次读取的身份 ——')
+  console.log(`  库          ${meta.path}`)
+  console.log(`  字节        ${meta.bytes}`)
+  console.log(`  schema      v${meta.schemaVersion}${meta.tripSnapshotTable ? '（有 trip_snapshot 绑定表）' : '（无 trip_snapshot 表）'}`)
+  console.log(`  读前 sha256 ${meta.sha256Before}`)
+  if (meta.code.sha) {
+    console.log(`  代码        ${meta.code.sha}${meta.code.dirty ? ' ⚠ 工作区有未提交改动' : ''}（来源 ${meta.code.source}）`)
+  } else {
+    console.log('  代码        (取不到 git HEAD：--code-sha 显式传，或把 GIT_EXE 指到 git.exe)')
+  }
+  console.log('')
+}
+
+function report(results, { compact = false, meta = null } = {}) {
+  if (meta) printRunMeta(meta)
   console.log(`种子狗 ${results.length} 只\n`)
   const withTrips = results.filter((r) => r.evidence.tripsConsidered > 0)
   const withWaiting = results.filter((r) => r.evidence.waiting !== null)
@@ -518,6 +547,34 @@ function selftest() {
     da.close()
   })
 
+  check('S23 绑定版本读得出，且「库里没这张表」不冒充「这趟没绑」', () => {
+    // 两个库对比：一个有 trip_snapshot 并真绑了 v1，一个没有这张表。
+    // 两者在 boundSnapshotVersion 上都是 null/数字，只看它会分不清「没绑」和「旧库没这概念」。
+    const withBind = new DatabaseSync(':memory:')
+    withBind.exec('PRAGMA foreign_keys = ON')
+    initializeDiagnosticSeeds(withBind)
+    mkTrips(withBind, `('b1','${D}',1,'done','auto','2026-11-24T01:00:00Z','2026-11-24T01:00:00Z','2026-11-24T02:00:00Z')`)
+    withBind.exec(`CREATE TABLE trip_snapshot (
+      trip_id TEXT PRIMARY KEY,
+      dog_id TEXT NOT NULL,
+      snapshot_version INTEGER NOT NULL
+    )`)
+    withBind.exec(`INSERT INTO trip_snapshot (trip_id, dog_id, snapshot_version) VALUES ('b1','${D}',1)`)
+    const rb = deriveSnapshot(withBind, D)
+    eq(rb.evidence.schemaHasTripSnapshot, true, '有绑定表')
+    eq(rb.evidence.trips[0].boundSnapshotVersion, 1, '这趟绑的是 v1')
+    withBind.close()
+
+    const noBind = new DatabaseSync(':memory:')
+    noBind.exec('PRAGMA foreign_keys = ON')
+    initializeDiagnosticSeeds(noBind)
+    mkTrips(noBind, `('b2','${D}',1,'done','auto','2026-11-24T01:00:00Z','2026-11-24T01:00:00Z','2026-11-24T02:00:00Z')`)
+    const rn = deriveSnapshot(noBind, D)
+    eq(rn.evidence.schemaHasTripSnapshot, false, '没有绑定表')
+    eq(rn.evidence.trips[0].boundSnapshotVersion, null, '旧库没有绑定关系，不是「绑定丢了」')
+    noBind.close()
+  })
+
   console.log(`\n自检 ${pass} 过 / ${fail} 败`)
   console.log('（这是「证据生成器」的验证，不是 D5 完成 —— 这里的数据是造的，不是它走出来的。）')
   db.close()
@@ -528,13 +585,20 @@ function selftest() {
 // 主流程
 // ---------------------------------------------------------------------------
 
-function loadJsonEvidence(results, dbLabel) {
+function loadJsonEvidence(results, dbLabel, meta) {
   const unfixed = results.filter((r) => !r.evidence.historyFixed).map((r) => r.evidence.dogId)
+  const bound = results.flatMap((r) =>
+    r.evidence.trips.map((t) => ({ dogId: r.evidence.dogId, tripId: t.tripId, seq: t.seq, version: t.boundSnapshotVersion })),
+  )
   return {
     generatedAt: new Date().toISOString(),
+    kind: 'd5-readonly-acceptance',
     db: dbLabel,
     readOnly: true,
     note: '本文件是只读派生的证据，不含可执行 SQL；版本号由 C 的分配器给，D 不写库。',
+    meta,
+    // 验收要看的是「这趟实际绑的是哪一版」，不是「我算出来该有几趟」。
+    bindings: bound,
     textSource: { sources: [...new Set(results.map((r) => r.evidence.textSource))], mutable: results.some((r) => r.evidence.textMutable) },
     historyFixed: unfixed.length === 0,
     historyUnfixedDogs: unfixed,
@@ -543,6 +607,28 @@ function loadJsonEvidence(results, dbLabel) {
         ? '全部摘要来自发生当时固定下来的事实。'
         : '有事件缺少发生时固定事实（或仍处于模板诊断模式）；不作正式记录。',
     dogs: results.map(({ body, evidence }) => ({ body, evidence })),
+  }
+}
+
+/** 读前后各算一次：两次数一样才算「只读」不是自说自话。 */
+function sha256Of(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+}
+
+/**
+ * 本机代码版本。拿 git 失败就给 null 并说明 ——
+ * PowerShell 里 `git` 常不在 PATH，不能因此中断一次只读验收。
+ */
+function codeVersion() {
+  const explicit = valueOf('--code-sha')
+  if (explicit) return { sha: explicit, dirty: null, source: 'arg' }
+  try {
+    const git = process.env.GIT_EXE || 'git'
+    const sha = execFileSync(git, ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim()
+    const dirty = execFileSync(git, ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).trim().length > 0
+    return { sha, dirty, source: 'git' }
+  } catch {
+    return { sha: null, dirty: null, source: 'unavailable' }
   }
 }
 
@@ -560,7 +646,25 @@ if (has('--selftest')) {
     process.exit(1)
   }
   // 只读连接：写一句就报 `attempt to write a readonly database`，不靠自觉。
+  // 打开之前先算一次 hash：读完之后再算一次，两次一样才叫「只读」，不靠自我声明。
+  const dbMeta = {
+    path: abs,
+    bytes: fs.statSync(abs).size,
+    sha256Before: sha256Of(abs),
+    sha256After: null,
+    /** 读前后是否逐字节相同。false 时本份证据不可作为「未改库」的凭据。 */
+    identical: false,
+    schemaVersion: null,
+    tripSnapshotTable: null,
+    code: codeVersion(),
+    command: `node scripts/d5-derive-snapshot.mjs --db '${abs}'${outPath ? ` --out '${path.resolve(outPath)}'` : ''}`,
+  }
+  // 只读连接：写一句就报 `attempt to write a readonly database`，不靠自觉。
   const db = new DatabaseSync(abs, { readOnly: true })
+  dbMeta.schemaVersion = Number(db.prepare('PRAGMA user_version').get().user_version)
+  dbMeta.tripSnapshotTable = Boolean(
+    db.prepare(`SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'trip_snapshot'`).get(),
+  )
   // 默认读固定事实。诊断态必须显式要，不能因为「读不到视图」就悄悄退回去。
   const diagnostic = has('--template-diagnostic')
   const deriveOpts = diagnostic ? {} : { occurrenceFacts: readOccurrenceFact }
@@ -581,6 +685,7 @@ if (has('--selftest')) {
     process.exit(1)
   }
   let results
+  let pendingOut = null
   try {
     // 单次读事务：同一只狗的经历和挂念出自同一个时间点，不会读到「写了一半」的中间态。
     db.exec('BEGIN')
@@ -595,12 +700,9 @@ if (has('--selftest')) {
       throw e
     }
     console.log(`库：${abs}（只读，单次读事务）\n`)
-    report(results)
+    report(results, { meta: dbMeta })
 
-    if (outPath) {
-      fs.writeFileSync(path.resolve(outPath), JSON.stringify(loadJsonEvidence(results, abs), null, 2) + '\n')
-      console.log(`证据 JSON：${path.resolve(outPath)}（与报告、SQL 分三个落点）`)
-    }
+    if (outPath) pendingOut = path.resolve(outPath)
 
     if (sqlOut) {
       if (!versionArg) {
@@ -648,6 +750,17 @@ if (has('--selftest')) {
     }
   } finally {
     db.close()
+    // 关库之后才算 after：连接还开着的时候算，等于在还没写完的状态上下结论。
+    dbMeta.sha256After = sha256Of(abs)
+    dbMeta.identical = dbMeta.sha256After === dbMeta.sha256Before
+    if (pendingOut && results) {
+      fs.writeFileSync(pendingOut, JSON.stringify(loadJsonEvidence(results, abs, dbMeta), null, 2) + '\n')
+      console.log(`证据 JSON：${pendingOut}（与报告、SQL 分三个落点）`)
+      console.log(
+        `读前 ${dbMeta.sha256Before.slice(0, 12)}… 读后 ${dbMeta.sha256After.slice(0, 12)}… ` +
+          `${dbMeta.identical ? '一致（本份证据可作为「未改库」凭据）' : '⚠ 不一致，本份证据不能作为「未改库」凭据'}`,
+      )
+    }
   }
 } else {
   // 没给库：用内存库跑一遍「只有种子狗、没有旅途」的起点。

@@ -120,6 +120,12 @@ export interface TripEvidence {
   textSource: 'occurrence' | 'template_current' | 'unverifiable' | 'none'
   /** 固定事实的来源标识（事件版本 id / 记录 id，具体形状由 C 定）。模板态恒为 null。 */
   factSourceId: string | null
+  /**
+   * 这趟出发时绑定的是哪一版快照（`trip_snapshot.snapshot_version`）。
+   * null 有两种：v6 库没有这张表（旧库本就没有绑定关系）/ 这趟确实没绑（历史遗留的未绑定趟）。
+   * 要区分这两种看 `schemaHasTripSnapshot`。
+   */
+  boundSnapshotVersion: number | null
   /** 这趟有没有 Find。只给 id / kind / source_mode —— 标题与摘要不进证据。 */
   finds: { id: string; kind: string; sourceMode: string | null }[]
 }
@@ -153,6 +159,11 @@ export interface SnapshotEvidence {
    */
   historyFixed: boolean
   findCoverage: { tripsWithFind: number; tripsWithoutFind: number }
+  /**
+   * 这个库有没有 v7 的 `trip_snapshot` 表。
+   * 用来区分「这趟没绑快照」和「旧库根本没绑定这张表」—— 两种都表现为 boundSnapshotVersion=null。
+   */
+  schemaHasTripSnapshot: boolean
 }
 
 export interface DeriveResult {
@@ -260,6 +271,19 @@ const earliestOccurrence = (db: DatabaseSync, tripId: string, dogId: string) =>
     .get(tripId, dogId) ?? null) as { event_id: string; happened_at: string } | null
 
 /**
+ * 这一趟出发时绑定的是哪一版快照（`trip_snapshot.snapshot_version`）。
+ *
+ * 为什么要读它：派生出「此刻该长什么样」是一回事，**这趟实际绑定的是哪一版**是另一回事。
+ * 验收要的是后者 —— 只报「我算出来该有几趟」而不报「库里钉的是哪一版」，
+ * 等于没核对绑定关系。
+ *
+ * `trip_snapshot` 是 v7 才有的表：v6 诊断库直接查会报 `no such table`，
+ * 所以先探测再查，缺表时一律回 null（旧库本来就没有绑定关系，不是「绑定丢了」）。
+ */
+const tripSnapshotTable = (db: DatabaseSync): boolean =>
+  Boolean(db.prepare(`SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'trip_snapshot'`).get())
+
+/**
  * 当前模板的 code / text。**只有诊断态才读它** —— 这两列会随改文案而变。
  * 读它的唯一理由是：没有固定事实时，还得让人看见「这条事件本身长什么样」。
  */
@@ -328,6 +352,12 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
   if (!dog) throw new Error(`没有这只狗：${dogId}`)
 
   const trips = recentTrips(db, dogId)
+  const hasBinding = tripSnapshotTable(db)
+  const boundOf = (tripId: string): number | null =>
+    hasBinding
+      ? ((db.prepare('SELECT snapshot_version FROM trip_snapshot WHERE trip_id = ?').get(tripId)?.snapshot_version ??
+          null) as number | null)
+      : null
 
   const tripEvidence: TripEvidence[] = []
   const summaries: string[] = []
@@ -372,6 +402,7 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
       summary,
       textSource: fact ? 'occurrence' : !occ ? 'none' : hasFactReader ? 'unverifiable' : 'template_current',
       factSourceId: fact ? fact.sourceId : null,
+      boundSnapshotVersion: boundOf(t.id),
       finds: finds.map((f) => ({ id: f.id, kind: f.kind, sourceMode: f.source_mode })),
     })
   }
@@ -406,6 +437,7 @@ export function deriveSnapshot(db: DatabaseSync, dogId: string, opts: DeriveOpti
     textMutable: missingFacts > 0 && !hasFactReader,
     historyFixed: missingFacts === 0,
     findCoverage: { tripsWithFind: withFind, tripsWithoutFind: tripEvidence.length - withFind },
+    schemaHasTripSnapshot: hasBinding,
   }
 
   return { body, evidence }
