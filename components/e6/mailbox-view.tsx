@@ -118,13 +118,13 @@ export function MailboxView({ dogId, client = mailboxClient, fixture = false, re
             {renderRelationshipActions ? renderRelationshipActions(activePeer) : <p className={s.muted}>举报与屏蔽操作暂未接通；目前不开放新的捎话提交。</p>}</>}
         </>}
         <button onClick={() => setCompose(false)}>先收起来</button></section>}
-      <nav className={s.tabs} aria-label="来信分类">{([['invitations', '邀请与回音'], ['inbox', '朋友来信'], ['outbox', '寄出的捎话']] as const).map(([key, label]) => <button key={key} aria-pressed={box === key} onClick={() => { setBox(key); closeDetail() }}>{label}</button>)}</nav>
+      <nav className={s.tabs} aria-label="来信分类">{([['invitations', '邀请与回音'], ['inbox', '朋友来信'], ['outbox', '寄出的捎话']] as const).map(([key, label]) => <button key={key} aria-pressed={box === key} onClick={() => { setPhase('loading'); setRows([]); setInvitations([]); setBox(key); closeDetail() }}>{label}</button>)}</nav>
       {phase === 'loading' && <p role="status" className={s.notice}>正在读取这一叠信…</p>}
       {phase === 'error' && <div className={s.notice} role="alert"><p>{error}</p><button onClick={() => setReload(x => x + 1)}>重新读取</button></div>}
       {phase === 'ready' && <>
         <div className={s.actions}><button onClick={() => setReload(x => x + 1)}>刷新这一叠信</button></div>
         {!selected && <div className={s.list}>
-          {box === 'invitations' ? invitations.length ? invitations.map(item => <article className={s.card} key={item.id}><div className={s.cardHead}><h2>它留给你的邀请</h2><span className={s.status}>{item.state === 'replied' ? '已回应' : item.state === 'gone_alone' ? '它先去看看了' : '安静地等着'}</span></div><p>{item.text}</p><button onClick={() => { setSelected(item); setReplying(false) }}>打开邀请</button></article>) : <Empty text="这里还没有邀请。先一起过会儿日子吧。" /> : rows.length ? rows.filter(item => box !== 'outbox' || item.kind === 'co_owner_message').map(item => <article className={s.card} key={item.id}>
+          {box === 'invitations' ? invitations.length ? invitations.map(item => <article className={s.card} key={item.id}><div className={s.cardHead}><h2>它留给你的邀请</h2><span className={s.status}>{item.state === 'replied' ? '已回应' : item.state === 'gone_alone' ? '它先去看看了' : '安静地等着'}</span></div><p>{item.text}</p><button onClick={() => { setSelected(item); setReplying(false) }}>打开邀请</button></article>) : <Empty text="这里还没有邀请。先一起过会儿日子吧。" /> : rows.length ? rows.filter(item => box === 'outbox' ? item.fromDog === dogId && item.kind === 'co_owner_message' : item.toDog === dogId).map(item => <article className={s.card} key={item.id}>
             <p className={s.muted}>{peerLabel(item)}</p><div className={s.cardHead}><h2>{letterTitle(item, dogId)}</h2><span className={s.status}>{letterState(item)}</span></div>
             {!item.deliveredAt && <p className={s.muted}>{box === 'outbox' ? '对方下次出行开始时，才会收到。' : '伙伴下次出行开始时，才会带来。不用守着等。'}</p>}
             {box === 'outbox' ? <><ExchangeText item={item} /><p className={s.muted}>{item.deliveredAt ? '已经送达。不必等对方马上回应。' : '已交给伙伴，尚未送达。'}</p></> : canOpen(item, dogId) && <button disabled={opening} onClick={() => void openLetter(item)}>拆开看看</button>}
