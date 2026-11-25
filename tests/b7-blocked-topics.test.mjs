@@ -1,7 +1,8 @@
 // B7「表达偏好与边界」可复验证据：
 //  1) 规范化口径与 C 的 blockedBy 一致（NFKC + zh-CN 小写 + 子串）；
 //  2) 屏蔽优先于心愿：命中屏蔽的心愿候选被判掉，不靠界面藏；
-//  3) 真实 SQLite 下只写 dog.blocked_topics 一列、整列覆盖、owner 隔离。
+//  3) 真实 SQLite 下只写 dog.blocked_topics 一列、整列覆盖、owner 隔离；
+//  4) 面板守卫：读取失败不可写（防覆盖旧词）、取消后在途态复位（防重开卡死）。
 // 不测契约文本归属（C/D/E 的过滤实现不在 B），见回交文档。
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -13,6 +14,7 @@ import {
   MAX_BLOCKED_TOPICS, MAX_TOPIC_LENGTH,
 } from '../lib/preferences/blocked-topics.ts'
 import { writeBlockedTopics, readBlockedTopics } from '../lib/preferences/blocked-topics-store.ts'
+import { canWriteTopics, phaseAfterDeactivate } from '../lib/preferences/blocked-topics-ui.ts'
 
 // ---- 规范化：与 C 同口径 ----
 
@@ -119,4 +121,24 @@ test('读取：合法 JSON 数组里的非字符串项被过滤，不误当成�
   const { db } = setup(t)
   db.prepare('UPDATE dog SET blocked_topics = ? WHERE id = ?').run('["雪", 3, null, "猫"]', 'dog-a')
   assert.deepEqual(readBlockedTopics(db, 'dog-a'), ['雪', '猫'])
+})
+
+// ---- 面板守卫：读取失败覆盖旧词 / 取消后重开卡状态 ----
+
+test('读取失败或读取中禁止写入，只有 ready 且面板可见才允许', () => {
+  // 读取失败 phase=error、读取中 loading、保存中 saving 一律不可写：
+  // 否则用当时为空/不完整的 topics 做整列 PATCH 会清掉服务端已存的旧词。
+  assert.equal(canWriteTopics('error', true), false, '读取失败不得写入')
+  assert.equal(canWriteTopics('loading', true), false, '读取中不得写入')
+  assert.equal(canWriteTopics('saving', true), false, '保存中不得重复写入')
+  assert.equal(canWriteTopics('ready', false), false, '面板隐藏时不得写入')
+  assert.equal(canWriteTopics('ready', true), true, '读取成功且可见才可写')
+})
+
+test('取消面板把在途 loading/saving 复位为 ready，稳定态不变', () => {
+  // 取消时若正在保存，phase 会被打回 ready；重开重读拿到服务端真值，不会卡在 saving。
+  assert.equal(phaseAfterDeactivate('loading'), 'ready')
+  assert.equal(phaseAfterDeactivate('saving'), 'ready')
+  assert.equal(phaseAfterDeactivate('ready'), 'ready')
+  assert.equal(phaseAfterDeactivate('error'), 'error', '错误态保留提示，交重试处理')
 })
