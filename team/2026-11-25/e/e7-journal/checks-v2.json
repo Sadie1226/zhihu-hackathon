@@ -1,0 +1,175 @@
+{
+  "date": "2026-11-25",
+  "branch": "e7-journal-20261125",
+  "batch": "v2-visual",
+  "base": "6f5282dc13b8273a7ac750ce0869bc5138d68b63",
+  "baseNote": "e6-mailbox-20261123，基于 dd5f53e；未合并 a-slider-fix-1124 或 a-d5-execution-ready-1125",
+  "supersedes": "checks.json（v1 静态摘要保留，不覆盖）",
+  "codeFingerprint": {
+    "v1": "33165d87465176a1b02dc52e653643c77022cf8141633dd1ee955ed585e885f4",
+    "v2": "bb12b514db4957d9c055d8daa61a9e3f8317332b6a8c7684848a07225867fcde",
+    "fileCount": 11,
+    "manifest": "evidence/code-fingerprint-v2.sha256"
+  },
+  "runtime": {
+    "node": "v24.20.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "browser": "chromium_headless_shell-1223 (Chromium 148.0.7778.96)",
+    "port": 3109,
+    "database": "项目外独立测试库 a5-development-journal.sqlite"
+  },
+  "staticChecks": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "name": "eslint",
+      "command": "npx eslint components/e7 \"app/(e)\" tests/e7-journal.test.mjs scripts/e7/verify.mjs --max-warnings=0",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "name": "unitTests",
+      "command": "node --test tests/e7-journal.test.mjs",
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "result": "pass"
+    }
+  ],
+  "browserChecks": {
+    "command": "E7_BASE_URL=http://127.0.0.1:3109 E7_DB_PATH=<独立测试库> E7_REAL=1 node scripts/e7/verify.mjs",
+    "ranAt": "2026-11-25T10:37:59.194Z",
+    "result": "ALL CHECKS PASSED",
+    "failures": [],
+    "fixtureViewports": ["375x667", "320x568", "1440x900"],
+    "fixtureScenarios": ["normal", "empty", "error", "partial", "slow", "sealed"],
+    "visual": {
+      "layers": {
+        "page": "rgb(244, 233, 214)",
+        "card": "rgb(255, 250, 240)",
+        "paper": "rgb(255, 253, 247)",
+        "distinct": true,
+        "ascendingLuminance": true
+      },
+      "cardBorderWidth": "1px",
+      "selectedTab": {
+        "backgroundColor": "rgb(237, 223, 196)",
+        "fontWeight": "600",
+        "boxShadow": "inset 0 -3px 0 #8b6b42"
+      },
+      "focusRing": {
+        "containsInset": true,
+        "containsWarmBrown": "rgb(138, 102, 54)",
+        "boxSizeUnchanged": true
+      },
+      "pressFeedback": {
+        "transform": "matrix(1, 0, 0, 1, 0, 1)",
+        "boxSizeUnchanged": true
+      },
+      "reveal": {
+        "staggerMs": 16,
+        "fourthGlyphDelayMs": 48,
+        "glyphDurationMs": 200,
+        "animationName": "glyphIn（CSS Modules 局部名）",
+        "ariaLabelIsFullText": true,
+        "clickRevealsAll": true,
+        "replaySkipsAnimation": true,
+        "toggleOffPersists": true,
+        "reducedMotionAnimationNone": true
+      },
+      "longText": {
+        "lineHeight": "31.2px",
+        "fontSize": "16px",
+        "horizontalOverflow": 0
+      }
+    },
+    "realPage": {
+      "url": "/journal",
+      "viewport": "375x667",
+      "identity": "development",
+      "tripsRendered": true,
+      "undeliveredLeak": false,
+      "readPatchStatus": 200,
+      "readAtWritten": "2026-11-25T10:38:22.604Z",
+      "readPatchesTotal": 1,
+      "replayGlyphs": 0,
+      "pageErrors": 0
+    },
+    "screenshots": 40,
+    "evidenceFiles": 42,
+    "rawOutput": "evidence/verification.json"
+  },
+  "readAtByBatch": {
+    "v1": { "fingerprint": "33165d87", "readAt": "2026-11-25T10:06:35.723Z", "evidence": "evidence-v1/verification.json" },
+    "v2": { "fingerprint": "bb12b514", "readAt": "2026-11-25T10:38:22.604Z", "evidence": "evidence/verification.json" },
+    "note": "两批时间戳不得混用"
+  },
+  "interfacesMeasured": {
+    "GET /api/dogs/:id/trips?limit=50": 200,
+    "GET /api/trips/:id/finds": 200,
+    "GET /api/trips/:id/message": 200,
+    "GET /api/dogs/:id/inbox?filter=all": 200,
+    "GET /api/exchanges?from_dog=:id": 200,
+    "PATCH /api/exchanges/:id/read": "200 且写入 read_at",
+    "GET /api/dogs/:id/relations": 404,
+    "gift list endpoint": "不存在，首版从 inbox 派生",
+    "routes.journal": false
+  },
+  "notVerified": [
+    "手机真机除四项视觉项以外的行为（拆信写已读、回应入口、长列表滚动性能等）",
+    "组件 reducedMotion prop 分支的真机验证（仅单测覆盖，浏览器侧验的是 CSS 媒体查询）",
+    "真实两账号收发闭环",
+    "离线打开（按 A 批准的排期后补）"
+  ],
+  "verificationLevel": "桌面自动化验证通过；手机四项视觉项经用户确认通过",
+  "phoneVerification": {
+    "status": "confirmed-by-user",
+    "url": "http://172.20.10.4:3109/e7-preview",
+    "date": "2026-11-25",
+    "time": "当日，具体时刻未记录",
+    "device": null,
+    "os": null,
+    "browser": null,
+    "deviceNote": "用户未提供机型、系统版本与浏览器版本；不推测，也不沿用 E5 那批记录的机型版本",
+    "confirmedScope": [
+      "配色、边框与正文阅读感",
+      "首次拆信的逐字渐显",
+      "点正文立即全显",
+      "关闭渐显后刷新仍直接全文"
+    ],
+    "notCoveredByPhone": [
+      "真实双账号收发闭环",
+      "离线打开",
+      "拆信写已读与回应入口的真机行为",
+      "长列表滚动性能"
+    ],
+    "reset": "夹具页刷新即重置未读；localStorage['e7-journal:reveal'] 会保留关闭选择"
+  },
+  "knownIssues": [
+    {
+      "id": "outgoing-shows-new",
+      "summary": "寄出的那封「一片压好的银杏叶」也显示「新到」",
+      "cause": "复用 E6 letterState()，不区分收发方向：已送达 + 未读即为「新到」",
+      "handling": "本轮不改代码，登记待与 A / C 统一口径"
+    }
+  ],
+  "sharedConfigDiff": {
+    "file": "next.config.ts",
+    "line": "allowedDevOrigins: ['127.0.0.1', ...(process.env.DEV_ALLOWED_ORIGINS ?? '').split(',').map(host => host.trim()).filter(Boolean)]",
+    "owner": "A",
+    "note": "与 A 在 a-slider-fix-1124 的写法逐字相同，合并不冲突；E 不擅自改共享配置"
+  },
+  "status": {
+    "onlineFirstOfflineLater": "已获 A 批准（用户 2026-11-25 确认）",
+    "bookstoreAndE11": "按已有采用回执记录，本文不新增采用结论",
+    "sliderBug": "用户在微信、Chrome、Safari、QQ 浏览器复测均未再出现；历史原因未定，不写「已修复」；微信 hydration mismatch 独立记录，未认定为该问题原因",
+    "e6NewOutgoing": "仍禁止"
+  },
+  "pushed": false,
+  "mergedToMain": false
+}
