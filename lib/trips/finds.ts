@@ -3,12 +3,18 @@ import type { DatabaseSync } from 'node:sqlite'
 import type { Find } from '../../contracts/types.ts'
 import { assertOwnedTrip, OwnershipError, resolveAuthContext } from '../auth/session.ts'
 import { canonicalZhihuContentUrl, WishContractError } from '../wishes/contract.ts'
+import {
+  DiscoveryReceiptIntegrityError, findContentHash, insertDiscoveryReceipt, ownerDiscoveryIntent, readDiscoveryReceipt,
+} from './discovery-receipt.ts'
+import type { MemberFilter, ReceiptScope } from './discovery-receipt.ts'
 import { TripError } from './errors.ts'
 import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
 import type { OwnerFindScope, SeedFindScope } from './find-scope.ts'
 import { readOccurrenceFact } from './occurrence-facts.ts'
 import { requireRunningSeedEventTrip } from './seed-event-scope.ts'
-import { blockedBy, eligibleSearchInput, proofTripId, verifiedSearchInput } from './search-proof.ts'
+import {
+  blockedBy, blockedByNormalizedText, eligibleSearchInput, normalizeBlockedText, proofTripId, verifiedSearchInput,
+} from './search-proof.ts'
 import type { SearchProof } from './search-proof.ts'
 
 export type FindInput = Omit<Find, 'id' | 'createdAt'> & {
@@ -75,38 +81,14 @@ function normalized(input: FindInput, verified = false, eventCapturedAt?: string
 
 type PreparedFind = ReturnType<typeof normalized>
 export type BatchFindCandidate = { proof: SearchProof } |
-  { input: FindInput; topics: readonly string[] }
+  { input: FindInput; topics: readonly string[] | null }
 type BatchContext = { dogId: string; startedAt: string; at: string; blockedTopics: string[] }
 type SelectCandidates = (trip: BatchContext) => readonly BatchFindCandidate[]
-type EventOmission = 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
-
-type ConfirmedBatch = { ids: Set<string>; candidates: BatchFindCandidate[] }
-type ConfirmedBatches = Map<string, ConfirmedBatch>
-// Active connections to the same file share replay protection in this process.
-const confirmed = new WeakMap<DatabaseSync, ConfirmedBatches>()
-const confirmedFiles = new Map<string, WeakRef<ConfirmedBatches>>()
-const releaseFile = new FinalizationRegistry<{ path: string; ref: WeakRef<ConfirmedBatches> }>(({ path, ref }) => {
-  if (confirmedFiles.get(path) === ref) confirmedFiles.delete(path)
-})
-
-function confirmedBatches(db: DatabaseSync): ConfirmedBatches {
-  const known = confirmed.get(db)
-  if (known) return known
-  const path = db.location()
-  const shared = path ? confirmedFiles.get(path)?.deref() : undefined
-  const batches: ConfirmedBatches = shared ?? new Map()
-  if (path && !shared) {
-    const ref = new WeakRef(batches)
-    confirmedFiles.set(path, ref)
-    releaseFile.register(batches, { path, ref })
-  }
-  confirmed.set(db, batches)
-  return batches
-}
-
-export function isDiscoveryConfirmed(db: DatabaseSync, tripId: string): boolean {
-  return confirmedBatches(db).has(tripId)
-}
+export type EventOmission = 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
+type VisibilityReason = 'BLOCKED_TOPICS' | 'TOPIC_EVIDENCE_UNAVAILABLE'
+export type DiscoveryConfirmation = { completedAt: string; replayed: boolean; visibilityReasons: VisibilityReason[] }
+type BatchResult = { finds: Find[]; confirmation: DiscoveryConfirmation | null; eventOmission?: EventOmission }
+type ConfirmedBatch = { finds: Find[]; confirmation: DiscoveryConfirmation }
 
 function frozenEvent(db: DatabaseSync, tripId: string, trip: BatchContext): PreparedFind | EventOmission | null {
   const fact = readOccurrenceFact(db, tripId, trip.dogId)
@@ -148,6 +130,15 @@ function isVisible(row: Pick<Find, 'title' | 'excerpt'>, topics: string[]): bool
   return !blockedBy(topics, row.title, row.excerpt ?? '')
 }
 
+function visibilityReason(row: Pick<Find, 'title' | 'excerpt'>, filter: MemberFilter, blocked: string[]): VisibilityReason | null {
+  if (!isVisible(row, blocked)) return 'BLOCKED_TOPICS'
+  if (filter[0] === 'search') return blockedByNormalizedText(blocked, filter[1], filter[2]) ? 'BLOCKED_TOPICS' : null
+  if (filter[0] === 'observation' && filter[1] !== null) {
+    return blockedByNormalizedText(blocked, ...filter[1]) ? 'BLOCKED_TOPICS' : null
+  }
+  return blocked.some(topic => topic.trim()) ? 'TOPIC_EVIDENCE_UNAVAILABLE' : null
+}
+
 function historicalUrl(value: string | null): string | null {
   try { return canonicalZhihuContentUrl(value) } catch (error) {
     if (error instanceof WishContractError) return null
@@ -174,18 +165,21 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     if (!(Date.parse(at) >= Date.parse(startedAt))) return conflict()
     return { dogId, startedAt, at, blockedTopics: readBlockedTopics(blockedTopics) }
   }
-  function runningTrip(tripId: string, scope: OwnerFindScope) {
-    const trip = readOwnerFindTrip(db, tripId, scope)
+  function runningOwnerTrip(tripId: string, trip: ReturnType<typeof readOwnerFindTrip>, intentId?: string) {
     if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
-    return { tripId, ownerId: trip.ownerId, ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
+    return { tripId, ownerId: trip.ownerId, intentId: ownerDiscoveryIntent(tripId, intentId),
+      ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
   }
   function history(tripId: string): Find[] {
     return db.prepare('SELECT ' + projection + ' FROM find f WHERE f.trip_id=? ORDER BY f.created_at,f.id')
       .all(tripId) as unknown as Find[]
   }
+  function findById(id: string): Find | undefined {
+    return db.prepare('SELECT ' + projection + ' FROM find f WHERE f.id=?').get(id) as Find | undefined
+  }
   function existingFind(entry: PreparedFind, id: string): Find | undefined {
     const { data, identity } = entry
-    let existing = db.prepare('SELECT ' + projection + ' FROM find f WHERE f.id=?').get(id) as Find | undefined
+    let existing = findById(id)
     // Historical rows may predate deterministic IDs.
     if (!existing && data.kind === 'zhihu') {
       existing = history(data.tripId).find(row => row.kind === 'zhihu' && historicalUrl(row.sourceUrl) === identity)
@@ -202,50 +196,82 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
       data.sourceMode, data.authorityLevel, data.voteUpCount, data.assetPath, at)
     return { id, ...data, createdAt: at }
   }
-  function write(inputOrProof: FindInput | SearchProof, scope: OwnerFindScope, verified: boolean): Find {
+  function replayBatch(trip: BatchContext & ReceiptScope): ConfirmedBatch | null {
+    const receipt = readDiscoveryReceipt(db, trip)
+    if (!receipt) return null
+    if (Date.parse(receipt.completedAt) < Date.parse(trip.startedAt)) throw new DiscoveryReceiptIntegrityError()
+    const finds: Find[] = []
+    const reasons = new Set<VisibilityReason>()
+    let hasArticle = false
+    for (const [id, expectedHash, filter] of receipt.members) {
+      const row = findById(id)
+      if (!row || row.tripId !== trip.tripId || findContentHash(row) !== expectedHash) {
+        throw new DiscoveryReceiptIntegrityError()
+      }
+      if (filter[0] === 'search') {
+        if (trip.ownerId === null || row.kind !== 'zhihu' || !historicalUrl(row.sourceUrl) ||
+            (row.sourceMode !== 'live' && row.sourceMode !== 'cache')) throw new DiscoveryReceiptIntegrityError()
+        hasArticle = true
+      } else if (filter[0] === 'event') {
+        const event = frozenEvent(db, trip.tripId, { ...trip, at: receipt.completedAt, blockedTopics: [] })
+        if (!event || typeof event === 'string' || event.eventCapturedAt !== filter[1] ||
+            findId(event) !== id || !sameContent(row, event.data)) throw new DiscoveryReceiptIntegrityError()
+      } else if (row.kind !== 'scene' && (trip.ownerId === null || row.kind !== 'moment')) {
+        throw new DiscoveryReceiptIntegrityError()
+      }
+      const reason = visibilityReason(row, filter, trip.blockedTopics)
+      if (reason) reasons.add(reason)
+      else finds.push({ ...row })
+    }
+    if (trip.ownerId !== null && !hasArticle) throw new DiscoveryReceiptIntegrityError()
+    return { finds, confirmation: { completedAt: receipt.completedAt, replayed: true, visibilityReasons: [...reasons] } }
+  }
+
+  function write(inputOrProof: FindInput | SearchProof, scope: OwnerFindScope, verified: boolean, intentId?: string): Find {
     return transaction(db, true, () => {
       const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
-      const trip = runningTrip(tripId, scope)
+      const trip = runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
+      const receipt = replayBatch(trip)
       const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics)
         : inputOrProof as FindInput
       const entry = normalized(input, verified)
       const id = findId(entry)
       const existing = existingFind(entry, id)
-      const prior = confirmedBatches(db).get(tripId)
-      if (prior && (!existing || !prior.ids.has(existing.id))) return conflict()
+      if (receipt && (!existing || !receipt.finds.some(row => row.id === existing.id))) return conflict()
       if (existing && !sameContent(existing, entry.data)) return conflict()
       return existing ?? insert(entry, id, trip.at)
     })
   }
-  function persistBatch(tripId: string, trip: BatchContext & { ownerId?: string }, select: SelectCandidates) {
-    const prior = confirmedBatches(db).get(tripId)
-    const candidates = prior?.candidates ?? select(trip)
-    const ordered = candidates.flatMap(candidate => {
+  function persistBatch(trip: BatchContext & ReceiptScope, select: SelectCandidates): BatchResult {
+    const prior = replayBatch(trip)
+    if (prior) return prior
+    const { tripId, ownerId } = trip
+    const ordered = select(trip).flatMap((candidate): { entry: PreparedFind; filter: MemberFilter }[] => {
       if ('proof' in candidate) {
-        if (trip.ownerId === undefined) return conflict()
-        // C9 can extend this proof-backed path while keeping the mode and first saved row intact.
-        const input = eligibleSearchInput(candidate.proof, { ...trip, tripId, ownerId: trip.ownerId }, trip.blockedTopics)
-        return input ? [normalized(input, true)] : []
+        if (ownerId === null) return conflict()
+        const verified = eligibleSearchInput(candidate.proof, { ...trip, ownerId }, trip.blockedTopics)
+        return verified ? [{ entry: normalized(verified.input, true), filter: verified.filter }] : []
       }
       const { input, topics } = candidate
-      if (input.tripId !== tripId || input.kind === 'zhihu' || (trip.ownerId === undefined && input.kind !== 'scene')) return conflict()
+      if (input.tripId !== tripId || input.kind === 'zhihu' || (ownerId === null && input.kind !== 'scene')) return conflict()
       const entry = normalized(input)
-      return isVisible(entry.data, trip.blockedTopics) && !blockedBy(trip.blockedTopics, ...topics) ? [entry] : []
+      const filter: MemberFilter = ['observation', topics?.map(normalizeBlockedText) ?? null]
+      return visibilityReason(entry.data, filter, trip.blockedTopics) ? [] : [{ entry, filter }]
     })
     const event = frozenEvent(db, tripId, trip)
     let eventOmission: EventOmission | undefined
     if (typeof event === 'string') eventOmission = event
-    else if (event) ordered.push(event)
-    ordered.sort((a, b) => priority(a.data) - priority(b.data) ||
+    else if (event?.eventCapturedAt !== undefined) ordered.push({ entry: event, filter: ['event', event.eventCapturedAt] })
+    ordered.sort(({ entry: a }, { entry: b }) => priority(a.data) - priority(b.data) ||
       (b.data.authorityLevel ?? 0) - (a.data.authorityLevel ?? 0) ||
       (b.data.voteUpCount ?? 0) - (a.data.voteUpCount ?? 0) ||
       compareText(a.data.kind, b.data.kind) || compareText(a.identity, b.identity) ||
       compareText(JSON.stringify(a.data), JSON.stringify(b.data)))
     let count = Number(db.prepare('SELECT count(*) AS n FROM find WHERE trip_id=?').get(tripId)?.n)
     const chosen = new Set<string>()
-    const finds: Find[] = []
+    const finds: { row: Find; filter: MemberFilter }[] = []
     let hasRealZhihu = false
-    for (const entry of ordered) {
+    for (const { entry, filter } of ordered) {
       const id = findId(entry)
       if (chosen.has(id)) continue
       chosen.add(id)
@@ -257,29 +283,25 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
         eventOmission = 'EVENT_FIND_MISMATCH'
         continue
       }
-      if (prior && (!existing || !prior.ids.has(existing.id))) continue
       if (existing && (!isVisible(existing, trip.blockedTopics) ||
           (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode))) continue
       // The physical limit includes history. Owners with no proven article can leave one slot open.
-      const limit = trip.ownerId !== undefined && !hasRealZhihu && entry.data.kind !== 'zhihu' ? 4 : 5
+      const limit = ownerId !== null && !hasRealZhihu && entry.data.kind !== 'zhihu' ? 4 : 5
       if (!existing && count >= limit) continue
-      finds.push(existing ?? insert(entry, id, trip.at))
+      finds.push({ row: existing ?? insert(entry, id, trip.at), filter })
       if (!existing) count++
       if (entry.data.kind === 'zhihu') hasRealZhihu = true
     }
-    finds.sort((a, b) => priority(a) - priority(b) || compareText(a.createdAt, b.createdAt) || compareText(a.id, b.id))
+    finds.sort(({ row: a }, { row: b }) =>
+      priority(a) - priority(b) || compareText(a.createdAt, b.createdAt) || compareText(a.id, b.id))
     const result = finds.slice(0, 5)
-    const completion = !prior && result.length >= 3 && (trip.ownerId === undefined || hasRealZhihu)
-      ? { ids: new Set(result.map(row => row.id)), candidates: candidates.map(candidate => 'proof' in candidate
-        ? { proof: candidate.proof } : { input: { ...candidate.input }, topics: [...candidate.topics] }) }
-      : null
-    return { finds: result, eventOmission, completion }
-  }
-
-  function writeBatch(tripId: string, authorize: () => BatchContext & { ownerId?: string }, select: SelectCandidates) {
-    const { completion, ...result } = transaction(db, true, () => persistBatch(tripId, authorize(), select))
-    if (completion) confirmedBatches(db).set(tripId, completion)
-    return result
+    if (result.length < 3 || (ownerId !== null && !hasRealZhihu)) {
+      return { finds: result.map(({ row }) => row), eventOmission, confirmation: null }
+    }
+    insertDiscoveryReceipt(db, trip, trip.at, result)
+    const checked = replayBatch(trip)
+    if (!checked || checked.finds.length !== result.length) throw new DiscoveryReceiptIntegrityError()
+    return { ...checked, eventOmission, confirmation: { ...checked.confirmation, replayed: false } }
   }
   return {
     list(tripId: string, ownerId: string): Find[] {
@@ -292,18 +314,26 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
       return write(input, ownerId, false)
     },
     /** The selector may synchronously resolve existing facts from this connection. */
-    writeBatch(tripId: string, scope: OwnerFindScope, select: SelectCandidates) {
-      return writeBatch(tripId, () => runningTrip(tripId, scope), select)
+    writeBatch(tripId: string, scope: OwnerFindScope, select: SelectCandidates, intentId?: string) {
+      return transaction(db, true, () => persistBatch(runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId), select))
     },
     writeSeedBatch(scope: SeedFindScope, select: SelectCandidates) {
-      return writeBatch(scope.tripId, () => {
+      return transaction(db, true, () => {
         const trip = requireRunningSeedEventTrip(db, scope)
-        return batchContext(scope.dogId, trip.startedAt, trip.blockedTopics)
-      }, select)
+        return persistBatch({ ...scope, ownerId: null, ...batchContext(scope.dogId, trip.startedAt, trip.blockedTopics) }, select)
+      })
+    },
+    prepareOwnerSearch(tripId: string, scope: OwnerFindScope, intentId?: string) {
+      return transaction(db, false, () => {
+        const profile = readOwnerFindTrip(db, tripId, scope)
+        const trip = runningOwnerTrip(tripId, profile, intentId)
+        return { ...trip, interestCategories: profile.interestCategories, wishText: profile.wishText,
+          wishCategory: profile.wishCategory, replay: replayBatch(trip) }
+      })
     },
     /** Trusted process-only capability; no body field can manufacture a proof. */
-    writeVerified(proof: SearchProof, scope: OwnerFindScope): Find {
-      return write(proof, scope, true)
+    writeVerified(proof: SearchProof, scope: OwnerFindScope, intentId?: string): Find {
+      return write(proof, scope, true, intentId)
     },
   }
 }

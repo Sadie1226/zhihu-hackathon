@@ -24,14 +24,14 @@ function startRequest(cookie, body = {}) {
 }
 
 test('default owner start binds the formal snapshot on an upgraded v7 database', async t => {
-  const { db: legacy, path } = mailboxDatabase(t, migrations.slice(0, -1))
+  const { db: legacy, path } = mailboxDatabase(t, migrations.filter(migration => migration.version <= 6))
   const owner = ownedDog(legacy, 'g3-owner')
   const trips = createTripService(legacy, { now })
   const pending = trips.create(owner.id, owner.sessionId, 'auto')
   legacy.close()
   const db = openDatabase(path)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
     assert.equal(readDepartureSnapshot(db, pending.id, owner.id), null)
     const response = await handleTripRequest(startRequest(owner.cookie), 'start', pending.id, () => db)
     assert.equal(response.status, 200)
@@ -43,7 +43,7 @@ test('default owner start binds the formal snapshot on an upgraded v7 database',
 })
 
 test('old running and terminal trips are never assigned a retrospective snapshot, and missing history blocks a new start', async t => {
-  const { db: legacy, path } = mailboxDatabase(t, migrations.slice(0, -1))
+  const { db: legacy, path } = mailboxDatabase(t, migrations.filter(migration => migration.version <= 6))
   const owner = ownedDog(legacy, 'g3-legacy')
   const sender = ownedDog(legacy, 'g3-sender')
   legacy.prepare(`INSERT INTO trip(id,dog_id,seq,status,trigger,created_at,started_at,ended_at)

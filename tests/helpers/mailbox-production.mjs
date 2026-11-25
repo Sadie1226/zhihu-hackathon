@@ -136,7 +136,7 @@ test('production HTTP routes, ownership, explicit read, C4 start, restart and fa
 })
 
 test('production HTTP upgrades v6 and binds the departure snapshot on the first start', { timeout: 45000 }, async t => {
-  const { db, path } = mailboxDatabase(t, migrations.slice(0, -1))
+  const { db, path } = mailboxDatabase(t, migrations.filter(migration => migration.version <= 6))
   const owner = ownedDog(db, 'g3-production-owner', true)
   const sender = ownedDog(db, 'g3-production-sender', true)
   insertExchange(db, 'g3-production-gift', sender.id, owner.id, 1)
@@ -153,7 +153,7 @@ test('production HTTP upgrades v6 and binds the departure snapshot on the first 
     assert.deepEqual(await post(startRoute), { trip: started.trip, delivered: [] })
     const reader = new DatabaseSync(path, { readOnly: true })
     try {
-      assert.equal(reader.prepare('PRAGMA user_version').get().user_version, 7)
+      assert.equal(reader.prepare('PRAGMA user_version').get().user_version, 8)
       assert.deepEqual(readDepartureSnapshot(reader, trip.id, owner.id), {
         dogId: owner.id, version: 1, createdAt: started.trip.startedAt,
         personalityTags: ['好奇', '看物', '直给'], interestCategories: null, recentTrips: [], waitingFor: null,

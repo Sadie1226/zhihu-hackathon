@@ -67,7 +67,7 @@ function controlledProvider(items, beforeResponse = () => {}) {
 
 function fixture(t) {
   const { db, path } = mailboxDatabase(t)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
   const trips = createTripService(db, { now: () => new Date(started) })
   function addTrip(dogId, beforeStart = () => {}) {
     const account = owner(db, dogId)
@@ -79,12 +79,12 @@ function fixture(t) {
   }
   const compose = createTripDiscoveryComposer(db, { now })
   function search(trip, items, beforeResponse) {
-    return createTripDiscoverySearch(db, controlledProvider(items, beforeResponse))(trip.id, trip.request)
+    return createTripDiscoverySearch(db, controlledProvider(items, beforeResponse), { now })(trip.id, trip.request)
   }
   return { db, path, trips, addTrip, compose, search }
 }
 
-test('real v7 owner start, C7 and frozen Moment retain the first content and G3 departure facts', t => {
+test('real owner start, C7 and frozen Moment retain the first content and G3 departure facts on v8', t => {
   const { db, path, trips, addTrip, compose } = fixture(t)
   const sender = owner(db, 'sender')
   const trip = addTrip('traveler', ({ dogId }) => {
@@ -121,7 +121,7 @@ test('real v7 owner start, C7 and frozen Moment retain the first content and G3 
 })
 
 test('earliest migrated unverifiable occurrence wins SQLite ordering over a later frozen occurrence', t => {
-  const { db: legacy, path } = mailboxDatabase(t, migrations.slice(0, -1))
+  const { db: legacy, path } = mailboxDatabase(t, migrations.filter(migration => migration.version <= 6))
   const account = owner(legacy, 'migrated')
   const trips = createTripService(legacy, { now: () => new Date(started) })
   const trip = { ...account, id: trips.create(account.dogId, account.ownerId, 'auto').id }
@@ -134,7 +134,7 @@ test('earliest migrated unverifiable occurrence wins SQLite ordering over a late
   legacy.close()
   const db = openDatabase(path)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
     db.prepare("INSERT INTO trip_event VALUES (?,'later',?,'2026-11-25T00:01:00.500Z')").run(trip.id, trip.dogId)
     assert.deepEqual(db.prepare('SELECT history_status FROM v_trip_event_history ORDER BY event_id').all()
       .map(row => row.history_status), ['frozen', 'unverifiable'])
@@ -240,16 +240,18 @@ test('three and five eligible owner finds, URL dedup, stable owner cookies and c
   const first = compose(three.id, otherDevice, threeInput)
   assert.equal(first.status, 'complete')
   assert.equal(first.finds.length, 3)
-  assert.deepEqual(compose(three.id, three.request, { searchProofs: drift.proofs, observations: [] }), first)
+  const replayed = { ...first, confirmation: { ...first.confirmation, replayed: true } }
+  assert.deepEqual(compose(three.id, three.request, { searchProofs: drift.proofs, observations: [] }), replayed)
   let replayCalls = 0
   const replay = await search(three, [item(300)], () => { replayCalls++ })
   assert.equal(replay.ok, true)
   assert.deepEqual(replay.proofs, [])
+  assert.deepEqual(replay.replay, { finds: first.finds, confirmation: replayed.confirmation })
   assert.equal(replayCalls, 0)
   const second = openDatabase(path)
   try {
     const replayFromSecond = createTripDiscoveryComposer(second, { now })
-    assert.deepEqual(replayFromSecond(three.id, three.request, { searchProofs: drift.proofs }), first)
+    assert.deepEqual(replayFromSecond(three.id, three.request, { searchProofs: drift.proofs }), replayed)
     assert.throws(() => createFindStore(second, { now }).writeVerified(drift.proof, three.request), conflict)
   } finally { second.close() }
   const duplicate = { ...item(301), Url: url(301).replace('www.zhihu.com', 'zhihu.com') + '/?utm_medium=demo' }

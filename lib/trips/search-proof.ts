@@ -1,30 +1,39 @@
 ﻿import type { ContractError } from '../../contracts/types.ts'
 import type { SearchResult } from '../zhihu/client.ts'
 import { canonicalZhihuContentUrl } from '../wishes/contract.ts'
+import { ownerDiscoveryIntent } from './discovery-receipt.ts'
 import type { FindInput } from './finds.ts'
-import { TripError } from './service.ts'
+import { TripError } from './errors.ts'
 
 /** Trusted server dependency injection only. Never select a provider from HTTP input. */
 export type SearchProvider = (query: string, count: number) => Promise<SearchResult>
 export type SearchProof = Readonly<{ readonly verifiedSearch: true }>
 type SearchScope = { tripId: string; dogId: string; ownerId: string }
-type Evidence = SearchScope & { query: string; category: string; input: FindInput }
+type Evidence = SearchScope & { intentId: string; query: string; category: string; input: FindInput }
 const evidence = new WeakMap<SearchProof, Evidence>()
 const network = (): ContractError => ({ code: 'NETWORK', detail: '这次没连上，可以再试一次', retriable: true })
 
+export function normalizeBlockedText(text: string): string {
+  return text.normalize('NFKC').toLocaleLowerCase('zh-CN')
+}
+
 export function blockedBy(topics: string[], ...texts: string[]): boolean {
-  const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase('zh-CN')
-  return topics.some(topic => topic.trim() && texts.some(text => normalize(text).includes(normalize(topic.trim()))))
+  return blockedByNormalizedText(topics, ...texts.map(normalizeBlockedText))
+}
+
+export function blockedByNormalizedText(topics: string[], ...texts: string[]): boolean {
+  return topics.some(topic => topic.trim() && texts.some(text => text.includes(normalizeBlockedText(topic.trim()))))
 }
 
 /** The default operation always calls the existing server-only C5 entry. Tests inject
  * synthetic operations explicitly; their outputs are not real integration evidence.
  */
-export async function searchForTrip(context: SearchScope & { query: string;
+export async function searchForTrip(context: SearchScope & { intentId?: string; query: string;
   category: string; blockedTopics: string[] }, provider?: SearchProvider): Promise<
   { ok: true; proof: SearchProof | null; proofs: readonly SearchProof[]; httpStatus: number; fetchedAt: string } |
   { ok: false; error: ContractError; httpStatus: number | null; fallback: 'cache-or-fixture' | null; alert: boolean }
 > {
+  const intentId = ownerDiscoveryIntent(context.tripId, context.intentId)
   try {
     const search = provider ?? (await import('../zhihu/index.ts')).searchZhihu
     const result = await search(context.query, 3)
@@ -48,7 +57,7 @@ export async function searchForTrip(context: SearchScope & { query: string;
     const proofs = inputs.filter(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? ''))
       .map(input => {
         const proof: SearchProof = Object.freeze({ verifiedSearch: true })
-        evidence.set(proof, { tripId: context.tripId, dogId: context.dogId, ownerId: context.ownerId,
+        evidence.set(proof, { tripId: context.tripId, dogId: context.dogId, ownerId: context.ownerId, intentId,
           query: context.query, category: context.category, input: Object.freeze(input) })
         return proof
       })
@@ -60,19 +69,21 @@ export async function searchForTrip(context: SearchScope & { query: string;
 }
 
 /** The store calls this under the write lock with the current owner, dog and blocks. */
-export function eligibleSearchInput(proof: SearchProof, scope: SearchScope, blockedTopics: string[]): FindInput | null {
+export function eligibleSearchInput(proof: SearchProof, scope: SearchScope & { intentId: string }, blockedTopics: string[]) {
   const value = proof && evidence.get(proof)
-  if (!value || value.ownerId !== scope.ownerId || value.dogId !== scope.dogId || value.tripId !== scope.tripId) {
+  if (!value || value.ownerId !== scope.ownerId || value.dogId !== scope.dogId || value.tripId !== scope.tripId ||
+      value.intentId !== scope.intentId) {
     throw new TripError('CONFLICT', '发现来源验证未通过')
   }
   if (blockedBy(blockedTopics, value.query, value.category, value.input.title, value.input.excerpt ?? '')) return null
-  return { ...value.input }
+  return { input: { ...value.input },
+    filter: ['search', normalizeBlockedText(value.query), normalizeBlockedText(value.category)] as const }
 }
 
-export function verifiedSearchInput(proof: SearchProof, scope: SearchScope, blockedTopics: string[]): FindInput {
-  const input = eligibleSearchInput(proof, scope, blockedTopics)
-  if (!input) throw new TripError('CONFLICT', '发现来源验证未通过')
-  return input
+export function verifiedSearchInput(proof: SearchProof, scope: SearchScope & { intentId: string }, blockedTopics: string[]): FindInput {
+  const verified = eligibleSearchInput(proof, scope, blockedTopics)
+  if (!verified) throw new TripError('CONFLICT', '发现来源验证未通过')
+  return verified.input
 }
 
 export function proofTripId(proof: SearchProof): string {

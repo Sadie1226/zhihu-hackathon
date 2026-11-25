@@ -3,7 +3,7 @@ import type { Find } from '../../contracts/types.ts'
 import { TripError } from './errors.ts'
 import type { OwnerFindScope, SeedFindScope } from './find-scope.ts'
 import { createFindStore } from './finds.ts'
-import type { BatchFindCandidate } from './finds.ts'
+import type { BatchFindCandidate, DiscoveryConfirmation, EventOmission } from './finds.ts'
 import type { SearchProof } from './search-proof.ts'
 
 /** The server executor supplies observations that it has actually verified for this trip. */
@@ -19,14 +19,17 @@ export type TripObservation = Readonly<{
   topics?: readonly string[]
 }>
 
-export type DiscoveryComposition = {
-  status: 'complete' | 'partial'
-  finds: Find[]
-  reasons: ('NO_REAL_ZHIHU' | 'INSUFFICIENT_FACTS')[]
-  eventOmission?: 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
-}
+export type DiscoveryComposition = { finds: Find[]; eventOmission?: EventOmission } & (
+  { status: 'complete'; confirmation: DiscoveryConfirmation; reasons: [] } |
+  { status: 'partial'; reasons: ('NO_REAL_ZHIHU' | 'INSUFFICIENT_FACTS')[] }
+)
 
-type CompositionInput = { searchProofs?: readonly SearchProof[]; observations?: readonly TripObservation[] }
+type CompositionInput = {
+  /** Stable intent supplied by the trusted owner executor. */
+  intentId?: string
+  searchProofs?: readonly SearchProof[]
+  observations?: readonly TripObservation[]
+}
 type SeedCompositionInput = { observations?: readonly (TripObservation & { kind: 'scene' })[] }
 
 function occurredWithin(at: string, start: string, end: string): boolean {
@@ -53,17 +56,19 @@ export function createTripDiscoveryComposer(db: DatabaseSync, options: { now?: (
         candidates.push({
           input: { tripId, kind: fact.kind, sourceKey: `observation:${fact.id}`, title: fact.title, excerpt: fact.excerpt,
             assetPath: fact.assetPath ?? null, sourceUrl: null, sourceMode: null, authorityLevel: null, voteUpCount: null },
-          topics: fact.topics ?? [],
+          topics: fact.topics ?? null,
         })
       }
       return candidates
     }
-    const { finds, eventOmission } = seed ? store.writeSeedBatch(authorization.seed, select)
-      : store.writeBatch(tripId, authorization.owner, select)
-    const reasons: DiscoveryComposition['reasons'] = []
+    const { finds, eventOmission, confirmation } = seed ? store.writeSeedBatch(authorization.seed, select)
+      : store.writeBatch(tripId, authorization.owner, select, input.intentId)
+    const diagnostic = eventOmission && { eventOmission }
+    if (confirmation) return { status: 'complete', confirmation, finds, reasons: [], ...diagnostic }
+    const reasons: Extract<DiscoveryComposition, { status: 'partial' }>['reasons'] = []
     if (!seed && !finds.some(find => find.kind === 'zhihu')) reasons.push('NO_REAL_ZHIHU')
     if (finds.length < 3) reasons.push('INSUFFICIENT_FACTS')
-    return { status: reasons.length ? 'partial' : 'complete', finds, reasons, ...(eventOmission && { eventOmission }) }
+    return { status: 'partial', finds, reasons, ...diagnostic }
   }
 
   return Object.assign(

@@ -12,7 +12,7 @@ import { insertDog, insertExchange, mailboxDatabase, ownedDog } from './helpers/
 
 const at = '2026-11-24T00:00:00.000Z'
 const clock = () => new Date(at)
-const v6Migrations = migrations.slice(0, -1)
+const v6Migrations = migrations.filter(migration => migration.version <= 6)
 
 function since(db, owner, id) {
   const service = createTripService(db, { now: clock, newId: () => id })
@@ -34,7 +34,7 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
   db.prepare('INSERT INTO trip_event VALUES (?,?,?,?)').run('legacy-trip', 'ev', owner.id, at)
   db.close()
 
-  const bad = { ...migrations.at(-1), sql: TRIP_HISTORY_V7_SQL + '\n INVALID SQL;' }
+  const bad = { ...migrations.find(migration => migration.version === 7), sql: TRIP_HISTORY_V7_SQL + '\n INVALID SQL;' }
   assert.throws(() => openDatabase(path, [...v6Migrations, bad]), /syntax error/)
   const afterFailure = openDatabase(path, v6Migrations)
   try {
@@ -47,7 +47,7 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
   for (let open = 0; open < 2; open += 1) {
     const migrated = openDatabase(path)
     try {
-      assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 7)
+      assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 8)
       assert.deepEqual({ ...migrated.prepare('SELECT * FROM v_trip_event_history').get() }, {
         trip_id: 'legacy-trip', event_id: 'ev', dog_id: owner.id, happened_at: at,
         event_code_at_occurrence: null, public_text_at_occurrence: null, history_status: 'unverifiable',

@@ -50,7 +50,7 @@ test('strict v6 rejects legacy adoption for a new owner and preserves existing l
   const dog = createDevelopmentDog(db, 'owner-a', payload())
   const upgraded = openDatabase(db.location())
   try {
-    assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 7)
+    assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 8)
     assert.deepEqual(ownedDog(upgraded, 'owner-a'), dog)
     assert.deepEqual(createDevelopmentDog(upgraded, 'owner-a', payload()), dog)
     assert.throws(() => createDevelopmentDog(upgraded, 'owner-b', { ...payload(), assembly: { cloth: 'hoodie', hat: null, glasses: null, face: 'happy' } }), /新版/)

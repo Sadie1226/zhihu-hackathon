@@ -2,24 +2,21 @@
 import { CATEGORY_KEYWORDS, INTEREST_CATEGORIES } from '../../contracts/types.ts'
 import type { InterestCategory } from '../../contracts/types.ts'
 import { TripError } from './errors.ts'
-import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
 import type { OwnerFindScope } from './find-scope.ts'
-import { createFindStore, isDiscoveryConfirmed } from './finds.ts'
+import { createFindStore } from './finds.ts'
 import { blockedBy, searchForTrip } from './search-proof.ts'
 import type { SearchProvider } from './search-proof.ts'
 
 /** Trusted server configuration supplies the provider. Search only, outside the write lock. */
-export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider) {
-  return async function search(tripId: string, scope: OwnerFindScope) {
+export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider, options: { now?: () => Date } = {}) {
+  const store = createFindStore(db, options)
+  return async function search(tripId: string, scope: OwnerFindScope, intentId?: string) {
     if (db.isTransaction) throw new Error('Trip discovery search requires a committed trip')
-    const trip = readOwnerFindTrip(db, tripId, scope)
-    if (trip.status !== 'running' || typeof trip.startedAt !== 'string') {
-      throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
+    const trip = store.prepareOwnerSearch(tripId, scope, intentId)
+    const { replay, blockedTopics } = trip
+    if (replay) {
+      return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null, replay }
     }
-    if (isDiscoveryConfirmed(db, tripId)) {
-      return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
-    }
-    const blockedTopics = readBlockedTopics(trip.blockedTopics)
     let candidate: { query: string; category: string } | undefined
     if (typeof trip.wishText === 'string' && typeof trip.wishCategory === 'string') {
       const category = trip.wishCategory
@@ -38,17 +35,19 @@ export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchPro
       }
     }
     if (!candidate) return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
-    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, ...candidate, blockedTopics }, provider)
+    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, intentId: trip.intentId, ...candidate, blockedTopics }, provider)
   }
 }
 
 /** Single Find compatibility entry. HTTP callers pass the same request to both phases. */
 export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
-  const search = createTripDiscoverySearch(db, options.provider)
-  return async function discover(tripId: string, scope: OwnerFindScope) {
-    const result = await search(tripId, scope)
+  const store = createFindStore(db, options)
+  const search = createTripDiscoverySearch(db, options.provider, options)
+  return async function discover(tripId: string, scope: OwnerFindScope, intentId?: string) {
+    const result = await search(tripId, scope, intentId)
     if (!result.ok) return result
-    const finds = result.proof ? [createFindStore(db, options).writeVerified(result.proof, scope)] : []
+    if ('replay' in result) return { ok: true as const, ...result.replay, httpStatus: null, fetchedAt: null }
+    const finds = result.proof ? [store.writeVerified(result.proof, scope, intentId)] : []
     return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
   }
 }
