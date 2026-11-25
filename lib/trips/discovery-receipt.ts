@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Find } from '../../contracts/types.ts'
 import { TripError } from './errors.ts'
+import { utcSearchTime } from './search-cache.ts'
 
 const hashVersion = 1
 const digestPattern = /^[0-9a-f]{64}$/
@@ -9,6 +10,7 @@ const intentPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 
 export type MemberFilter =
   | readonly ['search', string, string]
+  | readonly ['cache', string, string, fetchedAt: string]
   | readonly ['observation', readonly string[] | null]
   | readonly ['event', string]
 type Member = readonly [id: string, contentHash: string, filter: MemberFilter]
@@ -54,6 +56,9 @@ function validFilter(value: unknown): value is MemberFilter {
     case 'search':
       return value.length === 3 && typeof value[1] === 'string' && !!value[1].trim() &&
         typeof value[2] === 'string' && !!value[2].trim()
+    case 'cache':
+      return value.length === 4 && typeof value[1] === 'string' && !!value[1].trim() &&
+        typeof value[2] === 'string' && !!value[2].trim() && Number.isFinite(utcSearchTime(value[3]))
     case 'observation':
       return value.length === 2 && (value[1] === null ||
         (Array.isArray(value[1]) && value[1].every(topic => typeof topic === 'string')))

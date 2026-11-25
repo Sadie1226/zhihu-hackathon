@@ -11,6 +11,7 @@ import { TripError } from './errors.ts'
 import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
 import type { OwnerFindScope, SeedFindScope } from './find-scope.ts'
 import { readOccurrenceFact } from './occurrence-facts.ts'
+import { isFreshSearchTime } from './search-cache.ts'
 import { requireRunningSeedEventTrip } from './seed-event-scope.ts'
 import {
   blockedBy, blockedByNormalizedText, eligibleSearchInput, normalizeBlockedText, proofTripId, verifiedSearchInput,
@@ -61,8 +62,10 @@ function normalized(input: FindInput, verified = false, eventCapturedAt?: string
   if (input.voteUpCount !== null && (!Number.isSafeInteger(input.voteUpCount) || input.voteUpCount < 0)) return conflict()
   if (input.assetPath !== null && (typeof input.assetPath !== 'string' || !/^\/(?!\/)/.test(input.assetPath) ||
       /[\\?#%\s]/.test(input.assetPath) || input.assetPath.split('/').some(part => part === '.' || part === '..'))) return conflict()
-  // Ordinary writes remain fixture-only. Only opaque successful C5 proofs authorize live.
-  if (input.kind === 'zhihu' ? input.sourceMode !== (verified ? 'live' : 'fixture') : input.sourceMode !== null) return conflict()
+  if (input.kind === 'zhihu') {
+    const modes = verified ? ['live', 'cache'] : ['fixture']
+    if (input.sourceMode === null || !modes.includes(input.sourceMode)) return conflict()
+  } else if (input.sourceMode !== null) return conflict()
   const url = input.kind === 'zhihu' ? historicalUrl(input.sourceUrl) ?? conflict()
     : input.sourceUrl === null ? null : sourceUrl(input.sourceUrl)
   const key = input.sourceKey
@@ -132,7 +135,9 @@ function isVisible(row: Pick<Find, 'title' | 'excerpt'>, topics: string[]): bool
 
 function visibilityReason(row: Pick<Find, 'title' | 'excerpt'>, filter: MemberFilter, blocked: string[]): VisibilityReason | null {
   if (!isVisible(row, blocked)) return 'BLOCKED_TOPICS'
-  if (filter[0] === 'search') return blockedByNormalizedText(blocked, filter[1], filter[2]) ? 'BLOCKED_TOPICS' : null
+  if (filter[0] === 'search' || filter[0] === 'cache') {
+    return blockedByNormalizedText(blocked, filter[1], filter[2]) ? 'BLOCKED_TOPICS' : null
+  }
   if (filter[0] === 'observation' && filter[1] !== null) {
     return blockedByNormalizedText(blocked, ...filter[1]) ? 'BLOCKED_TOPICS' : null
   }
@@ -208,9 +213,14 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
       if (!row || row.tripId !== trip.tripId || findContentHash(row) !== expectedHash) {
         throw new DiscoveryReceiptIntegrityError()
       }
-      if (filter[0] === 'search') {
+      if (filter[0] === 'search' || filter[0] === 'cache') {
+        const expectedMode = filter[0] === 'cache' ? 'cache' : 'live'
         if (trip.ownerId === null || row.kind !== 'zhihu' || !historicalUrl(row.sourceUrl) ||
-            (row.sourceMode !== 'live' && row.sourceMode !== 'cache')) throw new DiscoveryReceiptIntegrityError()
+            row.sourceMode !== expectedMode) throw new DiscoveryReceiptIntegrityError()
+        // Validate the stored acceptance fact at its original time. Replay has no current TTL gate.
+        if (filter[0] === 'cache' && !isFreshSearchTime(filter[3], Date.parse(receipt.completedAt))) {
+          throw new DiscoveryReceiptIntegrityError()
+        }
         hasArticle = true
       } else if (filter[0] === 'event') {
         const event = frozenEvent(db, trip.tripId, { ...trip, at: receipt.completedAt, blockedTopics: [] })
@@ -227,19 +237,22 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     return { finds, confirmation: { completedAt: receipt.completedAt, replayed: true, visibilityReasons: [...reasons] } }
   }
 
+  function saveOne(input: FindInput, verified: boolean, at: string, receipt: ConfirmedBatch | null): Find {
+    const entry = normalized(input, verified)
+    const id = findId(entry)
+    const existing = existingFind(entry, id)
+    if (receipt && (!existing || !receipt.finds.some(row => row.id === existing.id))) return conflict()
+    if (existing && !sameContent(existing, entry.data)) return conflict()
+    return existing ?? insert(entry, id, at)
+  }
   function write(inputOrProof: FindInput | SearchProof, scope: OwnerFindScope, verified: boolean, intentId?: string): Find {
     return transaction(db, true, () => {
       const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
       const trip = runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
       const receipt = replayBatch(trip)
-      const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics)
+      const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics, trip.at)
         : inputOrProof as FindInput
-      const entry = normalized(input, verified)
-      const id = findId(entry)
-      const existing = existingFind(entry, id)
-      if (receipt && (!existing || !receipt.finds.some(row => row.id === existing.id))) return conflict()
-      if (existing && !sameContent(existing, entry.data)) return conflict()
-      return existing ?? insert(entry, id, trip.at)
+      return saveOne(input, verified, trip.at, receipt)
     })
   }
   function persistBatch(trip: BatchContext & ReceiptScope, select: SelectCandidates): BatchResult {
@@ -249,7 +262,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     const ordered = select(trip).flatMap((candidate): { entry: PreparedFind; filter: MemberFilter }[] => {
       if ('proof' in candidate) {
         if (ownerId === null) return conflict()
-        const verified = eligibleSearchInput(candidate.proof, { ...trip, ownerId }, trip.blockedTopics)
+        const verified = eligibleSearchInput(candidate.proof, { ...trip, ownerId }, trip.blockedTopics, trip.at)
         return verified ? [{ entry: normalized(verified.input, true), filter: verified.filter }] : []
       }
       const { input, topics } = candidate
@@ -274,7 +287,6 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     for (const { entry, filter } of ordered) {
       const id = findId(entry)
       if (chosen.has(id)) continue
-      chosen.add(id)
       const existing = existingFind(entry, id)
       if (entry.eventCapturedAt !== undefined && existing &&
           (!sameContent(existing, entry.data) ||
@@ -284,10 +296,12 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
         continue
       }
       if (existing && (!isVisible(existing, trip.blockedTopics) ||
-          (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode))) continue
+          (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode) ||
+          (entry.data.sourceMode === 'cache' && !sameContent(existing, entry.data)))) continue
       // The physical limit includes history. Owners with no proven article can leave one slot open.
       const limit = ownerId !== null && !hasRealZhihu && entry.data.kind !== 'zhihu' ? 4 : 5
       if (!existing && count >= limit) continue
+      chosen.add(id)
       finds.push({ row: existing ?? insert(entry, id, trip.at), filter })
       if (!existing) count++
       if (entry.data.kind === 'zhihu') hasRealZhihu = true
@@ -334,6 +348,18 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     /** Trusted process-only capability; no body field can manufacture a proof. */
     writeVerified(proof: SearchProof, scope: OwnerFindScope, intentId?: string): Find {
       return write(proof, scope, true, intentId)
+    },
+    /** The single-result executor yields to a batch confirmed during its external I/O. */
+    commitSearchSelection(tripId: string, proof: SearchProof | null, scope: OwnerFindScope,
+      intentId?: string): ConfirmedBatch | { finds: Find[] } {
+      return transaction(db, true, () => {
+        const trip = runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
+        const prior = replayBatch(trip)
+        if (prior) return prior
+        if (!proof) return { finds: [] }
+        const input = verifiedSearchInput(proof, trip, trip.blockedTopics, trip.at)
+        return { finds: [saveOne(input, true, trip.at, null)] }
+      })
     },
   }
 }

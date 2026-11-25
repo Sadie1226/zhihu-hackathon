@@ -4,12 +4,16 @@ import type { InterestCategory } from '../../contracts/types.ts'
 import { TripError } from './errors.ts'
 import type { OwnerFindScope } from './find-scope.ts'
 import { createFindStore } from './finds.ts'
+import { createMemorySearchCache } from './search-cache.ts'
 import { blockedBy, searchForTrip } from './search-proof.ts'
-import type { SearchProvider } from './search-proof.ts'
+import type { SearchCacheOptions, SearchProvider } from './search-proof.ts'
+
+const processCache = createMemorySearchCache()
 
 /** Trusted server configuration supplies the provider. Search only, outside the write lock. */
-export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider, options: { now?: () => Date } = {}) {
-  const store = createFindStore(db, options)
+export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider,
+  { cache = processCache, now }: SearchCacheOptions = {}) {
+  const store = createFindStore(db, { now })
   return async function search(tripId: string, scope: OwnerFindScope, intentId?: string) {
     if (db.isTransaction) throw new Error('Trip discovery search requires a committed trip')
     const trip = store.prepareOwnerSearch(tripId, scope, intentId)
@@ -35,19 +39,22 @@ export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchPro
       }
     }
     if (!candidate) return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
-    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, intentId: trip.intentId, ...candidate, blockedTopics }, provider)
+    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, intentId: trip.intentId,
+      ...candidate, blockedTopics }, provider, { cache, now })
   }
 }
 
 /** Single Find compatibility entry. HTTP callers pass the same request to both phases. */
-export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
+export function createTripDiscoverer(db: DatabaseSync, options: SearchCacheOptions & { provider?: SearchProvider } = {}) {
   const store = createFindStore(db, options)
   const search = createTripDiscoverySearch(db, options.provider, options)
   return async function discover(tripId: string, scope: OwnerFindScope, intentId?: string) {
     const result = await search(tripId, scope, intentId)
     if (!result.ok) return result
     if ('replay' in result) return { ok: true as const, ...result.replay, httpStatus: null, fetchedAt: null }
-    const finds = result.proof ? [store.writeVerified(result.proof, scope, intentId)] : []
-    return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
+    const saved = store.commitSearchSelection(tripId, result.proof, scope, intentId)
+    const diagnostic = 'degradation' in result && { degradation: result.degradation }
+    if ('confirmation' in saved) return { ok: true as const, ...saved, httpStatus: null, fetchedAt: null, ...diagnostic }
+    return { ok: true as const, ...saved, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt, ...diagnostic }
   }
 }

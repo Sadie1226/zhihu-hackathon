@@ -101,16 +101,23 @@ test('selection keeps the start-time wish rather than replacing it with a newer 
   assert.equal(db.prepare('SELECT wish_id FROM trip').get().wish_id, 'fixture-wish')
 })
 
-for (const [status, expected] of [[401, 'AUTH'], [429, 'RATE_LIMITED'], [503, 'NETWORK']]) {
-  test(`provider ${expected} remains internal failure with no fabricated live/fallback or retry`, async t => {
+for (const [status, expected] of [[401, 'AUTH'], [429, 'RATE_LIMITED']]) {
+  test(`provider ${expected} cache miss yields an empty result with internal metadata and no retry`, async t => {
     const { execute, rows } = setup(t), p = provider(() => Response.json({}, { status }))
     const result = await execute(p.search)
-    assert.equal(result.ok, false); assert.equal(result.error.code, expected)
-    assert.equal(result.error.retriable, expected === 'NETWORK'); assert.equal(p.calls, 1)
-    assert.equal(result.fallback, expected === 'NETWORK' ? null : 'cache-or-fixture')
-    assert.equal(rows().length, 0); assert.ok(!('finds' in result))
+    assert.equal(result.ok, true); assert.deepEqual(result.finds, [])
+    assert.deepEqual(result.degradation, { code: expected, alert: expected === 'AUTH' })
+    assert.equal(p.calls, 1); assert.equal(rows().length, 0)
   })
 }
+
+test('ordinary server failure stays NETWORK and does not initiate a fallback or retry', async t => {
+  const { execute, rows } = setup(t), p = provider(() => Response.json({}, { status: 503 }))
+  const result = await execute(p.search)
+  assert.equal(result.ok, false); assert.equal(result.error.code, 'NETWORK')
+  assert.equal(result.error.retriable, true); assert.equal(result.fallback, null)
+  assert.equal(p.calls, 1); assert.equal(rows().length, 0)
+})
 
 test('network exception and successful empty response never fabricate findings', async t => {
   const { execute, rows } = setup(t)
