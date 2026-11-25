@@ -80,7 +80,9 @@ try {
 
   // ── 2. 第一次派生 → 写成 v1（模拟 C 在出发事务里落版本） ───────────────────
   const derivedV1 = deriveSnapshot(db, owner.id, { occurrenceFacts: readOccurrenceFact })
-  const v1 = toFixedSnapshot(derivedV1, { dogId: owner.id, version: 1, createdAt: AT })
+  // G3 start already saved/bound v1 before this trip. Allocate a new immutable version.
+  const savedVersion = Number(db.prepare('SELECT COALESCE(MAX(version),0) n FROM snapshot WHERE dog_id=?').get(owner.id).n) + 1
+  const v1 = toFixedSnapshot(derivedV1, { dogId: owner.id, version: savedVersion, createdAt: AT })
   db.prepare(
     `INSERT INTO snapshot (dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -106,7 +108,7 @@ try {
   const factAfter = readOccurrenceFact(db, trip.id, owner.id)
 
   // ── 5. 已存的 v1 有没有被改写 ─────────────────────────────────────────────
-  const kept = db.prepare(`SELECT recent_trips FROM snapshot WHERE dog_id = ? AND version = 1`).get(owner.id)
+  const kept = db.prepare(`SELECT recent_trips FROM snapshot WHERE dog_id = ? AND version = ?`).get(owner.id, savedVersion)
   const keptText = JSON.parse(kept.recent_trips)[0] ?? null
 
   const snapshotKept = keptText === v1Text
