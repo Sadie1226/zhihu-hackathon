@@ -11,6 +11,8 @@ try {
  const errors = []
  page.on('pageerror', error => errors.push(error.message))
  await page.goto(`${process.env.E6_BASE_URL || 'http://127.0.0.1:3106'}/e6-preview`)
+ await page.getByRole('button', { name: '朋友来信', exact: true, pressed: true }).waitFor()
+ await page.getByRole('button', { name: '邀请与回音', exact: true }).click()
  await page.getByRole('button', { name: '打开邀请', exact: true }).waitFor()
  for (const [width, height] of [[375,667],[320,568],[1440,900]]) {
   await page.setViewportSize({ width, height })

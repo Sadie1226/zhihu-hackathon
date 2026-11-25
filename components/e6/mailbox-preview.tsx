@@ -24,11 +24,12 @@ function Composer({ peer, onCommit }: { peer: PublicDogSummary; onCommit: (text:
 export default function MailboxPreview() {
   const [scenario, setScenario] = useState('normal')
   return <><div style={{ padding: '12px 24px', background: '#eadcc6' }}><label htmlFor="e6-case">本地验收场景：</label><select id="e6-case" value={scenario} onChange={e => setScenario(e.target.value)}>
-    <option value="normal">正常</option><option value="empty">空信箱</option><option value="error">读取失败</option><option value="read-error">已读保存失败</option><option value="slow">读取中</option><option value="blocked">伙伴已屏蔽</option>
+    <option value="normal">正常</option><option value="invitations-error">邀请首次读取失败（重试恢复）</option><option value="empty">空信箱</option><option value="error">读取失败</option><option value="read-error">已读保存失败</option><option value="slow">读取中</option><option value="blocked">伙伴已屏蔽</option>
   </select></div><Preview key={scenario} scenario={scenario} /></>
 }
 function Preview({ scenario }: { scenario: string }) {
   const client = useMemo<MailboxClient>(() => {
+    let invitationAttempts = 0
     let rows: Exchange[] = raw.exchanges.map(row => ({ id: row.id, fromDog: row.from_dog, toDog: row.to_dog,
       kind: row.kind, payload: row.payload, deliverAfterTripSeq: row.deliver_after_trip_seq,
       createdAt: row.created_at, deliveredAt: row.delivered_at, repliedAt: row.replied_at, readAt: row.read_at })) as Exchange[]
@@ -42,7 +43,7 @@ function Preview({ scenario }: { scenario: string }) {
     return {
       inbox: async (_, signal) => { await before(signal); return { exchanges: scenario === 'empty' ? [] : rows.filter(row => row.toDog === 'dog_owner') } },
       outbox: async (_, signal) => { await before(signal); return { exchanges: scenario === 'empty' ? [] : rows.filter(row => row.fromDog === 'dog_owner') } },
-      invitations: async (_, signal) => { await before(signal); return { invitations: scenario === 'empty' ? [] : [{ id: 'invite_fixture', dogId: 'dog_owner', text: '下回看到桂花，可以拍一张给我吗？我想看看花开了没有。忙的话也没关系。', basedOnFindId: null, createdAt: '2026-11-23T10:00:00Z', state: 'waiting', replyId: null, goneAloneTripId: null }] } },
+      invitations: async (_, signal) => { await before(signal); if (scenario === 'invitations-error' && ++invitationAttempts === 1) throw new Error('邀请暂时读不到，朋友来信仍可阅读。'); return { invitations: scenario === 'empty' ? [] : [{ id: 'invite_fixture', dogId: 'dog_owner', text: '下回看到桂花，可以拍一张给我吗？我想看看花开了没有。忙的话也没关系。', basedOnFindId: null, createdAt: '2026-11-23T10:00:00Z', state: 'waiting', replyId: null, goneAloneTripId: null }] } },
       relations: async (_, signal) => { await before(signal); return { relations: scenario === 'empty' ? [] : [{ otherDog: sample, snapshot: null, relation: { id: 'relation_fixture', dogA: 'dog_owner', dogB: sample.id, firstMetAt: '2026-11-16T01:00:00Z', lastMetAt: '2026-11-16T01:00:00Z', metCount: 1, isBlocked: scenario === 'blocked', blockedAt: null } }] } },
       read: async (id, signal) => {
         await before(signal)

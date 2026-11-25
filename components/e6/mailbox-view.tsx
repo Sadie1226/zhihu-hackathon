@@ -29,7 +29,7 @@ function ExchangeText({ item }: { item: Exchange }) {
 }
 
 export function MailboxView({ dogId, client = mailboxClient, fixture = false, revision = 0, renderReply, renderComposer, renderRelationshipActions }: Props) {
-  const [box, setBox] = useState<Box>('invitations')
+  const [box, setBox] = useState<Box>('inbox')
   const [rows, setRows] = useState<Exchange[]>([])
   const [invitations, setInvitations] = useState<InvitationView[]>([])
   const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading')
