@@ -1,0 +1,761 @@
+{
+  "generatedAt": "2026-11-25T14:37:44.651Z",
+  "kind": "d5-readonly-acceptance",
+  "db": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_inbox-d5\\app.sqlite",
+  "readOnly": true,
+  "note": "本文件是只读派生的证据，不含可执行 SQL；版本号由 C 的分配器给，D 不写库。",
+  "meta": {
+    "path": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_inbox-d5\\app.sqlite",
+    "bytes": 307200,
+    "sha256Before": "442aeb3de567a32c2da9ea19fa9f62be9d7082729505b5f251fb58f4fa3a537e",
+    "sha256After": "442aeb3de567a32c2da9ea19fa9f62be9d7082729505b5f251fb58f4fa3a537e",
+    "identical": true,
+    "schemaVersion": 7,
+    "tripSnapshotTable": true,
+    "code": {
+      "sha": "2e25f5f51e8ec22b8616584270f8d3d0c0724d54",
+      "dirty": false,
+      "source": "git"
+    },
+    "command": "node scripts/d5-derive-snapshot.mjs --db 'C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_inbox-d5\\app.sqlite' --out 'C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_inbox-d5\\d-evidence.json'"
+  },
+  "bindings": [
+    {
+      "dogId": "dog_seed_01",
+      "tripId": "trip_seed_intent_f28c4557211914bd4ffc75a6b4c02a08ca05a2a3817c1073c8b69193215f3a69",
+      "seq": 1,
+      "version": 1
+    },
+    {
+      "dogId": "dog_seed_05",
+      "tripId": "trip_seed_intent_5e0e37d126146c7aa6406fb4441fa68fdd87a079902e782337b03673363bb977",
+      "seq": 1,
+      "version": 1
+    },
+    {
+      "dogId": "dog_seed_07",
+      "tripId": "trip_seed_intent_0c6dd738e6a939f0eb6020830e079d8702d77219cf27be2d511e4581e13fc578",
+      "seq": 1,
+      "version": 1
+    },
+    {
+      "dogId": "dog_seed_12",
+      "tripId": "trip_seed_intent_7ee8cb8db111e32740b305d73f5dd34ad15f7eb590a7470852bfacd3938d62c7",
+      "seq": 1,
+      "version": 1
+    },
+    {
+      "dogId": "dog_seed_18",
+      "tripId": "trip_seed_intent_cc2cdfb03dadcf08d101e6ecd34b65aa2e1fbd91f26128ad40179b80c538e2c1",
+      "seq": 1,
+      "version": 1
+    }
+  ],
+  "textSource": {
+    "sources": [
+      "occurrence"
+    ],
+    "mutable": false
+  },
+  "historyFixed": true,
+  "historyUnfixedDogs": [],
+  "historyNote": "全部摘要来自发生当时固定下来的事实。",
+  "dogs": [
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "看物",
+          "当下"
+        ],
+        "interestCategories": [
+          "自然风景",
+          "冷知识"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_01",
+        "tripsConsidered": 1,
+        "failedTripsIgnored": 0,
+        "trips": [
+          {
+            "tripId": "trip_seed_intent_f28c4557211914bd4ffc75a6b4c02a08ca05a2a3817c1073c8b69193215f3a69",
+            "seq": 1,
+            "status": "done",
+            "startedAt": "2026-11-25T00:00:00.000Z",
+            "endedAt": "2026-11-25T00:10:00.000Z",
+            "eventCount": 0,
+            "event": null,
+            "summary": null,
+            "textSource": "none",
+            "factSourceId": null,
+            "boundSnapshotVersion": 1,
+            "finds": []
+          }
+        ],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 1
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "恋家",
+          "慢热",
+          "寡言"
+        ],
+        "interestCategories": [
+          "手作与食物",
+          "动物与植物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_02",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "恋家",
+          "看物",
+          "寡言"
+        ],
+        "interestCategories": [
+          "自然风景",
+          "手作与食物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_03",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "自来熟",
+          "话痨",
+          "直给"
+        ],
+        "interestCategories": [
+          "城市角落",
+          "人与故事"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_04",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "慢热",
+          "看人",
+          "怀旧"
+        ],
+        "interestCategories": [
+          "人与故事",
+          "城市角落"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_05",
+        "tripsConsidered": 1,
+        "failedTripsIgnored": 0,
+        "trips": [
+          {
+            "tripId": "trip_seed_intent_5e0e37d126146c7aa6406fb4441fa68fdd87a079902e782337b03673363bb977",
+            "seq": 1,
+            "status": "done",
+            "startedAt": "2026-11-25T01:00:00.000Z",
+            "endedAt": "2026-11-25T01:10:00.000Z",
+            "eventCount": 0,
+            "event": null,
+            "summary": null,
+            "textSource": "none",
+            "factSourceId": null,
+            "boundSnapshotVersion": 1,
+            "finds": []
+          }
+        ],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 1
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "自来熟",
+          "看人"
+        ],
+        "interestCategories": [
+          "人与故事",
+          "城市角落"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_06",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "看人",
+          "婉转",
+          "当下"
+        ],
+        "interestCategories": [
+          "人与故事",
+          "手作与食物",
+          "动物与植物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_07",
+        "tripsConsidered": 1,
+        "failedTripsIgnored": 0,
+        "trips": [
+          {
+            "tripId": "trip_seed_intent_0c6dd738e6a939f0eb6020830e079d8702d77219cf27be2d511e4581e13fc578",
+            "seq": 1,
+            "status": "done",
+            "startedAt": "2026-11-25T02:00:00.000Z",
+            "endedAt": "2026-11-25T02:10:00.000Z",
+            "eventCount": 0,
+            "event": null,
+            "summary": null,
+            "textSource": "none",
+            "factSourceId": null,
+            "boundSnapshotVersion": 1,
+            "finds": []
+          }
+        ],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 1
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "慢热",
+          "寡言",
+          "婉转"
+        ],
+        "interestCategories": [
+          "自然风景",
+          "动物与植物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_08",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "直给",
+          "看物"
+        ],
+        "interestCategories": [
+          "冷知识",
+          "自然风景"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_09",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "恋家",
+          "婉转",
+          "怀旧"
+        ],
+        "interestCategories": [
+          "手作与食物",
+          "动物与植物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_10",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "看物",
+          "怀旧"
+        ],
+        "interestCategories": [
+          "自然风景",
+          "冷知识"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_11",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "恋家",
+          "婉转",
+          "看人"
+        ],
+        "interestCategories": [
+          "手作与食物",
+          "人与故事"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_12",
+        "tripsConsidered": 1,
+        "failedTripsIgnored": 0,
+        "trips": [
+          {
+            "tripId": "trip_seed_intent_7ee8cb8db111e32740b305d73f5dd34ad15f7eb590a7470852bfacd3938d62c7",
+            "seq": 1,
+            "status": "done",
+            "startedAt": "2026-11-25T03:00:00.000Z",
+            "endedAt": "2026-11-25T03:10:00.000Z",
+            "eventCount": 0,
+            "event": null,
+            "summary": null,
+            "textSource": "none",
+            "factSourceId": null,
+            "boundSnapshotVersion": 1,
+            "finds": []
+          }
+        ],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 1
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "慢热",
+          "寡言",
+          "看物"
+        ],
+        "interestCategories": [
+          "动物与植物",
+          "冷知识"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_13",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "自来熟",
+          "话痨",
+          "看人"
+        ],
+        "interestCategories": [
+          "人与故事",
+          "手作与食物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_14",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "直给",
+          "话痨"
+        ],
+        "interestCategories": [
+          "冷知识",
+          "城市角落"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_15",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "好奇",
+          "慢热",
+          "当下"
+        ],
+        "interestCategories": [
+          "城市角落",
+          "动物与植物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_16",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "慢热",
+          "婉转",
+          "看物"
+        ],
+        "interestCategories": [
+          "手作与食物",
+          "自然风景"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_17",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "自来熟",
+          "话痨",
+          "婉转"
+        ],
+        "interestCategories": [
+          "动物与植物",
+          "手作与食物"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_18",
+        "tripsConsidered": 1,
+        "failedTripsIgnored": 0,
+        "trips": [
+          {
+            "tripId": "trip_seed_intent_cc2cdfb03dadcf08d101e6ecd34b65aa2e1fbd91f26128ad40179b80c538e2c1",
+            "seq": 1,
+            "status": "done",
+            "startedAt": "2026-11-25T04:00:00.000Z",
+            "endedAt": "2026-11-25T04:10:00.000Z",
+            "eventCount": 0,
+            "event": null,
+            "summary": null,
+            "textSource": "none",
+            "factSourceId": null,
+            "boundSnapshotVersion": 1,
+            "finds": []
+          }
+        ],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 1
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "恋家",
+          "看人",
+          "寡言"
+        ],
+        "interestCategories": [
+          "动物与植物",
+          "人与故事"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_19",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    },
+    {
+      "body": {
+        "personalityTags": [
+          "自来熟",
+          "话痨",
+          "当下"
+        ],
+        "interestCategories": [
+          "城市角落",
+          "冷知识"
+        ],
+        "recentTrips": [],
+        "waitingFor": null
+      },
+      "evidence": {
+        "dogId": "dog_seed_20",
+        "tripsConsidered": 0,
+        "failedTripsIgnored": 0,
+        "trips": [],
+        "waiting": null,
+        "otherPendingWaiting": 0,
+        "textSource": "occurrence",
+        "textMutable": false,
+        "historyFixed": true,
+        "findCoverage": {
+          "tripsWithFind": 0,
+          "tripsWithoutFind": 0
+        },
+        "schemaHasTripSnapshot": true
+      }
+    }
+  ]
+}
