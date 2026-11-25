@@ -1,9 +1,14 @@
-import { createHash } from 'node:crypto'
+﻿import { createHash } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Find } from '../../contracts/types.ts'
 import { assertOwnedTrip, OwnershipError, resolveAuthContext } from '../auth/session.ts'
-import { TripError } from './service.ts'
-import { proofTripId, verifiedSearchInput } from './search-proof.ts'
+import { canonicalZhihuContentUrl, WishContractError } from '../wishes/contract.ts'
+import { TripError } from './errors.ts'
+import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
+import type { OwnerFindScope, SeedFindScope } from './find-scope.ts'
+import { readOccurrenceFact } from './occurrence-facts.ts'
+import { requireRunningSeedEventTrip } from './seed-event-scope.ts'
+import { blockedBy, eligibleSearchInput, proofTripId, verifiedSearchInput } from './search-proof.ts'
 import type { SearchProof } from './search-proof.ts'
 
 export type FindInput = Omit<Find, 'id' | 'createdAt'> & {
@@ -23,7 +28,7 @@ function transaction<T>(db: DatabaseSync, write: boolean, action: () => T): T {
     db.exec('COMMIT')
     return result
   } catch (error) {
-    db.exec('ROLLBACK')
+    if (db.isTransaction) db.exec('ROLLBACK')
     throw error
   }
 }
@@ -32,23 +37,15 @@ function validId(value: unknown): value is string {
     ![...value].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
 }
 
-function sourceUrl(value: unknown, zhihu: boolean): string {
+function sourceUrl(value: unknown): string {
   if (typeof value !== 'string' || /\s|\\/.test(value)) return conflict()
   let url: URL
   try { url = new URL(value) } catch { return conflict() }
   if (url.protocol !== 'https:' || url.username || url.password || url.port) return conflict()
-  if (zhihu) {
-    if (['www.zhihu.com', 'zhihu.com'].includes(url.hostname) &&
-        /^\/question\/[1-9][0-9]*(?:\/answer\/[1-9][0-9]*)?\/?$/.test(url.pathname)) {
-      url.hostname = 'www.zhihu.com'
-    } else if (!(url.hostname === 'zhuanlan.zhihu.com' && /^\/p\/[1-9][0-9]*\/?$/.test(url.pathname))) return conflict()
-    url.pathname = url.pathname.replace(/\/$/, '')
-    url.search = ''; url.hash = ''
-  }
   return url.href
 }
 
-function normalized(input: FindInput, verified = false): { data: Omit<Find, 'id' | 'createdAt'>; identity: string } {
+function normalized(input: FindInput, verified = false, eventCapturedAt?: string) {
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
       Object.keys(input).some(key => !['tripId', 'kind', 'title', 'excerpt', 'sourceUrl', 'sourceMode',
         'authorityLevel', 'voteUpCount', 'assetPath', 'sourceKey'].includes(key))) return conflict()
@@ -60,79 +57,253 @@ function normalized(input: FindInput, verified = false): { data: Omit<Find, 'id'
       /[\\?#%\s]/.test(input.assetPath) || input.assetPath.split('/').some(part => part === '.' || part === '..'))) return conflict()
   // Ordinary writes remain fixture-only. Only opaque successful C5 proofs authorize live.
   if (input.kind === 'zhihu' ? input.sourceMode !== (verified ? 'live' : 'fixture') : input.sourceMode !== null) return conflict()
-  const url = input.sourceUrl === null && input.kind !== 'zhihu' ? null : sourceUrl(input.sourceUrl, input.kind === 'zhihu')
+  const url = input.kind === 'zhihu' ? historicalUrl(input.sourceUrl) ?? conflict()
+    : input.sourceUrl === null ? null : sourceUrl(input.sourceUrl)
   const key = input.sourceKey
   if (input.kind !== 'zhihu' && (!validId(key) || key.length > 200)) return conflict()
   if (input.kind === 'zhihu' && key !== undefined) return conflict()
+  if (key?.startsWith('trip-event:') && eventCapturedAt === undefined) return conflict()
   return {
-    data: { tripId: input.tripId, kind: input.kind, title: input.title.trim(), excerpt: input.excerpt,
+    data: { tripId: input.tripId, kind: input.kind,
+      title: eventCapturedAt === undefined ? input.title.trim() : input.title, excerpt: input.excerpt,
       sourceUrl: url, sourceMode: input.sourceMode, authorityLevel: input.authorityLevel,
       voteUpCount: input.voteUpCount, assetPath: input.assetPath },
     identity: input.kind === 'zhihu' ? url! : key!,
+    eventCapturedAt,
   }
+}
+
+type PreparedFind = ReturnType<typeof normalized>
+export type BatchFindCandidate = { proof: SearchProof } |
+  { input: FindInput; topics: readonly string[] }
+type BatchContext = { dogId: string; startedAt: string; at: string; blockedTopics: string[] }
+type SelectCandidates = (trip: BatchContext) => readonly BatchFindCandidate[]
+type EventOmission = 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
+
+type ConfirmedBatch = { ids: Set<string>; candidates: BatchFindCandidate[] }
+type ConfirmedBatches = Map<string, ConfirmedBatch>
+// Active connections to the same file share replay protection in this process.
+const confirmed = new WeakMap<DatabaseSync, ConfirmedBatches>()
+const confirmedFiles = new Map<string, WeakRef<ConfirmedBatches>>()
+const releaseFile = new FinalizationRegistry<{ path: string; ref: WeakRef<ConfirmedBatches> }>(({ path, ref }) => {
+  if (confirmedFiles.get(path) === ref) confirmedFiles.delete(path)
+})
+
+function confirmedBatches(db: DatabaseSync): ConfirmedBatches {
+  const known = confirmed.get(db)
+  if (known) return known
+  const path = db.location()
+  const shared = path ? confirmedFiles.get(path)?.deref() : undefined
+  const batches: ConfirmedBatches = shared ?? new Map()
+  if (path && !shared) {
+    const ref = new WeakRef(batches)
+    confirmedFiles.set(path, ref)
+    releaseFile.register(batches, { path, ref })
+  }
+  confirmed.set(db, batches)
+  return batches
+}
+
+export function isDiscoveryConfirmed(db: DatabaseSync, tripId: string): boolean {
+  return confirmedBatches(db).has(tripId)
+}
+
+function frozenEvent(db: DatabaseSync, tripId: string, trip: BatchContext): PreparedFind | EventOmission | null {
+  const fact = readOccurrenceFact(db, tripId, trip.dogId)
+  if (!fact) {
+    // A migrated occurrence has an explicit row with two nulls. The view also treats
+    // missing storage as unverifiable, so check integrity before returning an empty result.
+    if (db.prepare(`
+      SELECT 1 FROM trip_event te LEFT JOIN trip_event_fact f
+        ON f.trip_id = te.trip_id AND f.event_id = te.event_id
+      WHERE te.trip_id = ? AND te.dog_id = ? AND (f.trip_id IS NULL OR
+        (f.event_code_at_occurrence IS NULL) <> (f.public_text_at_occurrence IS NULL))
+      LIMIT 1
+    `).get(tripId, trip.dogId)) throw new Error('Invalid v7 occurrence fact')
+    return null
+  }
+
+  const prefix = 'trip_event_fact:'
+  const source: unknown = fact.sourceId.startsWith(prefix) ? JSON.parse(fact.sourceId.slice(prefix.length)) : null
+  const captured = Date.parse(fact.capturedAt)
+  if (!Array.isArray(source) || source.length !== 2 || source[0] !== tripId ||
+      !validId(source[1]) || !fact.text.trim() || [...fact.text.trim()].length > 40 ||
+      !fact.capturedAt.endsWith('Z') || !Number.isFinite(captured)) throw new Error('Invalid v7 occurrence fact')
+  if (captured < Date.parse(trip.startedAt) || captured > Date.parse(trip.at) ||
+      blockedBy(trip.blockedTopics, fact.text)) return null
+  // The frozen text cannot clear a topic rule when the occurrence-time labels are absent.
+  if (trip.blockedTopics.some(topic => topic.trim())) return 'EVENT_TOPICS_UNVERIFIABLE'
+
+  return normalized({
+    tripId, kind: 'moment', sourceKey: `trip-event:${source[1]}`, title: fact.text, excerpt: null,
+    assetPath: null, sourceUrl: null, sourceMode: null, authorityLevel: null, voteUpCount: null,
+  }, false, fact.capturedAt)
+}
+
+function findId({ data, identity }: PreparedFind): string {
+  return 'find_' + createHash('sha256').update(JSON.stringify(['c6-find-v1', data.tripId, data.kind, identity])).digest('hex')
+}
+
+function isVisible(row: Pick<Find, 'title' | 'excerpt'>, topics: string[]): boolean {
+  return !blockedBy(topics, row.title, row.excerpt ?? '')
+}
+
+function historicalUrl(value: string | null): string | null {
+  try { return canonicalZhihuContentUrl(value) } catch (error) {
+    if (error instanceof WishContractError) return null
+    throw error
+  }
+}
+
+const priority = (row: Pick<Find, 'kind'>) => row.kind === 'zhihu' ? 0 : 1
+const compareText = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0
+
+function sameContent(existing: Find, data: PreparedFind['data']): boolean {
+  return (Object.keys(data) as (keyof typeof data)[]).every(field => {
+    const value = field === 'sourceUrl' && data.kind === 'zhihu' ? historicalUrl(existing.sourceUrl) : existing[field]
+    return value === data[field]
+  })
 }
 
 /** Internal C-only store. No network, secrets, scheduling, fallback or public write route.
  * Call write() outside another transaction; it owns the complete write-lock boundary.
  */
 export function createFindStore(db: DatabaseSync, options: { now?: () => Date } = {}) {
-  function ownedTrip(tripId: string, sessionId: string) {
-    if (!validId(tripId) || !validId(sessionId)) return missing()
-    const row = db.prepare(`SELECT t.status, t.started_at AS startedAt, d.blocked_topics AS blockedTopics,
-      d.is_sample AS isSample FROM trip t
-      JOIN dog d ON d.id=t.dog_id WHERE t.id=? AND d.session_id=?`).get(tripId, sessionId)
-    return row ?? missing()
+  function batchContext(dogId: string, startedAt: string, blockedTopics: unknown): BatchContext {
+    const at = (options.now ?? (() => new Date()))().toISOString()
+    if (!(Date.parse(at) >= Date.parse(startedAt))) return conflict()
+    return { dogId, startedAt, at, blockedTopics: readBlockedTopics(blockedTopics) }
   }
-  function write(inputOrProof: FindInput | SearchProof, sessionId: string, verified: boolean): Find {
+  function runningTrip(tripId: string, scope: OwnerFindScope) {
+    const trip = readOwnerFindTrip(db, tripId, scope)
+    if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
+    return { tripId, ownerId: trip.ownerId, ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
+  }
+  function history(tripId: string): Find[] {
+    return db.prepare('SELECT ' + projection + ' FROM find f WHERE f.trip_id=? ORDER BY f.created_at,f.id')
+      .all(tripId) as unknown as Find[]
+  }
+  function existingFind(entry: PreparedFind, id: string): Find | undefined {
+    const { data, identity } = entry
+    let existing = db.prepare('SELECT ' + projection + ' FROM find f WHERE f.id=?').get(id) as Find | undefined
+    // Historical rows may predate deterministic IDs.
+    if (!existing && data.kind === 'zhihu') {
+      existing = history(data.tripId).find(row => row.kind === 'zhihu' && historicalUrl(row.sourceUrl) === identity)
+    }
+    if (existing) {
+      if (existing.tripId !== data.tripId || existing.kind !== data.kind ||
+          (data.kind === 'zhihu' && historicalUrl(existing.sourceUrl) !== identity)) return conflict()
+      return { ...existing }
+    }
+  }
+  function insert({ data }: PreparedFind, id: string, at: string): Find {
+    db.prepare('INSERT INTO find(id,trip_id,kind,title,excerpt,source_url,source_mode,authority_level,vote_up_count,asset_path,created_at)' +
+      ' VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(id, data.tripId, data.kind, data.title, data.excerpt, data.sourceUrl,
+      data.sourceMode, data.authorityLevel, data.voteUpCount, data.assetPath, at)
+    return { id, ...data, createdAt: at }
+  }
+  function write(inputOrProof: FindInput | SearchProof, scope: OwnerFindScope, verified: boolean): Find {
     return transaction(db, true, () => {
-        const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
-        const trip = ownedTrip(tripId, sessionId)
-        if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
-        if (verified && trip.isSample === 1) return conflict()
-        const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, sessionId,
-          JSON.parse(String(trip.blockedTopics)) as string[]) : inputOrProof as FindInput
-        const { data, identity } = normalized(input, verified)
-        const id = `find_${createHash('sha256').update(JSON.stringify(['c6-find-v1', data.tripId, data.kind, identity])).digest('hex')}`
-        let existing = db.prepare(`SELECT ${projection} FROM find f WHERE f.id=?`).get(id) as Find | undefined
-        // Respect old rows with non-deterministic IDs too, without a new index/table.
-        if (!existing && data.kind === 'zhihu') {
-          existing = (db.prepare(`SELECT ${projection} FROM find f WHERE f.trip_id=? AND f.kind='zhihu'
-            ORDER BY f.created_at,f.id`).all(data.tripId) as unknown as Find[])
-            .find(row => sourceUrl(row.sourceUrl, true) === identity)
-        }
-        if (existing) {
-          if (Object.keys(data).some(key => {
-            const field = key as keyof typeof data
-            const actual = field === 'sourceUrl' && existing!.sourceUrl !== null && data.kind === 'zhihu'
-              ? sourceUrl(existing!.sourceUrl, true) : existing![field]
-            return actual !== data[field]
-          })) return conflict()
-          return { ...existing }
-        }
-        const at = (options.now ?? (() => new Date()))().toISOString()
-        if (Date.parse(at) < Date.parse(trip.startedAt)) return conflict()
-        db.prepare(`INSERT INTO find(id,trip_id,kind,title,excerpt,source_url,source_mode,authority_level,vote_up_count,asset_path,created_at)
-          VALUES(?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.tripId, data.kind, data.title, data.excerpt,
-            data.sourceUrl, data.sourceMode, data.authorityLevel, data.voteUpCount, data.assetPath, at)
-        return { id, ...data, createdAt: at }
+      const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
+      const trip = runningTrip(tripId, scope)
+      const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics)
+        : inputOrProof as FindInput
+      const entry = normalized(input, verified)
+      const id = findId(entry)
+      const existing = existingFind(entry, id)
+      const prior = confirmedBatches(db).get(tripId)
+      if (prior && (!existing || !prior.ids.has(existing.id))) return conflict()
+      if (existing && !sameContent(existing, entry.data)) return conflict()
+      return existing ?? insert(entry, id, trip.at)
     })
   }
+  function persistBatch(tripId: string, trip: BatchContext & { ownerId?: string }, select: SelectCandidates) {
+    const prior = confirmedBatches(db).get(tripId)
+    const candidates = prior?.candidates ?? select(trip)
+    const ordered = candidates.flatMap(candidate => {
+      if ('proof' in candidate) {
+        if (trip.ownerId === undefined) return conflict()
+        // C9 can extend this proof-backed path while keeping the mode and first saved row intact.
+        const input = eligibleSearchInput(candidate.proof, { ...trip, tripId, ownerId: trip.ownerId }, trip.blockedTopics)
+        return input ? [normalized(input, true)] : []
+      }
+      const { input, topics } = candidate
+      if (input.tripId !== tripId || input.kind === 'zhihu' || (trip.ownerId === undefined && input.kind !== 'scene')) return conflict()
+      const entry = normalized(input)
+      return isVisible(entry.data, trip.blockedTopics) && !blockedBy(trip.blockedTopics, ...topics) ? [entry] : []
+    })
+    const event = frozenEvent(db, tripId, trip)
+    let eventOmission: EventOmission | undefined
+    if (typeof event === 'string') eventOmission = event
+    else if (event) ordered.push(event)
+    ordered.sort((a, b) => priority(a.data) - priority(b.data) ||
+      (b.data.authorityLevel ?? 0) - (a.data.authorityLevel ?? 0) ||
+      (b.data.voteUpCount ?? 0) - (a.data.voteUpCount ?? 0) ||
+      compareText(a.data.kind, b.data.kind) || compareText(a.identity, b.identity) ||
+      compareText(JSON.stringify(a.data), JSON.stringify(b.data)))
+    let count = Number(db.prepare('SELECT count(*) AS n FROM find WHERE trip_id=?').get(tripId)?.n)
+    const chosen = new Set<string>()
+    const finds: Find[] = []
+    let hasRealZhihu = false
+    for (const entry of ordered) {
+      const id = findId(entry)
+      if (chosen.has(id)) continue
+      chosen.add(id)
+      const existing = existingFind(entry, id)
+      if (entry.eventCapturedAt !== undefined && existing &&
+          (!sameContent(existing, entry.data) ||
+            !(Date.parse(existing.createdAt) >= Date.parse(entry.eventCapturedAt) &&
+              Date.parse(existing.createdAt) <= Date.parse(trip.at)))) {
+        eventOmission = 'EVENT_FIND_MISMATCH'
+        continue
+      }
+      if (prior && (!existing || !prior.ids.has(existing.id))) continue
+      if (existing && (!isVisible(existing, trip.blockedTopics) ||
+          (entry.data.kind === 'zhihu' && existing.sourceMode !== entry.data.sourceMode))) continue
+      // The physical limit includes history. Owners with no proven article can leave one slot open.
+      const limit = trip.ownerId !== undefined && !hasRealZhihu && entry.data.kind !== 'zhihu' ? 4 : 5
+      if (!existing && count >= limit) continue
+      finds.push(existing ?? insert(entry, id, trip.at))
+      if (!existing) count++
+      if (entry.data.kind === 'zhihu') hasRealZhihu = true
+    }
+    finds.sort((a, b) => priority(a) - priority(b) || compareText(a.createdAt, b.createdAt) || compareText(a.id, b.id))
+    const result = finds.slice(0, 5)
+    const completion = !prior && result.length >= 3 && (trip.ownerId === undefined || hasRealZhihu)
+      ? { ids: new Set(result.map(row => row.id)), candidates: candidates.map(candidate => 'proof' in candidate
+        ? { proof: candidate.proof } : { input: { ...candidate.input }, topics: [...candidate.topics] }) }
+      : null
+    return { finds: result, eventOmission, completion }
+  }
+
+  function writeBatch(tripId: string, authorize: () => BatchContext & { ownerId?: string }, select: SelectCandidates) {
+    const { completion, ...result } = transaction(db, true, () => persistBatch(tripId, authorize(), select))
+    if (completion) confirmedBatches(db).set(tripId, completion)
+    return result
+  }
   return {
-    list(tripId: string, sessionId: string): Find[] {
+    list(tripId: string, ownerId: string): Find[] {
       return transaction(db, false, () => {
-        ownedTrip(tripId, sessionId)
-        const rows = db.prepare(`SELECT ${projection} FROM find f JOIN trip t ON t.id=f.trip_id
-          JOIN dog d ON d.id=t.dog_id WHERE t.id=? AND d.session_id=? ORDER BY f.created_at,f.id`)
-          .all(tripId, sessionId) as unknown as Find[]
-        return rows.map(row => ({ ...row }))
+        readOwnerFindTrip(db, tripId, ownerId)
+        return history(tripId).map(row => ({ ...row }))
       })
     },
-    write(input: FindInput, sessionId: string): Find {
-      return write(input, sessionId, false)
+    write(input: FindInput, ownerId: string): Find {
+      return write(input, ownerId, false)
+    },
+    /** The selector may synchronously resolve existing facts from this connection. */
+    writeBatch(tripId: string, scope: OwnerFindScope, select: SelectCandidates) {
+      return writeBatch(tripId, () => runningTrip(tripId, scope), select)
+    },
+    writeSeedBatch(scope: SeedFindScope, select: SelectCandidates) {
+      return writeBatch(scope.tripId, () => {
+        const trip = requireRunningSeedEventTrip(db, scope)
+        return batchContext(scope.dogId, trip.startedAt, trip.blockedTopics)
+      }, select)
     },
     /** Trusted process-only capability; no body field can manufacture a proof. */
-    writeVerified(proof: SearchProof, sessionId: string): Find {
-      return write(proof, sessionId, true)
+    writeVerified(proof: SearchProof, scope: OwnerFindScope): Find {
+      return write(proof, scope, true)
     },
   }
 }

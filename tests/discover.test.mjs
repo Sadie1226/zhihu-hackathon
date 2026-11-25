@@ -9,6 +9,7 @@ import { createTripDiscoverer } from '../lib/trips/discover.ts'
 import { createFindStore, handleFindsRequest } from '../lib/trips/finds.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import { searchForTrip } from '../lib/trips/search-proof.ts'
+import { revokeSession } from '../lib/auth/session.ts'
 
 // Every provider response here is synthetic fixture input. No .env, secrets or network.
 const at = '2026-11-20T00:01:00Z'
@@ -36,9 +37,11 @@ function setup(t, legacy = false) {
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at) VALUES('fixture-wish','fixture-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db, { now: () => new Date(at), newId: () => 'fixture-trip' })
   service.create('fixture-dog', session.sessionId, 'wish'); service.start('fixture-trip', session.sessionId)
-  const execute = p => createTripDiscoverer(db, { provider: p, now: () => new Date(at) })('fixture-trip', session.sessionId)
+  const cookie = session.setCookie.split(';')[0]
+  const request = new Request('http://localhost', { headers: { cookie } })
+  const execute = p => createTripDiscoverer(db, { provider: p, now: () => new Date(at) })('fixture-trip', request)
   const rows = () => db.prepare('SELECT * FROM find').all()
-  return { db, path, session: session.sessionId, cookie: session.setCookie.split(';')[0], service, execute, rows }
+  return { db, path, session: session.sessionId, cookie, request, service, execute, rows }
 }
 
 test('C4 start -> C5 protocol -> verified store -> authenticated GET -> finish -> restart history', async t => {
@@ -134,7 +137,7 @@ test('forged/cloned proofs and plain sourceMode=live cannot authorize storage', 
   for (const fake of [{ verifiedSearch: true }, {}, null, { sourceMode: 'live', tripId: 'fixture-trip' }]) {
     assert.throws(() => store.writeVerified(fake, session), { code: 'CONFLICT' })
   }
-  const result = await searchForTrip({ tripId: 'fixture-trip', sessionId: session,
+  const result = await searchForTrip({ tripId: 'fixture-trip', dogId: 'fixture-dog', ownerId: session,
     query: '想看雪', category: '自然风景', blockedTopics: [] }, provider().search)
   assert.throws(() => store.writeVerified(JSON.parse(JSON.stringify(result.proof)), session), { code: 'CONFLICT' })
   assert.throws(() => store.write({ tripId: 'fixture-trip', kind: 'zhihu', title: 'fixture', excerpt: null,
@@ -157,18 +160,18 @@ test('trip finishing during network request prevents commit and network holds no
 })
 
 test('ownership and latest blocked topics are rechecked when committing', async t => {
-  const { db, execute, rows } = setup(t, true)
+  const { db, execute, request, rows } = setup(t)
   const p = provider(() => {
     db.exec(`UPDATE dog SET blocked_topics='["雪"]'`)
     return Response.json(envelope([item]))
   })
   await assert.rejects(execute(p.search), { code: 'CONFLICT' }); assert.equal(rows().length, 0)
   db.exec("UPDATE dog SET blocked_topics='[]'")
-  const changedOwner = provider(() => {
-    db.prepare('UPDATE dog SET session_id=?').run('fixture-other-owner')
+  const revokedOwner = provider(() => {
+    revokeSession(request, db)
     return Response.json(envelope([item]))
   })
-  await assert.rejects(execute(changedOwner.search), { code: 'NOT_FOUND' }); assert.equal(rows().length, 0)
+  await assert.rejects(execute(revokedOwner.search), { code: 'NOT_FOUND' }); assert.equal(rows().length, 0)
 })
 
 test('cross-owner, missing session and terminal trips fail before search; historical GET still works', async t => {
@@ -184,14 +187,13 @@ test('cross-owner, missing session and terminal trips fail before search; histor
   assert.equal(handleFindsRequest(new Request('http://localhost'), 'fixture-trip', () => db).status, 404)
 })
 
-test('sample dog never runs live search and cannot acquire live provenance during commit', async t => {
-  const { db, execute, rows } = setup(t, true), p = provider()
+test('legacy and sample ownership keys never reach live search', async t => {
+  const { db, session, rows } = setup(t, true), p = provider()
+  const discover = createTripDiscoverer(db, { provider: p.search })
+  await assert.rejects(discover('fixture-trip', session), { code: 'NOT_FOUND' })
   db.exec('UPDATE dog SET is_sample=1')
-  await assert.rejects(execute(p.search), { code: 'CONFLICT' }); assert.equal(p.calls, 0)
-  db.exec('UPDATE dog SET is_sample=0')
-  await assert.rejects(execute(provider(() => {
-    db.exec('UPDATE dog SET is_sample=1'); return Response.json(envelope([item]))
-  }).search), { code: 'CONFLICT' })
+  await assert.rejects(discover('fixture-trip', session), { code: 'NOT_FOUND' })
+  assert.equal(p.calls, 0)
   assert.equal(rows().length, 0)
 })
 
