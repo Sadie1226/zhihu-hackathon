@@ -260,6 +260,7 @@ test('write fault, ambiguous historical facts and invalid randomness propagate a
   assert.deepEqual(pool(db), before)
   db.exec('DROP TRIGGER test_event_fault')
   assert.equal(pick(input)?.eventId, 'ev_spring_first_green')
+  only(db, 'any_slow_walker')
   db.prepare('INSERT INTO trip_event VALUES(?,?,?,?)')
     .run(input.tripId, 'ev_any_slow_walker', input.dogId, startAt)
   const ambiguous = history(db)

@@ -1,17 +1,27 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { deriveSnapshot, toFixedSnapshot } from '../social/snapshot-derive.ts'
 import { nextVersion, validateSnapshot } from '../social/snapshot.ts'
 import type { Snapshot } from '../social/snapshot.ts'
+import { TripError } from './errors.ts'
+import { readOccurrenceFact } from './occurrence-facts.ts'
 
 type Departure = { id: string; dogId: string }
 type SnapshotMeta = Pick<Snapshot, 'dogId' | 'version' | 'createdAt'>
 
-/** Adapter for the reviewed D deriveSnapshot + toSnapshot pair. */
-export type BuildDepartureSnapshot = (db: DatabaseSync, meta: SnapshotMeta) => Snapshot
+function buildDepartureSnapshot(db: DatabaseSync, meta: SnapshotMeta): Snapshot {
+  const result = deriveSnapshot(db, meta.dogId, { occurrenceFacts: readOccurrenceFact })
+  try {
+    return toFixedSnapshot(result, meta)
+  } catch (error) {
+    if (!result.evidence.historyFixed) {
+      throw new TripError('CONFLICT', 'HISTORY_UNVERIFIABLE: 事件发生时的固定事实缺失，不能生成正式快照')
+    }
+    throw error
+  }
+}
 
 /** Only the C4 start transaction calls this, after eligibility and before any start writes. */
-export function bindDepartureSnapshot(
-  db: DatabaseSync, trip: Departure, at: string, build: BuildDepartureSnapshot,
-): number {
+export function bindDepartureSnapshot(db: DatabaseSync, trip: Departure, at: string): number {
   if (!db.isTransaction) throw new Error('Departure snapshot requires the C4 write transaction')
   if (!db.prepare("SELECT 1 FROM trip WHERE id = ? AND dog_id = ? AND status = 'pending'")
     .get(trip.id, trip.dogId)) throw new Error('Departure snapshot requires a matching pending trip')
@@ -22,12 +32,7 @@ export function bindDepartureSnapshot(
   const previous = db.prepare('SELECT MAX(version) AS version FROM snapshot WHERE dog_id = ?').get(trip.dogId)?.version
   const version = nextVersion(previous === null ? null : Number(previous))
   if (!Number.isSafeInteger(version)) throw new Error('Invalid departure snapshot version')
-  const result = validateSnapshot(build(db, { dogId: trip.dogId, version, createdAt: at }))
-  if (!result.ok) throw new Error(`Invalid departure snapshot: ${result.code} at ${result.path}`)
-  const snapshot = result.value
-  if (snapshot.dogId !== trip.dogId || snapshot.version !== version || snapshot.createdAt !== at) {
-    throw new Error('Departure snapshot metadata mismatch')
-  }
+  const snapshot = buildDepartureSnapshot(db, { dogId: trip.dogId, version, createdAt: at })
 
   db.prepare(`INSERT INTO snapshot(dog_id, version, personality_tags, interest_categories, recent_trips, waiting_for, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(

@@ -11,6 +11,7 @@ const root = resolve('.local/k4-tests')
 mkdirSync(root, { recursive: true })
 const fixture = name => JSON.parse(readFileSync(`contracts/fixtures/${name}.json`, 'utf8'))
 const oldSchema = readFileSync('tests/fixtures/schema-v1.sql', 'utf8')
+const v6Migrations = migrations.filter(migration => migration.version <= 6)
 function temporary(t) {
   const directory = mkdtempSync(join(root, 'database-'))
   t.after(() => {
@@ -47,7 +48,7 @@ test('fresh database accepts snapshot NULL for dog with no selected interests; p
     insert(db, 'dog', { ...fixture('dog-v6').dogs[0], interest_categories: null })
     insert(db, 'snapshot', { ...fixture('snapshot').snapshots[0], interest_categories: null })
     assert.equal(snapshots(db)[0].interest_categories, null)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
     const columns = db.prepare("PRAGMA table_info('snapshot')").all()
     assert.deepEqual(columns.map(c => c.name), ['dog_id','version','personality_tags','interest_categories','recent_trips','waiting_for','created_at'])
     assert.deepEqual(columns.filter(c => c.pk).map(c => [c.name,c.pk]), [['dog_id',1],['version',2]])
@@ -63,7 +64,7 @@ test('fresh database accepts snapshot NULL for dog with no selected interests; p
 })
 
 test('non-NULL snapshots require JSON arrays with 2–3 existing categories, on INSERT and UPDATE', t => {
-  const db = openDatabase(temporary(t))
+  const db = openDatabase(temporary(t), v6Migrations)
   try {
     insert(db, 'dog', fixture('dog-v6').dogs[0])
     insert(db, 'snapshot', { ...fixture('snapshot').snapshots[0], interest_categories: null })
@@ -93,7 +94,7 @@ test('fresh schema does not rebuild snapshots in migration v4; triggers agree wi
     seed(db, 'dog-v6')
     const schema = db.prepare("SELECT * FROM sqlite_schema WHERE tbl_name='snapshot' ORDER BY name").all()
     const changes = db.prepare('SELECT total_changes() n').get().n
-    initializeDatabase(db, () => { throw new Error('must not reread schema') })
+    initializeDatabase(db, () => { throw new Error('must not reread schema') }, v6Migrations)
     assert.deepEqual(db.prepare("SELECT * FROM sqlite_schema WHERE tbl_name='snapshot' ORDER BY name").all(), schema)
     assert.equal(db.prepare('SELECT total_changes() n').get().n, changes)
     const fresh = readFileSync('contracts/schema.sql','utf8').replaceAll('\r\n','\n')
@@ -116,7 +117,7 @@ for (const version of [1,2,3]) {
     const preservedObjects = db.prepare("SELECT name,sql FROM sqlite_schema WHERE name IN ('snapshot_custom','snapshot_public','snapshot_audit','snapshot_view_delete','dog_snapshot_reference') ORDER BY name").all()
     db.close(); db = openDatabase(path)
     try {
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
       assert.deepEqual(snapshots(db), before)
       for (const [table, rows] of Object.entries(others)) {
         const actual = db.prepare(`SELECT * FROM ${table} ORDER BY id`).all()
@@ -126,9 +127,9 @@ for (const version of [1,2,3]) {
       assert.equal(db.prepare('SELECT COUNT(*) n FROM fixture_audit').get().n, 0, 'copy must not replay custom side effects')
       assert.equal(db.prepare('SELECT COUNT(*) n FROM snapshot_public').get().n, before.length)
       insert(db,'snapshot',{ ...fixture('snapshot').snapshots[0], version:8, interest_categories:null })
-      assert.throws(() => insert(db,'snapshot',{ ...fixture('snapshot').snapshots[0],version:8,interest_categories:null }),/UNIQUE/)
+      assert.throws(() => insert(db,'snapshot',{ ...fixture('snapshot').snapshots[0],version:8,interest_categories:null }),/snapshot version already exists/)
       assert.throws(() => insert(db,'snapshot',{ ...fixture('snapshot').snapshots[0],dog_id:'missing',interest_categories:null }),/FOREIGN KEY/)
-      assert.throws(() => db.exec("UPDATE snapshot SET recent_trips='[1,2,3,4]'"),/CHECK/)
+      assert.throws(() => db.exec("UPDATE snapshot SET recent_trips='[1,2,3,4]'"),/snapshot version is immutable/)
       assert.equal(db.prepare('SELECT COUNT(*) n FROM fixture_audit').get().n, 1)
       assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[])
       const all = snapshots(db)

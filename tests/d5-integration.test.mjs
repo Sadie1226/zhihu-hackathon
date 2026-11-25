@@ -12,20 +12,7 @@ import { insertDog, insertExchange, mailboxDatabase, ownedDog } from './helpers/
 
 const at = '2026-11-24T00:00:00.000Z'
 const clock = () => new Date(at)
-const proposedV7 = { version: 7, name: 'trip history', sql: TRIP_HISTORY_V7_SQL }
-// The joint interface base already includes the real K v6. Never register v6 twice.
-const versions = [...migrations, proposedV7]
-
-function install(db) {
-  db.exec('BEGIN IMMEDIATE')
-  try {
-    db.exec(TRIP_HISTORY_V7_SQL)
-    db.exec('COMMIT')
-  } catch (error) {
-    db.exec('ROLLBACK')
-    throw error
-  }
-}
+const v6Migrations = migrations.slice(0, -1)
 
 function since(db, owner, id) {
   const service = createTripService(db, { now: clock, newId: () => id })
@@ -39,17 +26,17 @@ function event(db) {
 }
 
 test('v7-shaped migration rolls back as a unit and preserves unverified old rows without current text', t => {
-  const { db, path } = mailboxDatabase(t)
+  const { db, path } = mailboxDatabase(t, v6Migrations)
   const owner = ownedDog(db, 'owner')
-  const trips = since(db, owner, 'legacy-trip')
+  db.prepare(`INSERT INTO trip(id,dog_id,seq,status,trigger,created_at,started_at,ended_at)
+    VALUES('legacy-trip',?,1,'done','auto',?,?,?)`).run(owner.id, at, at, at)
   event(db)
   db.prepare('INSERT INTO trip_event VALUES (?,?,?,?)').run('legacy-trip', 'ev', owner.id, at)
-  trips.finish('legacy-trip', owner.sessionId, 'done')
   db.close()
 
-  const bad = { ...proposedV7, sql: TRIP_HISTORY_V7_SQL + '\n INVALID SQL;' }
-  assert.throws(() => openDatabase(path, [...migrations, bad]), /syntax error/)
-  const afterFailure = openDatabase(path)
+  const bad = { ...migrations.at(-1), sql: TRIP_HISTORY_V7_SQL + '\n INVALID SQL;' }
+  assert.throws(() => openDatabase(path, [...v6Migrations, bad]), /syntax error/)
+  const afterFailure = openDatabase(path, v6Migrations)
   try {
     assert.equal(afterFailure.prepare('PRAGMA user_version').get().user_version, 6)
     assert.equal(afterFailure.prepare("SELECT 1 FROM sqlite_schema WHERE name = 'trip_event_fact'").get(), undefined)
@@ -58,7 +45,7 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
     afterFailure.close()
   }
   for (let open = 0; open < 2; open += 1) {
-    const migrated = openDatabase(path, versions)
+    const migrated = openDatabase(path)
     try {
       assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 7)
       assert.deepEqual({ ...migrated.prepare('SELECT * FROM v_trip_event_history').get() }, {
@@ -78,7 +65,6 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
 
 test('occurrence and frozen public fields commit together, survive template edits and resist SQL replacement', t => {
   const { db } = mailboxDatabase(t)
-  install(db)
   const a = ownedDog(db, 'owner-a')
   const b = ownedDog(db, 'owner-b')
   event(db)
@@ -125,7 +111,6 @@ test('seed event authorization checks the exact intent, dog and current trip sta
   assert.equal(seedIntentTripId('dog_seed_07', 'seed-test:001'),
     'trip_seed_intent_13612605004b11f0f22ea07e528fe50eaeba248294bbb64c364a6f5a0716f001')
   assert.throws(() => requireRunningSeedEventTrip(db, scope), /requires a transaction/)
-  // Set up only the authorization fixture. The unmerged seed lifecycle is exercised separately.
   const service = createTripService(db, { now: clock, newId: () => tripId })
   service.create(dogId, 'sample fixture a', 'auto')
   const inside = scope => {
@@ -149,30 +134,17 @@ test('seed event authorization checks the exact intent, dog and current trip sta
 
 test('C4 binds the validated version before start/delivery, and rollback, retry and reopen preserve the boundary', t => {
   const { db, path } = mailboxDatabase(t)
-  install(db)
   const owner = ownedDog(db, 'owner')
   const sender = ownedDog(db, 'sender')
   insertExchange(db, 'due', sender.id, owner.id, 1)
-  let builds = 0
-  const build = (connection, meta) => {
-    builds++
-    assert.equal(connection, db)
-    assert.ok(connection.isTransaction)
-    assert.equal(connection.prepare("SELECT delivered_at FROM exchange WHERE id = 'due'").get().delivered_at, null)
-    assert.equal(connection.prepare("SELECT status FROM trip WHERE id = 'departing'").get().status, 'pending')
-    // Shape-only builder for this C4 test. D's derivation still requires the frozen reader.
-    return { ...meta, personalityTags: ['好奇', '看物', '直给'], interestCategories: null, recentTrips: [], waitingFor: null }
-  }
-  const service = createTripService(db, { now: clock, newId: () => 'departing', buildDepartureSnapshot: build })
+  const service = createTripService(db, { now: clock, newId: () => 'departing' })
   const pending = service.create(owner.id, owner.sessionId, 'auto')
   assert.equal(readDepartureSnapshot(db, pending.id, owner.id), null)
-  assert.equal(builds, 0)
-  const badService = createTripService(db, { now: clock, buildDepartureSnapshot: (_db, meta) => ({
-    ...meta, dogId: sender.id, personalityTags: ['好奇', '看物', '直给'], interestCategories: null,
-    recentTrips: [], waitingFor: null,
-  }) })
-  assert.throws(() => badService.start(pending.id, owner.sessionId), /metadata mismatch/)
-  assert.deepEqual(service.get(pending.id, owner.sessionId), pending)
+  db.exec(`CREATE TRIGGER test_snapshot_before_start BEFORE INSERT ON snapshot BEGIN
+    SELECT RAISE(ABORT, 'snapshot must precede departure and delivery')
+    WHERE (SELECT status FROM trip WHERE id = 'departing') <> 'pending'
+      OR (SELECT delivered_at FROM exchange WHERE id = 'due') IS NOT NULL;
+  END;`)
   db.exec(`CREATE TRIGGER fault_delivery AFTER UPDATE OF delivered_at ON exchange
     BEGIN SELECT RAISE(FAIL, 'delivery fault'); END;`)
   assert.throws(() => service.start(pending.id, owner.sessionId), /delivery fault/)
@@ -186,11 +158,11 @@ test('C4 binds the validated version before start/delivery, and rollback, retry 
   assert.deepEqual(started.delivered.map(row => row.id), ['due'])
   assert.deepEqual(started.delivered.map(row => [row.deliveredAt, row.readAt, row.repliedAt]), [[at, null, null]])
   assert.deepEqual(service.start(pending.id, owner.sessionId), { trip: started.trip, delivered: [] })
-  assert.equal(builds, 2)
   const bound = readDepartureSnapshot(db, pending.id, owner.id)
   assert.equal(bound.version, 1)
   assert.equal(bound.createdAt, at)
   assert.equal(readDepartureSnapshot(db, pending.id, sender.id), null)
+  db.exec('DROP TRIGGER test_snapshot_before_start')
   db.prepare('INSERT INTO snapshot SELECT dog_id, 2, personality_tags, interest_categories, recent_trips, waiting_for, created_at FROM snapshot WHERE version=1').run()
   assert.deepEqual(readDepartureSnapshot(db, pending.id, owner.id), bound)
   for (const sql of [
@@ -205,7 +177,7 @@ test('C4 binds the validated version before start/delivery, and rollback, retry 
 
   const reopened = openDatabase(path)
   try {
-    const retry = createTripService(reopened, { buildDepartureSnapshot: () => assert.fail('repeat start derived again') })
+    const retry = createTripService(reopened, { now: () => assert.fail('repeat start allocated a new departure time') })
     assert.deepEqual(retry.start(pending.id, owner.sessionId), { trip: started.trip, delivered: [] })
     assert.deepEqual(readDepartureSnapshot(reopened, pending.id, owner.id), bound)
   } finally {
@@ -215,7 +187,6 @@ test('C4 binds the validated version before start/delivery, and rollback, retry 
 
 test('two C4 start connections bind one snapshot version and deliver once', { timeout: 15000 }, async t => {
   const { db, path } = mailboxDatabase(t)
-  install(db)
   const owner = ownedDog(db, 'racing-owner')
   const sender = ownedDog(db, 'sender')
   const service = createTripService(db, { now: clock })

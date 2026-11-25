@@ -214,10 +214,11 @@ POST /api/dogs/:id/trips
 POST /api/trips/:id/start    入：{ }   出：{ trip: Trip, delivered: Exchange[] }
 ```
 
-**C4 的 start 通过既有投递器写入 `delivered_at`。** 出发和投递在同一事务内完成：
+**C4 在同一事务内绑定快照、开始出发并投递。**
 
-1. 把 `status` 改成 `running`，写 `started_at`
-2. **投递**：找出所有 `to_dog = 这只狗`、`delivered_at IS NULL`、`deliver_after_trip_seq <= 本次 seq` 的 exchange，逐条写 `delivered_at`
+1. 检查归属、状态、配额和间隔，使用固定事件事实派生新快照，将该版本写入 `trip_snapshot`。
+2. 把 `status` 改成 `running`，写 `started_at`。
+3. 由既有投递器将本次到期的 exchange 逐条标为送达。
 
 ```
 POST /api/trips/:id/finish   入：{ status: 'done'|'failed'|'timeout' }
@@ -237,7 +238,7 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 - 五个路由全部验证服务端会话与 owner 归属；缺少有效 Cookie、跨 owner、记录不存在均 HTTP 404 / `NOT_FOUND`。所有响应 `Cache-Control: no-store`，读取不触发状态更新或投递。
 - POST 接受 JSON 对象：创建只有 `trigger`，开始为 `{}`，结束只有 `status`。不接收 `session_id`、seq 或时间戳；不允许跨来源 POST。参数/状态/额度冲突均 HTTP 409 / `CONFLICT`；数据库不可用返回脱敏 HTTP 503 / `NETWORK`。成功 HTTP 200。
 - A 裁定：UTC 存储；自然日按上海固定 +8 小时切分，仅统计 `started_at IS NOT NULL`，`date(started_at, '+8 hours')` 为归属日。pending 不扣次数，failed/timeout 已出发则计数，跨午夜结束仍归出发日。每日上限 2；沿用 `TRIP_MIN_GAP_HOURS=6`，出发时检查间隔。
-- 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务、当日额度、分配 `MAX(seq)+1` 并插入；出发在同类事务内重新检查额度及间隔，再写 running/started_at 并调用现有投递器。投递失败整笔回滚。
+- 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务和当日额度，分配 `MAX(seq)+1` 并插入。出发在同类事务内重新检查额度及间隔。派生、绑定、出发和投递中任一步失败都会整体回滚。派生所需历史缺少固定事实时返回 HTTP 409 / `CONFLICT`，并保留 pending。
 - 重复 start：running 返回原 trip 和 `delivered: []`，不改 started_at、不再投递；终态不能重新开始。只有 running 可进入终态；重复相同终态返回既有数据且不改 ended_at，其他终态切换返回 CONFLICT。
 - finish 只读已有 finds（包含 assetPath），B 未接入前 `message: null`，不伪造发现；不写 replied_at 或 read_at。
 - `timeout` 可显式结束；自动超时毫秒数未获裁定，不设置默认值。服务端执行器可传 `timeoutIfDue(id, sessionId, timeoutMs)`，未传即禁用；C4 不启动调度器，不在 GET 中隐式结束任务。
@@ -248,7 +249,8 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 
 - 可信服务端执行器通过 `createSeedTripRunner(db)(dogId, intentId)` 取得同一调度意图的 `create()`、`start()`、`finish(status)`。只允许数据库中 `is_sample=1` 且无 owner 的狗。内部能力不接收 Cookie 或 sessionId，现有 HTTP 路由继续要求真人 owner 归属。
 - 调用方为同一意图始终传相同 `intentId`，长度 1–128，首字符为 ASCII 字母或数字，其余可用字母、数字、点、下划线、冒号或连字符。相同狗和意图绑定同一 Trip ID，重启可恢复。另一意图在该狗已有 pending/running 时收到 `CONFLICT`。
-- 各阶段使用 C4 独立事务。创建返回已存在的同一意图记录。开始沿用每日配额、6 小时间隔及出发投递，失败可重试原 pending。重复开始返回既有 running 或终态 Trip，`delivered: []`。结束遵守既有终态规则。事件和自动调度由后续执行器接入。
+- 创建返回同一意图的既有记录。开始与主人出发共用快照及投递规则，失败可重试原 pending。重复开始返回既有 running 或终态 Trip，`delivered: []`。执行器在 start 提交后可调用同一意图的 `selectEvent(conditions)`。结束遵守既有终态规则。
+- 内部调用方先校验授权，再用 `readDepartureSnapshot(db, tripId, dogId)` 读取出发绑定版本。历史 running 或终态 Trip 若没有绑定，读取结果为 `null`。
 
 ### 4. 发现（c 实现）
 
@@ -740,7 +742,7 @@ fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenance
 - `resolveSceneContext(sceneFile)` 只接受 E2c `scene-map.json` 的相对文件键。未知场景返回 `null`。粗标签来自 A 核准的 D 映射，事件级兼容还要看场景与已审文本。
 - `createTripEventSelector(db)(input)` 由可信 Trip 执行器调用。输入为 `dogId`、`tripId`、服务端 C4 归属键 `sessionId` 和 `conditions`。条件包含 `sceneFile`、`season`、`weather` 和 `timeOfDay`。缺失可信条件可传 `null`。`any` 只用于事件候选条件。
 - 按启用、时间和天气、粗标签、语义、兴趣与屏蔽主题、同狗冷却顺序筛选；`match_tags=[]` 不限制兴趣，`interest_categories=NULL` 表示主人跳过，匹配不受六类限制，存储仍为 NULL。冷却按 UTC 经过时长计算，满 `cooldown_days × 24h` 可再选。
-- 校验 running Trip、归属、抽签和写入在同一同步事务。已记录唯一事件的 running Trip 重试返回原四字段记录。无匹配返回 `null`，旅途继续。数据库或历史一致性错误回滚并抛出。既有 start/finish 及页面接入由后续执行器联调。
+- 种子入口由内部意图调用，核对稳定 Trip ID、狗归属、种子标记和无 owner。主人入口拒绝样本狗。授权、抽签及 occurrence 写入在 start 提交后的独立事务，v7 触发器同时冻结事件代码和公开文本。已记录唯一事件的 running Trip 重试返回原记录。无匹配返回 `null`，旅途继续。数据库或历史一致性错误回滚并抛出。
 
 ### 初始化与 D 导入
 

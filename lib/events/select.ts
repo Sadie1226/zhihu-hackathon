@@ -1,11 +1,12 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { EventWeather, Season, TimeOfDay } from '../../contracts/types.ts'
 import { blockedBy } from '../trips/search-proof.ts'
+import { requireRunningSeedEventTrip } from '../trips/seed-event-scope.ts'
 import { createTripService, TripError } from '../trips/service.ts'
 import { resolveSceneContext } from './scene-context.ts'
 import { sceneAllowsEvent } from './semantic-policy.ts'
 
-type Conditions = {
+export type EventConditions = {
   sceneFile: string
   season: Exclude<Season, 'any'>
   weather: Exclude<EventWeather, 'any'>
@@ -13,18 +14,23 @@ type Conditions = {
 }
 
 /** Only the trusted server executor builds this input. sessionId is the C4 ownership key. */
-export type EventSelectionInput = {
+type EventSelectionTarget = {
   dogId: string
   tripId: string
-  sessionId: string
-  conditions: Conditions | null
+  conditions: EventConditions | null
 }
 
+export type EventSelectionInput = EventSelectionTarget & {
+  sessionId: string
+}
+
+type SeedEventSelectionInput = EventSelectionTarget & { intentId: string }
+type EventProfile = { startedAt: string; interestCategories: string | null; blockedTopics: string }
 export type SelectedTripEvent = { tripId: string; eventId: string; dogId: string; happenedAt: string }
 type Candidate = { id: string; code: string; text: string; placeTags: string; matchTags: string; weight: number; cooldownDays: number }
 const dayMs = 24 * 60 * 60 * 1000
 
-function knownConditions(conditions: Conditions) {
+function knownConditions(conditions: EventConditions) {
   return ['spring', 'summer', 'autumn', 'winter'].includes(conditions.season) &&
     ['clear', 'rain', 'snow'].includes(conditions.weather) &&
     ['morning', 'dusk', 'night'].includes(conditions.timeOfDay)
@@ -65,7 +71,8 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
   const random = options.random ?? Math.random
   const occurrence = db.prepare(`SELECT trip_id AS tripId, event_id AS eventId, dog_id AS dogId,
     happened_at AS happenedAt FROM trip_event WHERE trip_id = ? LIMIT 2`)
-  const dogQuery = db.prepare('SELECT interest_categories, blocked_topics FROM dog WHERE id = ? AND session_id = ?')
+  const dogQuery = db.prepare(`SELECT interest_categories AS interestCategories, blocked_topics AS blockedTopics
+    FROM dog WHERE id = ? AND session_id = ? AND is_sample = 0`)
   const candidateQuery = db.prepare(`SELECT id, code, text, place_tags AS placeTags, match_tags AS matchTags,
     weight, cooldown_days AS cooldownDays FROM event WHERE enabled = 1
     AND season IN ('any', ?) AND weather IN ('any', ?) AND time_of_day IN ('any', ?) ORDER BY code`)
@@ -74,13 +81,12 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
     WHERE te.dog_id = ? AND te.trip_id <> ?`)
   const insert = db.prepare('INSERT INTO trip_event(trip_id,event_id,dog_id,happened_at) VALUES(?,?,?,?)')
 
-  function choose({ dogId, tripId, sessionId, conditions }: EventSelectionInput, at: number): Candidate | undefined {
+  function choose({ dogId, tripId, conditions }: EventSelectionTarget, profile: EventProfile, at: number): Candidate | undefined {
     if (!conditions || !knownConditions(conditions)) return undefined
     const scene = resolveSceneContext(conditions.sceneFile)
     if (!scene) return undefined
-    const dog = dogQuery.get(dogId, sessionId)!
-    const interests = dog.interest_categories === null ? null : stringList(String(dog.interest_categories))
-    const blocked = stringList(String(dog.blocked_topics))
+    const interests = profile.interestCategories === null ? null : stringList(profile.interestCategories)
+    const blocked = stringList(profile.blockedTopics)
     const candidates = (candidateQuery.all(conditions.season, conditions.weather, conditions.timeOfDay) as Candidate[])
       .filter(row => {
         const tags = stringList(row.placeTags)
@@ -105,14 +111,13 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
     }), random)
   }
 
-  return function pickEvent(input: EventSelectionInput): SelectedTripEvent | null {
-    const { dogId, tripId, sessionId } = input
+  function pickEvent(input: EventSelectionTarget, authorize: () => EventProfile): SelectedTripEvent | null {
+    const { dogId, tripId } = input
+    if (db.isTransaction) throw new Error('Event selection requires a separate transaction after start commits')
     db.exec('BEGIN IMMEDIATE')
     try {
-      const trip = trips.get(tripId, sessionId)
-      if (trip.dogId !== dogId) throw new TripError('NOT_FOUND', '这条记录不在这里')
-      if (trip.status !== 'running' || trip.startedAt === null) throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
-      const started = timestamp(trip.startedAt)
+      const profile = authorize()
+      const started = timestamp(profile.startedAt)
       let result: SelectedTripEvent | null = null
       const existing = occurrence.all(tripId) as SelectedTripEvent[]
       if (existing.length > 0) {
@@ -126,7 +131,7 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
         const current = now()
         const happenedAt = current.toISOString()
         if (current.getTime() < started) throw new TripError('CONFLICT', '事件时间早于出发')
-        const picked = choose(input, current.getTime())
+        const picked = choose(input, profile, current.getTime())
         if (picked) {
           insert.run(tripId, picked.id, dogId, happenedAt)
           result = { tripId, eventId: picked.id, dogId, happenedAt }
@@ -139,4 +144,21 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
       throw error
     }
   }
+
+  const pickForOwner = (input: EventSelectionInput) => pickEvent(input, () => {
+    const { dogId, tripId, sessionId } = input
+    const trip = trips.get(tripId, sessionId)
+    const dog = dogQuery.get(dogId, sessionId)
+    if (trip.dogId !== dogId || !dog) throw new TripError('NOT_FOUND', '这条记录不在这里')
+    if (trip.status !== 'running' || trip.startedAt === null) throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
+    return {
+      startedAt: trip.startedAt,
+      interestCategories: dog.interestCategories === null ? null : String(dog.interestCategories),
+      blockedTopics: String(dog.blockedTopics),
+    }
+  })
+
+  return Object.assign(pickForOwner, {
+    forSeed: (input: SeedEventSelectionInput) => pickEvent(input, () => requireRunningSeedEventTrip(db, input)),
+  })
 }

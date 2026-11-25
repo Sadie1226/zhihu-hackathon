@@ -1,13 +1,6 @@
 import { openDatabase } from './bootstrap.ts'
 import { migrations } from './migrations.ts'
-import type { Migration } from './migrations.ts'
-import { TRIP_HISTORY_V7_SQL } from './migrations/007-trip-history.ts'
-
-/** Explicit joint-interface registry. The default HTTP runtime stays v6 until C wires start. */
-export const d5InterfaceMigrations: readonly Migration[] = [
-  ...migrations,
-  { version: 7, name: 'immutable occurrence facts and departure snapshot binding', sql: TRIP_HISTORY_V7_SQL },
-]
+export const d5InterfaceMigrations = migrations
 
 /** Dedicated local validation path only; never opens the default application database implicitly. */
 export function openD5InterfaceDatabase(path: string) {

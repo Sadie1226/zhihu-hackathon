@@ -6,8 +6,11 @@ import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
+import { DatabaseSync } from 'node:sqlite'
 import { openDatabase } from '../../lib/db/bootstrap.ts'
-import { insertDog, insertExchange, mailboxDatabase, seedMailbox } from './mailbox-fixtures.mjs'
+import { migrations } from '../../lib/db/migrations.ts'
+import { readDepartureSnapshot } from '../../lib/trips/departure-snapshot.ts'
+import { insertDog, insertExchange, mailboxDatabase, ownedDog, seedMailbox } from './mailbox-fixtures.mjs'
 
 async function freePort() {
   const probe = createServer()
@@ -130,4 +133,33 @@ test('production HTTP routes, ownership, explicit read, C4 start, restart and fa
   } finally {
     await server.stop()
   }
+})
+
+test('production HTTP upgrades v6 and binds the departure snapshot on the first start', { timeout: 45000 }, async t => {
+  const { db, path } = mailboxDatabase(t, migrations.slice(0, -1))
+  const owner = ownedDog(db, 'g3-production-owner', true)
+  const sender = ownedDog(db, 'g3-production-sender', true)
+  insertExchange(db, 'g3-production-gift', sender.id, owner.id, 1)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
+  db.close()
+  const server = await productionServer(path)
+  try {
+    const post = route => request(server.base, route, 200, { cookie: owner.cookie, method: 'POST' })
+    const { trip } = await post(`/api/dogs/${owner.id}/trips`)
+    const startRoute = `/api/trips/${trip.id}/start`
+    const started = await post(startRoute)
+    assert.equal(started.trip.status, 'running')
+    assert.deepEqual(started.delivered.map(row => row.id), ['g3-production-gift'])
+    assert.deepEqual(await post(startRoute), { trip: started.trip, delivered: [] })
+    const reader = new DatabaseSync(path, { readOnly: true })
+    try {
+      assert.equal(reader.prepare('PRAGMA user_version').get().user_version, 7)
+      assert.deepEqual(readDepartureSnapshot(reader, trip.id, owner.id), {
+        dogId: owner.id, version: 1, createdAt: started.trip.startedAt,
+        personalityTags: ['好奇', '看物', '直给'], interestCategories: null, recentTrips: [], waitingFor: null,
+      })
+      assert.equal(reader.prepare('SELECT count(*) AS n FROM snapshot WHERE dog_id = ?').get(owner.id).n, 1)
+      assert.deepEqual(reader.prepare('PRAGMA foreign_key_check').all(), [])
+    } finally { reader.close() }
+  } finally { await server.stop() }
 })

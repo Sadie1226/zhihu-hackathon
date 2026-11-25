@@ -4,6 +4,7 @@ import { wishMigrationSql } from './migrations/003-wishes.ts'
 import { snapshotInterestNullMigration } from './migrations/004-snapshot-interest-null.ts'
 import { ownerSessionMigration } from './migrations/005-owner-session.ts'
 import { TSPF_ASSEMBLY_V6_SQL } from './migrations/006-tspf-assembly.ts'
+import { TRIP_HISTORY_V7_SQL } from './migrations/007-trip-history.ts'
 
 /** Infrastructure versions use PRAGMA user_version, without a separate tracking table. */
 export interface Migration {
@@ -22,4 +23,5 @@ export const migrations: readonly Migration[] = [
   { version: 4, name: 'nullable snapshot interests', sql: snapshotInterestNullMigration },
   { version: 5, name: 'stable owners and revocable sessions', sql: ownerSessionMigration },
   { version: 6, name: 'adopted r2 T/S/P/F assembly writes', sql: TSPF_ASSEMBLY_V6_SQL },
+  { version: 7, name: 'immutable occurrence facts and departure snapshot binding', sql: TRIP_HISTORY_V7_SQL },
 ]

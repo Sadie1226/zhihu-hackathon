@@ -5,12 +5,7 @@ import { createTripService } from '../../lib/trips/service.ts'
 const { path, tripId, sessionId, at } = workerData
 const db = new DatabaseSync(path, { timeout: 5000 })
 db.exec('PRAGMA foreign_keys = ON')
-const service = createTripService(db, {
-  now: () => new Date(at),
-  buildDepartureSnapshot: (_db, meta) => ({
-    ...meta, personalityTags: ['好奇', '看物', '直给'], interestCategories: null, recentTrips: [], waitingFor: null,
-  }),
-})
+const service = createTripService(db, { now: () => new Date(at) })
 parentPort.postMessage('ready')
 parentPort.once('message', () => {
   try {

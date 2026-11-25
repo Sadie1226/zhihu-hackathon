@@ -1,19 +1,14 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { TRIPS_PER_DAY_MAX, TRIP_MIN_GAP_HOURS } from '../../contracts/types.ts'
 import type { Trip, TripStatus, TripTrigger, Find, Exchange } from '../../contracts/types.ts'
 import { deliverOnTripStart } from '../mailbox/deliver.mjs'
 import { selectActiveWish } from '../wishes/contract.ts'
 import { bindDepartureSnapshot } from './departure-snapshot.ts'
-import type { BuildDepartureSnapshot } from './departure-snapshot.ts'
+import { TripError } from './errors.ts'
+import { seedIntentTripId } from './seed-event-scope.ts'
 
-export class TripError extends Error {
-  code: 'NOT_FOUND' | 'CONFLICT'
-  constructor(code: 'NOT_FOUND' | 'CONFLICT', detail: string) {
-    super(detail)
-    this.code = code
-  }
-}
+export { TripError } from './errors.ts'
 const conflict = (detail: string): never => { throw new TripError('CONFLICT', detail) }
 const missing = (): never => { throw new TripError('NOT_FOUND', '这条记录不在这里') }
 export type TerminalStatus = Extract<TripStatus, 'done' | 'failed' | 'timeout'>
@@ -51,7 +46,6 @@ export function startsOnShanghaiDay(db: DatabaseSync, dogId: string, at: string)
 type TripOptions = {
   now?: () => Date
   newId?: () => string
-  buildDepartureSnapshot?: BuildDepartureSnapshot
 }
 type OwnerScope = { kind: 'owner'; sessionId: string }
 type SampleScope = { kind: 'sample'; dogId: string; tripId: string }
@@ -137,7 +131,7 @@ function tripService(db: DatabaseSync, options: TripOptions) {
         if (last && Date.parse(at) - Date.parse(String(last.started_at)) < TRIP_MIN_GAP_HOURS * 3600000) {
           conflict('两次出发需要间隔至少 6 小时')
         }
-        if (options.buildDepartureSnapshot) bindDepartureSnapshot(db, trip, at, options.buildDepartureSnapshot)
+        bindDepartureSnapshot(db, trip, at)
         // Resolve at actual departure, under this write lock, so a wish revoked
         // while pending cannot become the provenance of a future trip.
         const wish = scope.kind === 'owner' && trip.trigger === 'wish'
@@ -189,13 +183,8 @@ export function createTripService(db: DatabaseSync, options: TripOptions = {}) {
 }
 
 /** Internal C4 capability for a single sample dog and a single scheduled trip. */
-export function sampleTripLifecycle(db: DatabaseSync, dogId: string, intentId: string, options: Pick<TripOptions, 'now' | 'buildDepartureSnapshot'>) {
-  if (typeof dogId !== 'string' || !dogId.trim() ||
-      typeof intentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(intentId)) {
-    conflict('种子狗出行意图无效')
-  }
-  const hash = createHash('sha256').update(JSON.stringify([dogId, intentId])).digest('hex')
-  const tripId = `trip_seed_intent_${hash}`
+export function sampleTripLifecycle(db: DatabaseSync, dogId: string, intentId: string, options: Pick<TripOptions, 'now'>) {
+  const tripId = seedIntentTripId(dogId, intentId)
   const scope: SampleScope = { kind: 'sample', dogId, tripId }
   const service = tripService(db, options)
   return {

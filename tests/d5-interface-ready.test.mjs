@@ -32,6 +32,7 @@ test('interface opener never falls back to the default application database', ()
 })
 
 test('interface registry uses real v6 -> v7 for fresh/legacy databases, preserving seeds and rolling back failures', t => {
+  assert.equal(d5InterfaceMigrations, migrations)
   assert.deepEqual(d5InterfaceMigrations.map(m => m.version), [2, 3, 4, 5, 6, 7])
   const path = pathFor(t)
   let db = new DatabaseSync(path)
@@ -44,13 +45,13 @@ test('interface registry uses real v6 -> v7 for fresh/legacy databases, preservi
     INSERT INTO event(id,code,text,season,weather,time_of_day) VALUES('legacy-event','legacy','现在的模板','any','any','any');
     INSERT INTO trip_event VALUES('legacy','legacy-event','dog_seed_07','${at}');`)
   db.close()
-  const bad = [...migrations, { ...d5InterfaceMigrations.at(-1), sql: d5InterfaceMigrations.at(-1).sql + '; INVALID SQL;' }]
+  const bad = [...migrations.slice(0, -1), { ...migrations.at(-1), sql: migrations.at(-1).sql + '; INVALID SQL;' }]
   assert.throws(() => openDatabase(path, bad), /syntax error/)
   db = new DatabaseSync(path)
   assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5)
   assert.equal(db.prepare("SELECT name FROM sqlite_schema WHERE name='trip_event_fact'").get(), undefined)
   db.close()
-  db = openD5InterfaceDatabase(path)
+  db = openDatabase(path)
   try {
     assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
     assert.deepEqual(db.prepare('SELECT id,assembly FROM dog ORDER BY id').all(), before)
@@ -106,7 +107,7 @@ test('reader chooses earliest occurrence chronologically and never skips an unve
   let db
   t.after(() => { if (db?.isOpen) db.close() })
   const path = pathFor(t)
-  db = openDatabase(path)
+  db = openDatabase(path, migrations.slice(0, -1))
   const owner = ownedDog(db, 'ordered-owner')
   db.exec(`INSERT INTO trip(id,dog_id,seq,status,trigger,created_at,started_at,ended_at)
     VALUES('ordered','${owner.id}',1,'done','auto','${at}','${at}','${at}');

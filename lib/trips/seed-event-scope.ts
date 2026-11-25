@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { TripError } from './service.ts'
+import { TripError } from './errors.ts'
 
-/** Also used by the sample lifecycle once C8 is on the shared base. */
 export function seedIntentTripId(dogId: string, intentId: string): string {
   if (typeof dogId !== 'string' || !dogId.trim() ||
       typeof intentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(intentId)) {

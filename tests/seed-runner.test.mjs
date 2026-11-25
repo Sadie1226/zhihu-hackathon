@@ -6,6 +6,7 @@ import { Worker } from 'node:worker_threads'
 import { sessionCookieName } from '../lib/auth/session.ts'
 import { initializeDatabase, openDatabase } from '../lib/db/bootstrap.ts'
 import { migrations } from '../lib/db/migrations.ts'
+import { readDepartureSnapshot } from '../lib/trips/departure-snapshot.ts'
 import { handleTripRequest } from '../lib/trips/http.ts'
 import { createSeedTripRunner } from '../lib/trips/seed-runner.ts'
 import { insertExchange, mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
@@ -198,6 +199,8 @@ test('two SQLite connections use one trip for one intent and only one performs d
   for (const { exit } of workers) assert.deepEqual(await exit, [0])
   assert.deepEqual(a.trip, b.trip)
   assert.equal(tripRows(db).length, 1)
+  assert.equal(db.prepare('SELECT count(*) AS n FROM snapshot WHERE dog_id = ?').get(seed).n, 1)
+  assert.equal(readDepartureSnapshot(db, a.trip.id, seed).version, 1)
   assert.deepEqual([a.delivered.length, b.delivered.length].sort(), [0, 1])
   assert.equal(exchange(db, 'concurrent').delivered_at, a.trip.startedAt)
 })

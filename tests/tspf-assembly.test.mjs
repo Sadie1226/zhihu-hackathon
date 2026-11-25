@@ -164,7 +164,7 @@ test('v5 seed SQL and historical rows survive atomic upgrade, rollback and resta
     assert.deepEqual(rows(), before)
     db.close()
     db = openDatabase(path)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
     assert.deepEqual(rows(), before)
     assert.ok(rows().dog.every(row => isLegacyAssembly(parseStoredAssembly(row.assembly))))
     assert.equal(db.prepare("SELECT assembly FROM dog WHERE id='legacy-dog'").get().assembly, historicAssembly)
@@ -182,7 +182,7 @@ test('v5 seed SQL and historical rows survive atomic upgrade, rollback and resta
     update.run(JSON.stringify(good))
     db.close()
     db = openDatabase(path)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7)
     assert.deepEqual(parseStoredAssembly(db.prepare("SELECT assembly FROM dog WHERE id='legacy-dog'").get().assembly), good)
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
   } finally { if (db.isOpen) db.close() }
