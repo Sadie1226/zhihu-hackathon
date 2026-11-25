@@ -10,6 +10,7 @@ import { createTripEventSelector } from '../lib/events/select.ts'
 import { createTripDiscoveryComposer } from '../lib/trips/composer.ts'
 import { createTripDiscoverer, createTripDiscoverySearch } from '../lib/trips/discover.ts'
 import { handleFindsRequest } from '../lib/trips/finds.ts'
+import { createMemorySearchCache } from '../lib/trips/search-cache.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import { createZhihuSearchClient } from '../lib/zhihu/client.ts'
 import { mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
@@ -62,7 +63,7 @@ function fixture(t) {
         }] } })
       } })
     const search = createTripDiscoverySearch(db, provider, { now })
-    return { search, get calls() { return calls } }
+    return { search, provider, get calls() { return calls } }
   }
   async function complete(observed = observations) {
     const result = await newSearch().search(trip.id, request, intentId)
@@ -85,9 +86,12 @@ function launch(t, f, options = {}) {
   const exit = once(child, 'exit')
   let searchMessage
   const searching = new Promise(resolve => { searchMessage = resolve })
+  let selectedMessage
+  const selected = new Promise(resolve => { selectedMessage = resolve })
   let result
   child.on('message', message => {
     if (message.phase === 'searching') searchMessage(message)
+    if (message.phase === 'selected') selectedMessage(message)
     if (message.phase === 'done') result = message
   })
   child.send({ path: f.path, tripId: f.trip.id, cookie: f.owner.cookie,
@@ -95,6 +99,9 @@ function launch(t, f, options = {}) {
   return {
     async searching() {
       return Promise.race([searching, exit.then(([code]) => assert.fail(`Child exited before barrier (${code}): ${stderr}`))])
+    },
+    async selected() {
+      return Promise.race([selected, exit.then(([code]) => assert.fail(`Child exited before selection (${code}): ${stderr}`))])
     },
     release() { child.send('release') },
     async result() {
@@ -355,3 +362,200 @@ test('D8 revocation during provider wait rejects confirmation under the write lo
     assert.deepEqual(rowset(f.db, f.trip.id), [])
   } finally { second.close() }
 })
+
+const expiredAt = '2026-11-26T02:02:00.000Z'
+const replayed = composition => ({
+  ...composition, confirmation: { ...composition.confirmation, replayed: true },
+})
+const io = result => [result.providerCalls, result.reads, result.writes, result.warmCalls]
+
+test('C9: a live receipt survives process exit with zero provider and cache access', { timeout: 15000 }, async t => {
+  const f = fixture(t)
+  const first = await launch(t, f).result()
+  assert.deepEqual(io(first), [1, 0, 1, 0])
+  assert.equal(first.composition.finds[0].sourceMode, 'live')
+  assert.equal(JSON.parse(first.receipts[0].members_json)[0][2][0], 'search')
+  f.db.close()
+
+  const restart = await launch(t, f, { at: expiredAt, fallbackStatus: 429 }).result()
+  assert.deepEqual(io(restart), [0, 0, 0, 0])
+  assert.deepEqual(restart.composition, replayed(first.composition))
+  assert.deepEqual(restart.receipts, first.receipts)
+  assert.equal(restart.count, 3)
+})
+
+for (const [status, code] of [[429, 'RATE_LIMITED'], [401, 'AUTH']]) {
+  test(`C9: ${code} creates a durable cache member and a cold independent process replays after TTL`,
+    { timeout: 15000 }, async t => {
+      const f = fixture(t)
+      const first = await launch(t, f, { warmAt: startedAt, fallbackStatus: status }).result()
+      assert.deepEqual(io(first), [1, 1, 1, 1])
+      assert.deepEqual(first.degradation, { code, alert: status === 401 })
+      assert.equal(first.fetchedAt, startedAt)
+      assert.equal(first.composition.status, 'complete')
+      const [article] = first.composition.finds
+      assert.equal(article.sourceMode, 'cache')
+      assert.equal(article.createdAt, at)
+      const [captured] = first.receipts
+      assert.equal(captured.completed_at, at)
+      assert.notEqual(captured.completed_at, startedAt)
+      const [id, hash, filter] = JSON.parse(captured.members_json)[0]
+      assert.equal(id, article.id)
+      assert.match(hash, /^[0-9a-f]{64}$/)
+      assert.deepEqual(filter, ['cache', query, '自然风景', startedAt])
+      f.db.close()
+
+      const cold = await launch(t, f, { at: expiredAt, fallbackStatus: 429, candidateIds: [910] }).result()
+      assert.deepEqual(io(cold), [0, 0, 0, 0])
+      assert.deepEqual(cold.composition, replayed(first.composition))
+      assert.deepEqual(cold.receipts, first.receipts)
+      assert.equal(cold.count, 3)
+      assert.equal(cold.fetchedAt, null)
+      const reopened = openDatabase(f.path)
+      try {
+        const response = handleFindsRequest(f.request, f.trip.id, () => reopened)
+        assert.equal(response.status, 200)
+        const payload = await response.json()
+        assert.deepEqual(payload.finds.find(find => find.id === article.id), article)
+        assert.deepEqual(Object.keys(payload), ['finds'])
+        assert.ok(!JSON.stringify(payload).includes(query))
+        assert.ok(!JSON.stringify(payload).includes(hash))
+        if (status === 429) {
+          reopened.prepare('UPDATE dog SET blocked_topics=? WHERE id=?')
+            .run(JSON.stringify([query, '已核验场景']), f.owner.id)
+          const hidden = await launch(t, f, { at: expiredAt, fallbackStatus: 429 }).result()
+          assert.deepEqual(io(hidden), [0, 0, 0, 0])
+          assert.equal(hidden.composition.status, 'complete')
+          assert.deepEqual(hidden.composition.finds, [])
+          assert.deepEqual(hidden.composition.confirmation.visibilityReasons, ['BLOCKED_TOPICS'])
+          assert.deepEqual(hidden.receipts, first.receipts)
+        }
+      } finally { reopened.close() }
+    })
+}
+
+for (const winnerMode of ['live', 'cache']) {
+  test(`C9: ${winnerMode} wins a two-process mixed live/cache race and the in-flight loser cannot replace it`,
+    { timeout: 15000 }, async t => {
+      const f = fixture(t)
+      const live = launch(t, f, { holdCommit: true, candidateIds: [901] })
+      const cached = launch(t, f, { holdCommit: true, warmAt: startedAt, fallbackStatus: 429,
+        candidateIds: [904], commitAt: winnerMode === 'live' ? expiredAt : at })
+      const [liveSelection, cacheSelection] = await Promise.all([live.selected(), cached.selected()])
+      assert.notEqual(liveSelection.pid, cacheSelection.pid)
+      assert.notEqual(liveSelection.pid, process.pid)
+      assert.notEqual(cacheSelection.pid, process.pid)
+      assert.equal(liveSelection.transaction, false)
+      assert.equal(cacheSelection.transaction, false)
+      assert.equal(liveSelection.proofCount, 1)
+      assert.equal(cacheSelection.proofCount, 1)
+      assert.equal(cacheSelection.fetchedAt, startedAt)
+      assert.deepEqual(io(cacheSelection), [1, 1, 1, 1])
+      assert.deepEqual(io(liveSelection), [1, 0, 1, 0])
+
+      const [winner, loser] = winnerMode === 'live' ? [live, cached] : [cached, live]
+      winner.release()
+      const first = await winner.result()
+      assert.equal(first.composition.status, 'complete')
+      assert.equal(first.composition.confirmation.replayed, false)
+      const article = first.composition.finds.find(row => row.kind === 'zhihu')
+      assert.equal(article.sourceMode, winnerMode)
+      assert.ok(article.sourceUrl.endsWith(winnerMode === 'live' ? '/901' : '/904'))
+      loser.release()
+      const lost = await loser.result()
+      assert.deepEqual(lost.composition, replayed(first.composition))
+      assert.deepEqual(lost.receipts, first.receipts)
+      assert.equal(lost.count, 3)
+      assert.equal(first.count, 3)
+      assert.equal(first.receipts.length, 1)
+      assert.deepEqual(rowset(f.db, f.trip.id).flatMap(row => row.source_url ?? []), [article.sourceUrl])
+      assert.deepEqual(f.db.prepare('PRAGMA foreign_key_check').all(), [])
+    })
+}
+
+test('C9: cache scope binds the consuming intent before confirmation and first acceptance still expires',
+  { timeout: 15000 }, async t => {
+    const f = fixture(t)
+    const cache = createMemorySearchCache()
+    const warm = createTripDiscoverySearch(f.db, f.newSearch().provider, { now, cache })
+    const fallbackProvider = createZhihuSearchClient({ accessSecret: 'controlled-c6-fixture',
+      fetch: async () => Response.json({}, { status: 429 }) })
+    const seeded = await warm(f.trip.id, f.request, intentId)
+    assert.equal(seeded.proofs.length, 1)
+    const selectCache = createTripDiscoverySearch(f.db, fallbackProvider, { now, cache })
+    const fallback = await selectCache(f.trip.id, f.request, 'consuming-intent')
+    assert.equal(fallback.proofs.length, 1)
+    assert.throws(() => f.compose(f.trip.id, f.request, {
+      intentId, searchProofs: fallback.proofs, observations: f.observations,
+    }), conflict)
+    assert.deepEqual(rowset(f.db, f.trip.id), [])
+    assert.equal(receipt(f.db, f.trip.id), undefined)
+
+    const result = await launch(t, f, { warmAt: startedAt, fallbackStatus: 429,
+      commitAt: '2026-11-26T02:00:00.000Z' }).result()
+    assert.deepEqual(io(result), [1, 1, 1, 1])
+    assert.equal(result.fetchedAt, startedAt)
+    assert.equal(result.composition.status, 'partial')
+    assert.deepEqual(result.composition.reasons, ['NO_REAL_ZHIHU', 'INSUFFICIENT_FACTS'])
+    assert.ok(result.composition.finds.every(row => row.kind === 'scene'))
+    assert.deepEqual(result.receipts, [])
+    assert.equal(result.count, 2)
+  })
+
+test('C9: single-result discovery yields to a confirmed batch during cache read and retains the AUTH alert', async t => {
+  const f = fixture(t)
+  const memory = createMemorySearchCache()
+  const live = f.newSearch().provider
+  const warm = createTripDiscoverySearch(f.db, live, { now, cache: memory })
+  const selection = await warm(f.trip.id, f.request, intentId)
+  assert.equal(selection.proofs.length, 1)
+  const second = openDatabase(f.path)
+  let first
+  try {
+    const cache = { ...memory, async read(key) {
+      assert.equal(f.db.isTransaction, false)
+      first = createTripDiscoveryComposer(second, { now })(f.trip.id, f.request, {
+        intentId, searchProofs: selection.proofs, observations: f.observations,
+      })
+      return memory.read(key)
+    } }
+    const provider = createZhihuSearchClient({ accessSecret: 'controlled-c6-fixture',
+      fetch: async () => Response.json({}, { status: 401 }) })
+    const result = await createTripDiscoverer(f.db, { provider, cache, now })(f.trip.id, f.request, intentId)
+    assert.equal(first.status, 'complete')
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.finds, first.finds)
+    assert.deepEqual(result.confirmation, replayed(first).confirmation)
+    assert.deepEqual(result.degradation, { code: 'AUTH', alert: true })
+    assert.equal(rowset(f.db, f.trip.id).length, 3)
+  } finally { second.close() }
+})
+
+test('C9: cached receipt corruption and competing intent fail before any provider or cache access',
+  { timeout: 15000 }, async t => {
+    const f = fixture(t)
+    const first = await launch(t, f, { warmAt: startedAt, fallbackStatus: 429 }).result()
+    assert.equal(first.composition.finds[0].sourceMode, 'cache')
+    const rival = await launch(t, f, { intentId: 'rival-cache-intent', fallbackStatus: 429 }).result()
+    assert.deepEqual(io(rival), [0, 0, 0, 0])
+    assert.equal(rival.error.code, 'CONFLICT')
+    assert.deepEqual({ ...receipt(f.db, f.trip.id) }, first.receipts[0])
+
+    damageMembers(f, members => { members[0][2][3] = '2026-11-25T02:01:00.000Z' })
+    const damaged = receipt(f.db, f.trip.id)
+    const rows = rowset(f.db, f.trip.id)
+    const blocked = await launch(t, f, { fallbackStatus: 429 }).result()
+    assert.deepEqual(io(blocked), [0, 0, 0, 0])
+    assert.deepEqual(blocked.error, invalid)
+    assert.deepEqual(receipt(f.db, f.trip.id), damaged)
+    assert.deepEqual(rowset(f.db, f.trip.id), rows)
+
+    f.db.prepare('UPDATE trip_discovery_receipt SET members_json=? WHERE trip_id=?')
+      .run(first.receipts[0].members_json, f.trip.id)
+    f.db.prepare('DELETE FROM find WHERE id=?').run(first.composition.finds[0].id)
+    const missingMember = await launch(t, f, { fallbackStatus: 429 }).result()
+    assert.deepEqual(io(missingMember), [0, 0, 0, 0])
+    assert.deepEqual(missingMember.error, invalid)
+    assert.equal(rowset(f.db, f.trip.id).length, 2)
+    assert.deepEqual({ ...receipt(f.db, f.trip.id) }, first.receipts[0])
+  })
