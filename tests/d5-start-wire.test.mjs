@@ -31,7 +31,7 @@ test('default owner start binds the formal snapshot on an upgraded v7 database',
   legacy.close()
   const db = openDatabase(path)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
     assert.equal(readDepartureSnapshot(db, pending.id, owner.id), null)
     const response = await handleTripRequest(startRequest(owner.cookie), 'start', pending.id, () => db)
     assert.equal(response.status, 200)

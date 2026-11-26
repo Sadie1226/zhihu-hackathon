@@ -568,6 +568,85 @@ POST /api/gen/image
 
 ---
 
+### 11. 日常交流（`POST /api/chat`，待 B 实现）
+
+请求和成功体分别使用 `ChatRequest` 和 `ChatResponse`。B 的本机示例通道继续独立运行，正式发送由 A 审合契约后接入。
+
+```json
+{
+  "dogId": "dog_xxx",
+  "text": "今天想和你说件小事",
+  "clientMessageId": "msg_intent_xxx"
+}
+```
+
+- 仅接受 `Content-Type: application/json`，可带 UTF-8 charset。UTF-8 请求体限 16 KiB（16,384 字节），读取时按实际字节设上限，JSON 必须是仅含上述三个自有字段的对象，各字段均为字符串，字段名不得重复。拒绝查询参数、其他字段及客户端提供的 owner、session 或 token。解析后调用 `contracts/chat.ts` 的 `parseChatRequest`。
+- `dogId` 是已有狗 ID，原样比较。限 1–128 个 UTF-16 码元，无首尾空白、C0/C1 控制字符或孤立代理码元。`clientMessageId` 限 1–128 个 ASCII 字符，首字为字母或数字，其余为字母、数字、下划线或连字符。区分大小写，不修剪。客户端为一次意图生成一个不可预测的键，例如 `crypto.randomUUID()`，并为该意图的所有重试保存此键。
+- `text` 解码后最多 2,048 个 UTF-16 码元，禁止孤立代理码元及 C0/C1 控制字符，允许 TAB、LF 和 CR。使用 JavaScript `trim()` 去首尾空白后，按现有 `countChars` 校验 1–200。该函数移除所有 ECMAScript `\s` 后取 JavaScript `String.length`。标点算字，普通汉字 1 个码元，补充平面 emoji 通常 2 个码元，组合字符按其 UTF-16 码元累计。保存和回传仅做 `trim()`，保留内部空白及换行，不做 Unicode 归一化、合并空白或改写。
+- 身份仅来自 Cookie。请求来源、媒体类型和查询参数通过校验后，用 `resolveAuthContext` 验证当前环境下有效、未过期、未撤销的稳定 owner 会话。正文解析后，在最终写事务中重新校验会话，并查 `dog.id = dogId AND dog.owner_id = auth.ownerId AND dog.is_sample = 0`，先授权目标再查幂等记录。缺少有效会话、狗不存在、种子狗、历史无 owner 狗及跨主人目标均返回相同的 404。
+- 写入要求单个有效的 `Origin`，其 scheme、host、port 必须与应用请求的受信外部源一致（可信请求 URL 及 Host，或部署明确信任的代理配置）。拒绝缺失、`null`、不匹配的 Origin 及 `Sec-Fetch-Site: cross-site`。不信任请求方任意设置的转发头，不开放跨源写入。所有接口响应设置 `Cache-Control: no-store` 与 `Vary: Cookie`。
+
+**HTTP 200** 在实际提交成功后返回首次持久化的主人消息。新写入和同意图重放使用相同格式。
+
+```json
+{
+  "id": "chat_xxx",
+  "dogId": "dog_xxx",
+  "text": "今天想和你说件小事",
+  "createdAt": "2026-11-25T08:00:00.000Z"
+}
+```
+
+`id` 是服务端分配的不透明聊天记录 ID，可用 `chat_` 加随机 UUID 实现。`createdAt` 为首次保存时的服务端 UTC ISO 8601 时间，固定毫秒精度并以 `Z` 结束（`Date.toISOString()`）。首版成功体固定四键。待真实回复生成与保存另行定约后才可扩展 `replyText`，四句本地示例回复不得用作服务端确认。
+
+#### 幂等与恢复
+
+- 按 `(owner_id, client_message_id)` 保证持久化唯一性。同一授权 owner、相同键、相同 `dogId` 且 `trim()` 后文本逐码元相等时，返回原 `id/dogId/text/createdAt`。内部空白或 Unicode 码元改变属于内容改变。相同键提交不同的授权狗或规范化文本返回 409。未归属的目标始终先返回 404，即使该 owner 已用过该键。
+- 在 SQLite 写事务中完成会话与狗归属检查、按 owner 和键查已有记录、比较或写入，唯一约束保证多连接并发只写一条。只有目标唯一键冲突可回读当作重放，其他数据库异常不得当成功。重启后从数据库读取原记录。同键允许不同 owner 各自使用，响应不能暴露其他 owner 有无该键。
+- B 用本次请求保留的 `clientMessageId` 找到乐观上屏的待确认项，用 200 返回的服务端 `id` 确认并去重。客户端超时、连接中断、503 或响应结果不明时，保留原 `dogId`、文本和键，以同一意图重试。即使第一次已提交但响应丢失，也只确认原记录。明确另发或修改文本后另发时才生成新键。客户端超时本身没有 HTTP 错误响应。
+
+#### 错误和隐私
+
+错误体沿用 `ContractError` 的 `{ code, detail, retriable }`。
+
+| HTTP | code | retriable | 裁定 |
+| --- | --- | --- | --- |
+| 404 | `NOT_FOUND` | false | 会话无效，或目标狗不存在、未绑定当前 owner、属于种子狗 |
+| 409 | `CONFLICT` | false | JSON、来源、媒体类型、字段或长度非法，或同 owner 同键的有效请求改了目标或内容。采用现行 K 校验口径，替代 B 建议稿的 400 |
+| 503 | `NETWORK` | true | 数据库写入、读取或必要网络环节真实故障，允许保留原键重试 |
+
+只返回受控错误说明，不回显请求正文、token、owner 内部凭据、其他狗的消息、SQL 错误或堆栈。服务端不得在未确认实际保存时返回 200。
+
+| 内容 | 存取边界 |
+| --- | --- |
+| Chat | 主人与自己狗的私有日常交流，单独存储 |
+| Trip `Message` | 绑定 `tripId` 的归来分享，由 B 通过既有归来读取契约提供 |
+| Invitation Reply | 对指定邀请的一次主人回应，写入既有 `reply` |
+| CoOwnerMessage | 经 `exchange` 延迟投递的跨狗捎话，适用既有来源和身份边界 |
+
+聊天写入不得创建 `wish` 或长期任务，不得向 `snapshot` 写入原话或派生摘要，不得复制到其他狗、`message`、`exchange`、`reply` 或 `trip_event`。不得用聊天冒充主人回应礼物或邀请。
+
+#### v9 存储候选
+
+v9 候选的独立 `chat_message` 只保存首次确认的消息。下列 DDL 概括字段与引用。运行约束以 `schema.sql` 和 `009-chat-message.ts` 为准，另含键格式及插入覆盖保护。部署由 A 审核，正式 POST 仍待 B 接入。
+
+```sql
+CREATE TABLE chat_message (
+  id TEXT PRIMARY KEY NOT NULL,
+  owner_id TEXT NOT NULL REFERENCES owner(id),
+  client_message_id TEXT NOT NULL,
+  dog_id TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (owner_id, client_message_id),
+  FOREIGN KEY (dog_id, owner_id) REFERENCES dog(id, owner_id)
+) STRICT;
+```
+
+复用现有 `dog(id, owner_id)` 唯一约束。业务层执行完整字段检查、授权和同键原值比较。记录不覆盖，幂等随已保存记录持久保留，本契约不设键过期或公开历史读取 API。
+
+---
+
 ## 三、四种 `exchange.payload` 的形状
 
 `kind` 决定 payload 长什么样。**加第五种必须由 c 改 K。**

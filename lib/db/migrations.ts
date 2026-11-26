@@ -6,6 +6,7 @@ import { ownerSessionMigration } from './migrations/005-owner-session.ts'
 import { TSPF_ASSEMBLY_V6_SQL } from './migrations/006-tspf-assembly.ts'
 import { TRIP_HISTORY_V7_SQL } from './migrations/007-trip-history.ts'
 import { discoveryReceiptV8Migration } from './migrations/008-discovery-receipt.ts'
+import { chatMessageMigration } from './migrations/009-chat-message.ts'
 
 /** Infrastructure versions use PRAGMA user_version, without a separate tracking table. */
 export interface Migration {
@@ -26,4 +27,5 @@ export const migrations: readonly Migration[] = [
   { version: 6, name: 'adopted r2 T/S/P/F assembly writes', sql: TSPF_ASSEMBLY_V6_SQL },
   { version: 7, name: 'immutable occurrence facts and departure snapshot binding', sql: TRIP_HISTORY_V7_SQL },
   { version: 8, name: 'durable trip discovery receipt and v7 history hold', sql: discoveryReceiptV8Migration },
+  chatMessageMigration,
 ]

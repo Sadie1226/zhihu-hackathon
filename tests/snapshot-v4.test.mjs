@@ -48,7 +48,7 @@ test('fresh database accepts snapshot NULL for dog with no selected interests; p
     insert(db, 'dog', { ...fixture('dog-v6').dogs[0], interest_categories: null })
     insert(db, 'snapshot', { ...fixture('snapshot').snapshots[0], interest_categories: null })
     assert.equal(snapshots(db)[0].interest_categories, null)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
     const columns = db.prepare("PRAGMA table_info('snapshot')").all()
     assert.deepEqual(columns.map(c => c.name), ['dog_id','version','personality_tags','interest_categories','recent_trips','waiting_for','created_at'])
     assert.deepEqual(columns.filter(c => c.pk).map(c => [c.name,c.pk]), [['dog_id',1],['version',2]])
@@ -117,7 +117,7 @@ for (const version of [1,2,3]) {
     const preservedObjects = db.prepare("SELECT name,sql FROM sqlite_schema WHERE name IN ('snapshot_custom','snapshot_public','snapshot_audit','snapshot_view_delete','dog_snapshot_reference') ORDER BY name").all()
     db.close(); db = openDatabase(path)
     try {
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
       assert.deepEqual(snapshots(db), before)
       for (const [table, rows] of Object.entries(others)) {
         const actual = db.prepare(`SELECT * FROM ${table} ORDER BY id`).all()

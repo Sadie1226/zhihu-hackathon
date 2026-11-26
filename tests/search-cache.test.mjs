@@ -30,7 +30,7 @@ const missing = { code: 'NOT_FOUND' }
 
 function fixture(t) {
   const { db, path } = mailboxDatabase(t)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
   const clock = { at: first }
   const now = () => new Date(clock.at)
   const trips = createTripService(db, { now })

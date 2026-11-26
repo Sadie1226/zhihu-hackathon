@@ -153,7 +153,7 @@ test('production HTTP upgrades v6 and binds the departure snapshot on the first 
     assert.deepEqual(await post(startRoute), { trip: started.trip, delivered: [] })
     const reader = new DatabaseSync(path, { readOnly: true })
     try {
-      assert.equal(reader.prepare('PRAGMA user_version').get().user_version, 8)
+      assert.equal(reader.prepare('PRAGMA user_version').get().user_version, 9)
       assert.deepEqual(readDepartureSnapshot(reader, trip.id, owner.id), {
         dogId: owner.id, version: 1, createdAt: started.trip.startedAt,
         personalityTags: ['好奇', '看物', '直给'], interestCategories: null, recentTrips: [], waitingFor: null,

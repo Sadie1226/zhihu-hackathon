@@ -51,7 +51,7 @@ const tables = db
   .prepare("select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name")
   .all()
   .map((r) => r.name)
-const EXPECTED_TABLES = ['adoption_receipt', 'dog', 'event', 'exchange', 'find', 'invitation', 'message', 'owner', 'owner_session', 'relation', 'reply', 'snapshot', 'trip', 'trip_discovery_legacy_hold', 'trip_discovery_receipt', 'trip_event', 'wish']
+const EXPECTED_TABLES = ['adoption_receipt', 'chat_message', 'dog', 'event', 'exchange', 'find', 'invitation', 'message', 'owner', 'owner_session', 'relation', 'reply', 'snapshot', 'trip', 'trip_discovery_legacy_hold', 'trip_discovery_receipt', 'trip_event', 'wish']
 if (JSON.stringify(tables) === JSON.stringify(EXPECTED_TABLES)) {
   ok(`${tables.length} 张表：${tables.join(' ')}`)
 } else {

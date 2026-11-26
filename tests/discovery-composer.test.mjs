@@ -67,7 +67,7 @@ function controlledProvider(items, beforeResponse = () => {}) {
 
 function fixture(t) {
   const { db, path } = mailboxDatabase(t)
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
   const trips = createTripService(db, { now: () => new Date(started) })
   function addTrip(dogId, beforeStart = () => {}) {
     const account = owner(db, dogId)
@@ -134,7 +134,7 @@ test('earliest migrated unverifiable occurrence wins SQLite ordering over a late
   legacy.close()
   const db = openDatabase(path)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
     db.prepare("INSERT INTO trip_event VALUES (?,'later',?,'2026-11-25T00:01:00.500Z')").run(trip.id, trip.dogId)
     assert.deepEqual(db.prepare('SELECT history_status FROM v_trip_event_history ORDER BY event_id').all()
       .map(row => row.history_status), ['frozen', 'unverifiable'])

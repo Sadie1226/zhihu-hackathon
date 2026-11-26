@@ -10,6 +10,7 @@ import { createTripService } from '../lib/trips/service.ts'
 import { mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
 
 const v7 = migrations.filter(migration => migration.version <= 7)
+const v8 = migrations.filter(migration => migration.version <= 8)
 const at = '2026-11-25T02:00:00.000Z'
 const now = () => new Date(at)
 const schemaV1 = () => readFileSync('tests/fixtures/schema-v1.sql', 'utf8')
@@ -44,14 +45,14 @@ const history = db => ['trip', 'snapshot', 'trip_snapshot', 'trip_event', 'trip_
 test('fresh schema and migrated v7 have identical v8 objects; reopen does not infer receipts', t => {
   const { db: fresh } = mailboxDatabase(t)
   const { db: legacy, path } = mailboxDatabase(t, v7, schemaV1())
-  assert.equal(version(fresh), 8)
+  assert.equal(version(fresh), 9)
   assert.equal(version(legacy), 7)
   assert.deepEqual(objects(legacy), [])
   const { id, owner } = seedRecord(legacy)
   const before = history(legacy)
   legacy.close()
 
-  const migrated = openDatabase(path)
+  const migrated = openDatabase(path, v8)
   try {
     assert.equal(version(migrated), 8)
     assert.equal(objects(migrated).length, 4)
@@ -69,7 +70,7 @@ test('fresh schema and migrated v7 have identical v8 objects; reopen does not in
     assert.equal(migrated.prepare('PRAGMA integrity_check').get().integrity_check, 'ok')
     assert.deepEqual(migrated.prepare('PRAGMA foreign_key_check').all(), [])
   } finally { migrated.close() }
-  const reopened = openDatabase(path)
+  const reopened = openDatabase(path, v8)
   try {
     assert.equal(version(reopened), 8)
     assert.deepEqual(objects(reopened), objects(fresh))
@@ -93,7 +94,7 @@ test('an error after v8 DDL rolls back objects and version and allows a clean up
     assert.equal(unchanged.prepare("SELECT 1 FROM sqlite_schema WHERE name='trip_discovery_legacy_hold'").get(), undefined)
     assert.deepEqual(history(unchanged), before)
   } finally { unchanged.close() }
-  const upgraded = openDatabase(path)
+  const upgraded = openDatabase(path, v8)
   try {
     assert.equal(version(upgraded), 8)
     assert.deepEqual(history(upgraded), before)

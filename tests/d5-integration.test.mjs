@@ -47,7 +47,7 @@ test('v7-shaped migration rolls back as a unit and preserves unverified old rows
   for (let open = 0; open < 2; open += 1) {
     const migrated = openDatabase(path)
     try {
-      assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 8)
+      assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 9)
       assert.deepEqual({ ...migrated.prepare('SELECT * FROM v_trip_event_history').get() }, {
         trip_id: 'legacy-trip', event_id: 'ev', dog_id: owner.id, happened_at: at,
         event_code_at_occurrence: null, public_text_at_occurrence: null, history_status: 'unverifiable',

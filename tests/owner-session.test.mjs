@@ -163,7 +163,7 @@ test('v4 to v5 is additive, rolls back failed DDL and preserves seed and legacy 
     assert.deepEqual(db.prepare('SELECT * FROM trip').all(), history)
     db.close()
     db = openDatabase(path)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
     assert.deepEqual(db.prepare('SELECT id,session_id,is_sample,created_at FROM dog ORDER BY id').all(), before)
     assert.deepEqual(db.prepare('SELECT * FROM trip').all(), history)
     assert.equal(db.prepare('SELECT count(*) n FROM owner').get().n, 0)

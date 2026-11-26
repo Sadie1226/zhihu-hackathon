@@ -31,9 +31,9 @@ test('interface opener never falls back to the default application database', ()
   }
 })
 
-test('interface registry uses real v6 -> v7 -> v8 for fresh/legacy databases, preserving seeds and rolling back failures', t => {
+test('interface registry uses real v6 -> v7 -> v8 -> v9, preserving seeds and rolling back failures', t => {
   assert.equal(d5InterfaceMigrations, migrations)
-  assert.deepEqual(d5InterfaceMigrations.map(m => m.version), [2, 3, 4, 5, 6, 7, 8])
+  assert.deepEqual(d5InterfaceMigrations.map(m => m.version), [2, 3, 4, 5, 6, 7, 8, 9])
   const path = pathFor(t)
   let db = new DatabaseSync(path)
   db.exec('PRAGMA foreign_keys=ON')
@@ -54,7 +54,7 @@ test('interface registry uses real v6 -> v7 -> v8 for fresh/legacy databases, pr
   db.close()
   db = openDatabase(path)
   try {
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9)
     assert.deepEqual(db.prepare('SELECT id,assembly FROM dog ORDER BY id').all(), before)
     assert.equal(readOccurrenceFact(db, 'legacy', 'dog_seed_07'), null)
     assert.equal(readOccurrenceFact(db, 'legacy', 'dog_seed_01'), null)

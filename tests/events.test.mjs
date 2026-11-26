@@ -63,7 +63,7 @@ test('event has exactly 12 columns, trip_event exactly 4, defaults and indexes a
   assert.deepEqual(db.prepare("PRAGMA table_info('event')").all().map(c => c.name), columns)
   assert.deepEqual(db.prepare("PRAGMA table_info('trip_event')").all().map(c => c.name),
     ['trip_id', 'event_id', 'dog_id', 'happened_at'])
-  assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 17)
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 18)
   assert.deepEqual(db.prepare("SELECT name FROM sqlite_schema WHERE type='view' ORDER BY name").all().map(row => row.name),
     ['v_invitation_state', 'v_wish_active'])
   assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1)
@@ -228,7 +228,7 @@ test('fresh initialization and version-1 migration produce identical event table
       WHERE tbl_name IN ('event','trip_event') ORDER BY type,name`).all()
       .map(row => ({ ...row, sql: row.sql?.replace(/\r\n/g, '\n') ?? null }))
     assert.deepEqual(objects(upgraded), objects(fresh))
-    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.equal(fresh.prepare('PRAGMA user_version').get().user_version, 9)
     assert.equal(upgraded.prepare("SELECT COUNT(*) n FROM pragma_table_info('event')").get().n, 12)
     assert.throws(() => insertEvent(upgraded, { place_tags: '["unknown"]' }), /invalid place tag/)
     assert.throws(() => insertEvent(upgraded, { match_tags: '[null]' }), /invalid interest category/)
