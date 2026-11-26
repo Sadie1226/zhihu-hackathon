@@ -1,18 +1,25 @@
 /**
- * d7 来回 —— 真实生产构建 + 真实 HTTP 的完整链路证据
+ * d7 来回 —— 开发服务 + 真实 HTTP 的完整链路证据
  *
  * 为什么不能只用 `node --test`：那组用例跑在进程内，`handleExchangeSend` 是被直接调用的。
- * 它能证明「逻辑对」，但不能证明「一个真的浏览器/真的两台手机连上去能走通」——
- * cookie、origin、content-type、路由分派、生产构建这几层，只有真起服务才会暴露。
+ * 它能证明「逻辑对」，但不能证明「一个真的浏览器连上去能走通」——
+ * cookie、origin、content-type、路由分派这几层，只有真起服务才会暴露。
+ *
+ * **边界先说清楚，别让证据看起来比事实多**：
+ *   · 这是**开发服务**（`next dev`），不是生产构建；登录走开发身份，不是知乎身份。
+ *   · 是**单机两个会话**，不是两台设备 —— 会话隔离/网络重试要等 d9 真机。
+ *   · 第 6 步甲看到的是 `repliedAt` 有值（已回应状态），脚本**不读回应正文**，
+ *     所以不能说「甲读到了回音内容」。
+ *   · 没有 UI 组合验收、没有举报屏蔽路径。
  *
  * 这条链要一次走完（d7 验收原话：「一个人能走完的完整来回」）：
  *
- *   1. 两台设备各自登录（两个 owner，两套 cookie）→ 各领养一只狗
+ *   1. 两个会话各自登录（两个 owner，两套 cookie）→ 各领养一只狗
  *   2. 甲的主人写一句话，托自己的狗带给乙的狗   POST /api/exchanges
  *   3. 乙的狗出门                                POST /api/dogs/:id/trips + POST /api/trips/:id/start
  *   4. 乙在收件箱里看到这句话、点开                GET inbox?filter=arrived + PATCH /api/exchanges/:id/read
  *   5. 乙回一句（真实 HTTP）                       POST /api/replies
- *   6. 甲在自己的发件箱里看到回音，不再「在等」     GET /api/exchanges?from_dog=
+ *   6. 甲在自己的发件箱里看到「已回应」状态      GET /api/exchanges?from_dog=
  *
  * 第 5 步走 `POST /api/replies`（实现在 `app/(b)/api/replies/route.ts`，B 的路由组）。
  * 抓路由时别只扫 `app/api/` —— 路由组 `(b)` 不改 URL，但会藏住文件。
@@ -22,12 +29,16 @@
  *   · 还没送达就回 → 409（「这条交换还没送达」）
  *   · 替别人的交换回 → 404（来源不属于当前会话）
  *
- * 跑法（dev server 按需编译，不必先 build）：
- *   node scripts/d7/roundtrip-http.mjs --db <新库路径> --out <证据路径> [--code-sha <sha>]
- *   `--reply-transport=service` 可退回服务层直写，仅用于对照排查。
+ * 跑法：
+ *   node scripts/d7/roundtrip-http.mjs --db <新库> --out <证据.json> [--expected-sha <sha>] [--allow-dirty]
+ *
+ *   · `--expected-sha`：期望的提交 SHA。实际 HEAD 与它不等 → 拒绝出证据、退出 1。
+ *   · 工作区 tracked 改动（不含本次产物）默认也拒绝出证据；`--allow-dirty` 可放行，
+ *     但证据标 `formal: false`，不能当正式通过证据用。
+ *   · `--reply-transport=service` 可退回服务层直写，仅用于对照排查。
  */
 
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
@@ -35,6 +46,7 @@ import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { setTimeout } from 'node:timers/promises'
+import { fileURLToPath } from 'node:url'
 import { writeReply } from '../../lib/replies/idempotency.ts'
 
 const WORDS = '楼下的桂花开了，你那边闻得到吗'
@@ -51,7 +63,8 @@ function arg(name, fallback = null) {
 
 const dbPath = resolve(arg('db') ?? './tmp-d7/a5-development-d7.sqlite')
 const outPath = resolve(arg('out') ?? './tmp-d7/d7-roundtrip.json')
-const codeSha = arg('code-sha', 'unknown')
+const expectedSha = arg('expected-sha', null)
+const allowDirty = process.argv.includes('--allow-dirty')
 const replyTransport = arg('reply-transport', 'http')
 if (!['http', 'service'].includes(replyTransport)) {
   throw new Error(`--reply-transport 只接受 http 或 service，收到 ${replyTransport}`)
@@ -70,6 +83,110 @@ if (!['http', 'service'].includes(replyTransport)) {
  */
 if (!/a5-development(?:-[a-z0-9-]+)?\.sqlite$/i.test(dbPath)) {
   throw new Error(`本脚本走开发身份，库名必须是 a5-development*.sqlite，收到 ${dbPath}`)
+}
+
+// ===========================================================================
+// 代码身份：自己查，不是「你说我记」
+// ===========================================================================
+//
+// 上一版 `--code-sha` 只是把参数原样抄进证据——传什么就记什么，
+// 于是「证据说它跑在 bdd86af 上」这件事从来没有被验证过。这等于给证据留了后门：
+// 代码改了、或者传错一个 SHA，证据照样漂亮。
+//
+// 现在改成：
+//   · HEAD 由 `git rev-parse` 现取；
+//   · tracked 改动由 `git status --porcelain` 现取（untracked 不算，那是本次产物）；
+//   · `--expected-sha` 给了就必须等于 HEAD，不等直接拒绝出证据；
+//   · 工作区有 tracked 改动也拒绝，除非显式 `--allow-dirty`（此时 `formal: false`）。
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+
+/**
+ * Windows 上 `git` 常不在 PATH（PowerShell 里尤其），`GIT_EXE` 是队里既有的兜底。
+ * 找不到就明确报错 —— 静默记一个 `unknown` 又变成后门了。
+ */
+function resolveGit() {
+  for (const bin of [process.env.GIT_EXE, 'git'].filter(Boolean)) {
+    try {
+      execFileSync(bin, ['--version'], { cwd: repoRoot, stdio: 'pipe' })
+      return bin
+    } catch { /* 试下一个 */ }
+  }
+  throw new Error('找不到 git，无法核验代码身份。请把 git 加进 PATH，或设置 GIT_EXE 指向 git.exe')
+}
+
+const gitBin = resolveGit()
+// `core.quotepath=false`：不然中文路径会被转义成 `"\346\215\216..."`，比对全废。
+const gitOut = (...args) =>
+  execFileSync(gitBin, ['-c', 'core.quotepath=false', ...args], { cwd: repoRoot, encoding: 'utf8' }).trim()
+
+/** 本次运行自己产出的文件，不该被算成「源码被改过」。 */
+function artifactPaths() {
+  return new Set(
+    [
+      dbPath,
+      `${dbPath}-wal`,
+      `${dbPath}-shm`,
+      dbPath.replace(/\.sqlite$/i, '.evidence.sqlite'),
+      outPath,
+    ].map((p) => p.replace(/\\/g, '/').toLowerCase()),
+  )
+}
+
+function readCodeIdentity() {
+  const head = gitOut('rev-parse', 'HEAD')
+  const artifacts = artifactPaths()
+  // 不能用 gitOut：它 trim 了整段输出，而 ` M path` 的**前导空格本身就是状态码的一部分**。
+  // 被 trim 掉再 slice(3)，路径就会少首字母 —— 我第一版就是这么错的。
+  const raw = execFileSync(gitBin, ['-c', 'core.quotepath=false', 'status', '--porcelain'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  })
+  const entries = raw
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line) => ({
+      code: line.slice(0, 2),
+      // 重命名是 `R  old -> new`，只关心新路径。
+      path: line.slice(3).replace(/^"|"$/g, '').split(' -> ').pop(),
+    }))
+  const trackedDirty = entries.filter(
+    (e) => !e.code.includes('?') && !artifacts.has(resolve(repoRoot, e.path).replace(/\\/g, '/').toLowerCase()),
+  )
+  return { head, trackedDirty, untracked: entries.filter((e) => e.code.includes('?')).length }
+}
+
+function refuse(reason) {
+  process.stderr.write(`\n拒绝出证据：${reason}\n`)
+  process.exit(1)
+}
+
+const codeIdentity = readCodeIdentity()
+if (expectedSha && codeIdentity.head !== expectedSha) {
+  refuse(`实际 HEAD ${codeIdentity.head} ≠ 期望 ${expectedSha}。要按实际代码出证据，就别传 --expected-sha。`)
+}
+if (codeIdentity.trackedDirty.length > 0 && !allowDirty) {
+  refuse(
+    `工作区有 ${codeIdentity.trackedDirty.length} 处 tracked 改动：\n` +
+      codeIdentity.trackedDirty.map((e) => `  ${e.code} ${e.path}`).join('\n') +
+      '\n正式证据必须来自干净已提交源码。先提交，或加 --allow-dirty（证据会标 formal:false）。',
+  )
+}
+
+const codeEvidence = {
+  head: codeIdentity.head,
+  expected: expectedSha,
+  matchesExpected: expectedSha ? true : null,
+  dirty: codeIdentity.trackedDirty.length > 0,
+  dirtyFiles: codeIdentity.trackedDirty.map((e) => `${e.code} ${e.path}`),
+  formal: codeIdentity.trackedDirty.length === 0 && (!expectedSha || codeIdentity.head === expectedSha),
+  server: 'next dev --webpack（开发服务，非生产构建）',
+  login: 'development（开发身份，非知乎身份）',
+  replyTransport,
+  node: process.version,
+  command: [process.execPath, ...process.argv.slice(1)].join(' '),
+  repoRoot,
+  capturedAt: new Date().toISOString(),
 }
 
 // ===========================================================================
@@ -191,8 +308,11 @@ async function adopt(base, who, name) {
 // ===========================================================================
 
 const started = Date.now()
+// 主流程算完的事实，留给最后一步核快照用（fast-fail 时为空）。
+// 用对象装而不是裸 let：赋值点在 try 内、读取点在函数外，ESLint 会误判成「赋值未使用」。
+const runState = { snapshot: null }
 const server = await startServer()
-const evidence = { kind: 'd7-roundtrip', code: { sha: codeSha }, meta: { base: server.base, dbPath, words: WORDS } }
+const evidence = { kind: 'd7-roundtrip', code: codeEvidence, meta: { base: server.base, dbPath, outPath, words: WORDS } }
 
 try {
   // ---- 1. 两台设备，两只真狗 ----
@@ -348,6 +468,8 @@ try {
     after.close()
   }
 
+  runState.snapshot = { facts, exchangeId: exchange.id, receiverDogId: beta.dog.id, pendingExchangeId: pending.exchange.id }
+
   // 「等回音」这条判定只有一份实现，这里不重写：直接用它算给证据。
   const { isWaitingForReply } = await import('../../lib/mailbox/service.ts')
   const checks = [
@@ -404,24 +526,39 @@ mkdirSync(dirname(outPath), { recursive: true })
  * （进程刚被杀，-shm 还映射着，checkpoint 删不掉 WAL）。所以改用 SQLite 自己的
  * 一致快照接口 `VACUUM INTO`：产物是自包含文件、不含 WAL，哈希才有唯一含义。
  */
-const dbInfo = snapshotAndHash(dbPath)
+const dbInfo = snapshotVerifyAndHash(dbPath, runState.snapshot)
 evidence.db = dbInfo
+if (dbInfo.problems.length > 0) {
+  evidence.verdict = `fail: 快照核验（${dbInfo.problems.join(' / ')}）`
+}
 writeFileSync(outPath, `${JSON.stringify(evidence, null, 2)}\n`)
 process.stdout.write(
   `\n${evidence.verdict === 'pass' ? '全绿' : '有失败'} — ${evidence.chains?.filter((c) => c.ok).length}/${evidence.chains?.length} 项，` +
-  `证据 ${outPath}\n现场库 ${dbPath}（主文件 ${dbInfo.liveBytes} 字节 + wal ${dbInfo.liveWalBytes} 字节）\n` +
-  `快照 ${dbInfo.snapshotPath}（${dbInfo.bytes} 字节）\nsha256 ${dbInfo.sha256}\n`,
+  `证据 ${outPath}\n` +
+  `代码 HEAD ${evidence.code.head.slice(0, 12)}（${evidence.code.formal ? 'formal' : '非正式：dirty 或未传 expected-sha'}）\n` +
+  `现场库 ${dbPath}（主文件 ${dbInfo.liveBytes} 字节 + wal ${dbInfo.liveWalBytes} 字节）\n` +
+  `快照 ${dbInfo.snapshotPath}（${dbInfo.bytes} 字节，只读自核 ${dbInfo.problems.length === 0 ? '通过' : '失败'}）\n` +
+  `sha256 ${dbInfo.sha256}\n`,
 )
 if (evidence.verdict !== 'pass') process.exitCode = 1
 
-function snapshotAndHash(path) {
+
+/**
+ * 在**快照自己的连接**上核验，不留「拿源库的检查结果给快照盖章」的口子。
+ *
+ * 上一版就是那么干的：`VACUUM INTO` 之后在源连接上跑 `integrity_check`，
+ * 然后直接对生成的快照文件算哈希。核的是源库 —— 快照要是拷漏了、截断了，
+ * 一样「通过」。现在：关源连接 → 只读打开快照 → 核完整性/外键/本批核心行 →
+ * 与源库已记录的事实逐项比对 → 全对上才允许算哈希并出 pass。
+ */
+function snapshotVerifyAndHash(path, ctx) {
   const snapshotPath = path.replace(/\.sqlite$/i, '.evidence.sqlite')
   try {
     unlinkSync(snapshotPath)
   } catch { /* 第一次跑就没有，正常 */ }
   // SQL 字符串里的路径用正斜杠，避免 Windows 反斜杠被当成转义。
   const target = snapshotPath.replace(/\\/g, '/').replace(/'/g, "''")
-  const db = new DatabaseSync(path)
+  const source = new DatabaseSync(path)
   try {
     /**
      * `next dev` 会起子进程，父进程被 kill 后那一小段时间里文件仍被映射着，
@@ -431,7 +568,7 @@ function snapshotAndHash(path) {
     let lastError
     for (let attempt = 0; attempt < 8; attempt++) {
       try {
-        db.exec(`VACUUM INTO '${target}'`)
+        source.exec(`VACUUM INTO '${target}'`)
         lastError = undefined
         break
       } catch (error) {
@@ -440,17 +577,20 @@ function snapshotAndHash(path) {
       }
     }
     if (lastError) throw lastError
-    // 快照必须自洽：不然「哈希漂亮」但内容坏了。
-    const check = db.prepare('PRAGMA integrity_check').get().integrity_check
-    if (check !== 'ok') throw new Error(`快照 integrity_check 不是 ok：${check}`)
   } finally {
-    db.close()
+    // 必须关掉源连接再核 —— 否则核的可能还是「正在被写的那一份」。
+    source.close()
   }
+
+  const problems = ctx
+    ? verifySnapshot(snapshotPath, ctx)
+    : ['主流程未走完，没有可与快照对账的事实']
+
   const bytes = readFileSync(snapshotPath)
   let liveWalBytes = 0
   try {
     liveWalBytes = readFileSync(`${path}-wal`).length
-  } catch { /* 没有 wal 文件 */ }
+  } catch { /* 没有 wal 文件就是最干净的情况 */ }
   return {
     path,
     liveBytes: readFileSync(path).length,
@@ -458,5 +598,56 @@ function snapshotAndHash(path) {
     snapshotPath,
     bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex'),
+    openedReadOnly: true,
+    checkedOn: 'snapshot（不是源库）',
+    problems,
   }
+}
+
+/** 只读打开快照本体：完整性、外键、本批核心行，逐项与源库事实比对。 */
+function verifySnapshot(snapshotPath, ctx) {
+  const problems = []
+  const db = new DatabaseSync(snapshotPath, { readOnly: true })
+  try {
+    const q = (sql, ...params) => db.prepare(sql).get(...params)
+    const integrity = q('PRAGMA integrity_check').integrity_check
+    if (integrity !== 'ok') problems.push(`snapshot integrity_check = ${integrity}`)
+    const fk = db.prepare('PRAGMA foreign_key_check').all()
+    if (fk.length > 0) problems.push(`snapshot 外键问题 ${fk.length} 条`)
+
+    const same = (label, actual, expected) => {
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) problems.push(`${label} 与源库不一致`)
+    }
+    same(
+      'exchange 行',
+      q(`SELECT id, from_dog AS fromDog, to_dog AS toDog, kind, payload,
+        deliver_after_trip_seq AS seq, created_at AS createdAt, delivered_at AS deliveredAt,
+        replied_at AS repliedAt, read_at AS readAt FROM exchange WHERE id = ?`, ctx.exchangeId),
+      ctx.facts.exchange,
+    )
+    same(
+      'reply 行',
+      q('SELECT id, text, kind FROM reply WHERE exchange_id = ?', ctx.exchangeId),
+      ctx.facts.replyRow,
+    )
+    same(
+      'reply 条数',
+      q('SELECT count(*) AS n FROM reply WHERE exchange_id = ?', ctx.exchangeId).n,
+      ctx.facts.replyRows,
+    )
+    same(
+      'trip 行',
+      db.prepare('SELECT id, seq, status, started_at AS startedAt FROM trip WHERE dog_id = ? ORDER BY seq')
+        .all(ctx.receiverDogId),
+      ctx.facts.trips,
+    )
+    same(
+      '未送达那条的 reply 数',
+      q('SELECT count(*) AS n FROM reply WHERE exchange_id = ?', ctx.pendingExchangeId).n,
+      ctx.facts.pendingReplyRows,
+    )
+  } finally {
+    db.close()
+  }
+  return problems
 }
