@@ -327,10 +327,38 @@ try {
 }
 
 mkdirSync(dirname(outPath), { recursive: true })
+/**
+ * **先 checkpoint，再算哈希。**
+ *
+ * 这台机器上跑完两轮，两次 `app.sqlite` 的 sha256 一模一样 —— 不是巧合，是因为
+ * 数据全在 `-wal` 里、主库文件还停在「只有 schema」的状态。只对主文件求哈希，
+ * 等于对着一份不含任何消息的空壳盖章。A 11/25 的更正说的就是这件事：
+ * 空 WAL 可以忽略，**非空 WAL 必须算进去**。
+ *
+ * `wal_checkpoint(TRUNCATE)` 把 WAL 摺回主库并清空，之后的主文件哈希才代表真实内容。
+ */
+const dbInfo = checkpointAndHash(dbPath)
+evidence.db = dbInfo
 writeFileSync(outPath, `${JSON.stringify(evidence, null, 2)}\n`)
-const dbHash = createHash('sha256').update(readFileSync(dbPath)).digest('hex')
 process.stdout.write(
   `\n${evidence.verdict === 'pass' ? '全绿' : '有失败'} — ${evidence.chains?.filter((c) => c.ok).length}/${evidence.chains?.length} 项，` +
-  `证据 ${outPath}\n库 ${dbPath}\nsha256 ${dbHash}\n`,
+  `证据 ${outPath}\n库 ${dbPath}（${dbInfo.bytes} 字节，checkpoint 后 wal ${dbInfo.walBytes} 字节）\nsha256 ${dbInfo.sha256}\n`,
 )
 if (evidence.verdict !== 'pass') process.exitCode = 1
+
+function checkpointAndHash(path) {
+  const db = new DatabaseSync(path)
+  try {
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+  } finally {
+    db.close()
+  }
+  const bytes = readFileSync(path)
+  // checkpoint 后仍要确认 WAL 已空：若这里不是 0，说明还有连接没放锁，哈希不可信。
+  let walBytes = 0
+  try {
+    walBytes = readFileSync(`${path}-wal`).length
+  } catch { /* 没有 wal 文件就是最干净的情况 */ }
+  if (walBytes !== 0) throw new Error(`checkpoint 后 WAL 仍有 ${walBytes} 字节，主文件哈希不代表全内容`)
+  return { path, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), walBytes }
+}
