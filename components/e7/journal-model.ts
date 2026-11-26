@@ -1,4 +1,4 @@
-import type { Exchange, Find, Message, Trip } from '../../contracts/types.ts'
+import type { Exchange, Find, Message, SourceMode, Trip } from '../../contracts/types.ts'
 import { canOpen, letterState, letterTitle, safeSource } from '../e6/mailbox-model.ts'
 
 /**
@@ -71,17 +71,32 @@ export function entryBody(entry: JournalEntry): string | null {
   }
 }
 
-/** 来源标记沿用 E6 的四种取值，不新造第五种。 */
-export function sourceNote(entry: JournalEntry): string | null {
-  if (isSealed(entry)) return null
-  const payload = entry.exchange.payload
-  if (payload.kind !== 'gift' && payload.kind !== 'find') return null
-  switch (payload.sourceMode) {
+/** 发件状态按收件方事实展示；未送达优先，不能冒充已读或已回应。 */
+export function journalLetterState(entry: JournalEntry): string {
+  const item = entry.exchange
+  if (entry.direction === 'in') return letterState(item)
+  if (!item.deliveredAt) return '在路上'
+  if (item.repliedAt) return '对方已回应'
+  if (item.readAt) return '对方已读'
+  return '已寄出'
+}
+
+/** 来源来自持久字段，不依据图片、链接或夹具页面自行猜测。 */
+export function provenanceNote(mode: SourceMode | null | undefined): string {
+  switch (mode) {
     case 'fixture': return '示例内容'
     case 'cache': return '来自先前保存的发现'
     case 'live': return '来自一次知乎发现'
     default: return '来源信息未提供'
   }
+}
+
+/** 封存收件不显示包括来源在内的内容。 */
+export function sourceNote(entry: JournalEntry): string | null {
+  if (isSealed(entry)) return null
+  const payload = entry.exchange.payload
+  if (payload.kind !== 'gift' && payload.kind !== 'find') return null
+  return provenanceNote(payload.sourceMode)
 }
 
 /** 只有当前狗已经收到的礼物才进「收到的礼物」，在路上的不提前露出名字。 */
@@ -164,4 +179,34 @@ export function shouldRevealOnOpen(
 ): boolean {
   if (!options.revealOn || options.reducedMotion) return false
   return entry.direction === 'in' && entry.exchange.deliveredAt !== null && entry.exchange.readAt === null
+}
+
+
+export type TripDetailState = {
+  tripId: string
+  retrying?: boolean
+  phase: 'loading' | 'ready' | 'error'
+  finds: Find[]
+  message: Message | null
+  findsError: string
+  messageError: string
+}
+
+/** 重试失败不得抹掉同一趟已经成功读取的内容，也不能复用另一趟的数据。 */
+export function settleTripDetail(
+  tripId: string,
+  finds: PromiseSettledResult<{ finds: Find[] }>,
+  message: PromiseSettledResult<{ message: Message | null }>,
+  previous: TripDetailState | null,
+): TripDetailState {
+  const kept = previous?.tripId === tripId ? previous : null
+  const bothFailed = finds.status === 'rejected' && message.status === 'rejected'
+  return {
+    tripId,
+    phase: bothFailed && kept?.phase !== 'ready' ? 'error' : 'ready',
+    finds: finds.status === 'fulfilled' ? finds.value.finds : kept?.finds ?? [],
+    message: message.status === 'fulfilled' ? message.value.message : kept?.message ?? null,
+    findsError: finds.status === 'rejected' ? '这一趟的发现暂时读不到。' : '',
+    messageError: message.status === 'rejected' ? '归来话暂时读不到。' : '',
+  }
 }

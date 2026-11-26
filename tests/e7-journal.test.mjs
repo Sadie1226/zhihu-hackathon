@@ -161,3 +161,48 @@ test('reads are authenticated, no-store, and failures reject instead of returnin
     globalThis.fetch = original
   }
 })
+
+test('outgoing state describes the recipient; undelivered wins over inconsistent read timestamps', async () => {
+  const { journalLetterState } = await import('../components/e7/journal-model.ts')
+  const entry = overrides => ({ direction: 'out', exchange: exchange(overrides) })
+  assert.equal(journalLetterState(entry({ deliveredAt: null, readAt: 't', repliedAt: 't' })), '在路上')
+  assert.equal(journalLetterState(entry({})), '已寄出')
+  assert.equal(journalLetterState(entry({ readAt: 't' })), '对方已读')
+  assert.equal(journalLetterState(entry({ repliedAt: 't' })), '对方已回应')
+  assert.equal(journalLetterState({ direction: 'in', exchange: exchange() }), '新到')
+})
+
+test('find and gift provenance covers all four modes without guessing from content', async () => {
+  const { provenanceNote } = await import('../components/e7/journal-model.ts')
+  for (const [mode, text] of [['fixture', '示例内容'], ['cache', '来自先前保存的发现'], ['live', '来自一次知乎发现'], [null, '来源信息未提供'], [undefined, '来源信息未提供']]) {
+    assert.equal(provenanceNote(mode), text)
+    for (const kind of ['gift', 'find']) {
+      const item = exchange({ kind, payload: { ...exchange().payload, kind, sourceMode: mode } })
+      assert.equal(sourceNote({ direction: 'in', exchange: item }), text)
+      assert.equal(sourceNote({ direction: 'in', exchange: { ...item, deliveredAt: null } }), null)
+    }
+  }
+})
+
+test('return-message failure and retry preserve successful finds, without a false empty state', async () => {
+  const { settleTripDetail } = await import('../components/e7/journal-model.ts')
+  const ok = value => ({ status: 'fulfilled', value })
+  const failed = { status: 'rejected', reason: new Error('offline') }
+  const finds = [{ id: 'find_1', title: '白桦林' }]
+  const partial = settleTripDetail('trip_1', ok({ finds }), failed, null)
+  assert.equal(partial.phase, 'ready')
+  assert.equal(partial.message, null)
+  assert.notEqual(partial.messageError, '')
+  assert.deepEqual(partial.finds, finds)
+  const retryFailure = settleTripDetail('trip_1', failed, failed, { ...partial, retrying: true })
+  assert.equal(retryFailure.phase, 'ready')
+  assert.deepEqual(retryFailure.finds, finds)
+  const recovered = settleTripDetail('trip_1', ok({ finds }), ok({ message: { text: '我回来了。' } }), retryFailure)
+  assert.equal(recovered.messageError, '')
+  assert.equal(recovered.message.text, '我回来了。')
+  assert.deepEqual(recovered.finds, finds)
+  const anotherTrip = settleTripDetail('trip_2', failed, failed, recovered)
+  assert.equal(anotherTrip.phase, 'error')
+  assert.deepEqual(anotherTrip.finds, [])
+  assert.equal(anotherTrip.message, null)
+})

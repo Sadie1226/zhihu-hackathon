@@ -127,6 +127,15 @@ function makeClient(scenario: string): JournalClient {
   const empty = scenario === 'empty'
   const sealedOnly = scenario === 'sealed'
   const inbox = INBOX.map(row => ({ ...row }))
+  let messageAttempts = 0
+  const review = scenario === 'review'
+  const modes = ['fixture', 'cache', 'live', null] as const
+  if (review) for (const [index, mode] of modes.entries()) {
+    const gift = INBOX.find(item => item.kind === 'gift')!
+    inbox.push({ ...gift, id: `review_gift_${index}`, payload: {
+      kind: 'gift', giftName: `来源礼物${index}`, note: null, imagePath: null, sourceMode: mode,
+    } })
+  }
   async function guard(signal: AbortSignal) {
     if (scenario === 'slow') await delay(signal, 2500)
     if (signal.aborted) throw new Error('aborted')
@@ -140,11 +149,20 @@ function makeClient(scenario: string): JournalClient {
     finds: async (tripId, signal) => {
       await guard(signal)
       if (scenario === 'error') return fail()
+      if (review && tripId === 'trip_001') return { finds: modes.map((mode, index) => ({
+        ...FINDS.trip_001[1], id: `review_find_${index}`, title: `来源发现${index}`, sourceMode: mode,
+      })) }
       return { finds: empty ? [] : FINDS[tripId] ?? [] }
     },
     message: async (tripId, signal) => {
       await guard(signal)
       if (scenario === 'error') return fail()
+      if (review && tripId === 'trip_001') {
+        if (signal.aborted) throw new Error('aborted')
+        messageAttempts += 1
+        if (messageAttempts === 1) return fail()
+        await delay(signal, 600)
+      }
       return { message: empty ? null : MESSAGES[tripId] ?? null }
     },
     inbox: async (_, signal) => {
@@ -157,7 +175,11 @@ function makeClient(scenario: string): JournalClient {
     outbox: async (_, signal) => {
       await guard(signal)
       if (scenario === 'error' || scenario === 'partial') return fail()
-      return { exchanges: empty || sealedOnly ? [] : OUTBOX }
+      return { exchanges: empty || sealedOnly ? [] : review ? [
+        ...OUTBOX,
+        { ...OUTBOX[1], id: 'review_out_read', readAt: '2026-11-20T10:00:00Z' },
+        { ...OUTBOX[1], id: 'review_out_reply', repliedAt: '2026-11-20T11:00:00Z' },
+      ] : OUTBOX }
     },
     read: async (id, signal) => {
       await guard(signal)
@@ -198,6 +220,7 @@ export default function JournalPreview() {
       <label htmlFor="e7-case">本地验收场景：</label>
       <select id="e7-case" value={scenario} onChange={event => setScenario(event.target.value)} style={{ minHeight: 44, font: 'inherit' }}>
         <option value="normal">正常</option>
+        <option value="review">E7 修补：来源、归来话重试与发件状态</option>
         <option value="empty">空手账</option>
         <option value="error">全部读取失败</option>
         <option value="partial">发件读取失败</option>

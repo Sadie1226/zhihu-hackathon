@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import type { Exchange, Find, Message, PublicDogSummary, Reply, Trip } from '@/contracts/types'
+import type { Exchange, PublicDogSummary, Reply, Trip } from '@/contracts/types'
 import { journalClient, type JournalClient } from './journal-client'
 import {
   entryBody,
   formatTripMoment,
   isSealed,
-  letterState,
+  journalLetterState,
+  provenanceNote,
   letterTitle,
   mergeExchanges,
   receivedGifts,
@@ -17,6 +18,8 @@ import {
   shouldMarkRead,
   shouldRevealOnOpen,
   sourceNote,
+  settleTripDetail,
+  type TripDetailState,
   tripLabel,
   tripMessageText,
   tripOutcome,
@@ -34,13 +37,6 @@ type MailState = {
   inboxFailed: boolean
   outboxFailed: boolean
   error: string
-}
-type DetailState = {
-  phase: Phase
-  finds: Find[]
-  message: Message | null
-  findsError: string
-  messageError: string
 }
 type Props = {
   dogId: string
@@ -73,7 +69,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
   const [tripTick, setTripTick] = useState(0)
 
   const [openTrip, setOpenTrip] = useState<string | null>(null)
-  const [detail, setDetail] = useState<DetailState | null>(null)
+  const [detail, setDetail] = useState<TripDetailState | null>(null)
   const [detailTick, setDetailTick] = useState(0)
 
   const [mail, setMail] = useState<MailState>(EMPTY_MAIL)
@@ -121,19 +117,16 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
   useEffect(() => {
     if (!openTrip) { setDetail(null); return }
     const controller = new AbortController()
-    setDetail({ phase: 'loading', finds: [], message: null, findsError: '', messageError: '' })
+    // 同一趟重试保留已成功读取的内容，避免归来话失败把发现一起清空。
+    setDetail(previous => previous?.tripId === openTrip && previous.phase === 'ready'
+      ? { ...previous, retrying: true }
+      : { tripId: openTrip, phase: 'loading', finds: [], message: null, findsError: '', messageError: '' })
     void Promise.allSettled([
       client.finds(openTrip, controller.signal),
       client.message(openTrip, controller.signal),
     ]).then(([findsResult, messageResult]) => {
       if (controller.signal.aborted) return
-      setDetail({
-        phase: findsResult.status === 'rejected' && messageResult.status === 'rejected' ? 'error' : 'ready',
-        finds: findsResult.status === 'fulfilled' ? findsResult.value.finds : [],
-        message: messageResult.status === 'fulfilled' ? messageResult.value.message : null,
-        findsError: findsResult.status === 'rejected' ? messageOf(findsResult.reason) : '',
-        messageError: messageResult.status === 'rejected' ? messageOf(messageResult.reason) : '',
-      })
+      setDetail(previous => settleTripDetail(openTrip, findsResult, messageResult, previous))
     })
     return () => controller.abort()
   }, [openTrip, client, detailTick])
@@ -301,7 +294,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
                 <p className={s.muted}>{inbound ? '收到' : '寄出'} · {peerLabel(entry.exchange)}</p>
                 <div className={s.cardHead}>
                   <h2>{letterTitle(entry.exchange, dogId)}</h2>
-                  <span className={s.status}>{letterState(entry.exchange)}</span>
+                  <span className={s.status}>{journalLetterState(entry)}</span>
                 </div>
                 {sealed && <p className={s.muted}>伙伴下次出行开始时，才会带来。不用守着等。</p>}
                 {!inbound && body !== null && <p className={s.text}>{body || '这份心意没有附言。'}</p>}
@@ -349,7 +342,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
             </div>
             <p className={s.muted}>{peerLabel(item)}</p>
             {item.payload.kind === 'gift' && item.payload.note && <p className={s.text}>{item.payload.note}</p>}
-            <p className={s.muted}>{item.payload.kind === 'gift' && item.payload.sourceMode === 'fixture' ? '示例内容' : '留在手账里，不用另外收藏。'}</p>
+            <p className={s.muted}>{item.payload.kind === 'gift' ? provenanceNote(item.payload.sourceMode) : '来源信息未提供'}</p>
           </article>)}</div>)}
       </section>}
     </main>
@@ -377,7 +370,7 @@ function StaggerText({ text, onReveal }: { text: string; onReveal: () => void })
   </p>
 }
 
-function TripDetail({ detail, onRetry }: { detail: DetailState | null; onRetry: () => void }) {
+function TripDetail({ detail, onRetry }: { detail: TripDetailState | null; onRetry: () => void }) {
   if (!detail) return <p role="status" className={s.notice}>正在读这一趟…</p>
   if (detail.phase === 'loading') return <p role="status" className={s.notice}>正在读这一趟…</p>
   if (detail.phase === 'error') return <Failure text="这一趟的记录暂时读不到。" onRetry={onRetry} />
@@ -385,20 +378,21 @@ function TripDetail({ detail, onRetry }: { detail: DetailState | null; onRetry: 
   const message = tripMessageText(detail.message)
   return <div className={s.detail}>
     {place && <p>去了 <strong>{place}</strong></p>}
-    {detail.findsError
-      ? <p className={s.muted}>这一趟的发现暂时读不到。<button onClick={onRetry}>重新读取</button></p>
-      : detail.finds.length === 0
-        ? <p className={s.muted}>这一趟没有记下发现。</p>
+    {detail.retrying && <p role="status" className={s.muted}>正在重新读取这一趟…</p>}
+    {detail.findsError && <p className={s.muted}>这一趟的发现暂时读不到。<button disabled={detail.retrying} onClick={onRetry}>重新读取</button></p>}
+    {detail.finds.length === 0
+        ? !detail.findsError && <p className={s.muted}>这一趟没有记下发现。</p>
         : <>
           <p className={s.muted}>这一趟记下 {detail.finds.length} 条发现</p>
           <ul className={s.finds}>{detail.finds.map(find => <li key={find.id}>
             <strong>{find.title}</strong>
+            <span className={s.muted}>{provenanceNote(find.sourceMode)}</span>
             {find.excerpt && <span className={s.text}>{find.excerpt}</span>}
             {find.kind === 'zhihu' && safeSource(find.sourceUrl) && <a href={safeSource(find.sourceUrl)} target="_blank" rel="noopener noreferrer">阅读原文</a>}
           </li>)}</ul>
         </>}
     {detail.messageError
-      ? <p className={s.muted}>归来话暂时读不到。</p>
+      ? <p className={s.muted}>归来话暂时读不到。<button disabled={detail.retrying} onClick={onRetry}>重新读取归来话</button></p>
       : message
         ? <blockquote className={s.quote}>{message}</blockquote>
         : <p className={s.muted}>这一趟没有留下归来话。</p>}
