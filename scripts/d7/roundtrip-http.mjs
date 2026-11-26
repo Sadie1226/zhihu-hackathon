@@ -27,7 +27,7 @@
 import { spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -328,37 +328,70 @@ try {
 
 mkdirSync(dirname(outPath), { recursive: true })
 /**
- * **先 checkpoint，再算哈希。**
+ * **哈希算在「一致快照」上，不是算在现场库文件上。**
  *
  * 这台机器上跑完两轮，两次 `app.sqlite` 的 sha256 一模一样 —— 不是巧合，是因为
  * 数据全在 `-wal` 里、主库文件还停在「只有 schema」的状态。只对主文件求哈希，
  * 等于对着一份不含任何消息的空壳盖章。A 11/25 的更正说的就是这件事：
  * 空 WAL 可以忽略，**非空 WAL 必须算进去**。
  *
- * `wal_checkpoint(TRUNCATE)` 把 WAL 摺回主库并清空，之后的主文件哈希才代表真实内容。
+ * 先试过 `wal_checkpoint(TRUNCATE)`，在 Windows 上撞到 `SQLITE_IOERR_DELETE_NOENT`
+ * （进程刚被杀，-shm 还映射着，checkpoint 删不掉 WAL）。所以改用 SQLite 自己的
+ * 一致快照接口 `VACUUM INTO`：产物是自包含文件、不含 WAL，哈希才有唯一含义。
  */
-const dbInfo = checkpointAndHash(dbPath)
+const dbInfo = snapshotAndHash(dbPath)
 evidence.db = dbInfo
 writeFileSync(outPath, `${JSON.stringify(evidence, null, 2)}\n`)
 process.stdout.write(
   `\n${evidence.verdict === 'pass' ? '全绿' : '有失败'} — ${evidence.chains?.filter((c) => c.ok).length}/${evidence.chains?.length} 项，` +
-  `证据 ${outPath}\n库 ${dbPath}（${dbInfo.bytes} 字节，checkpoint 后 wal ${dbInfo.walBytes} 字节）\nsha256 ${dbInfo.sha256}\n`,
+  `证据 ${outPath}\n现场库 ${dbPath}（主文件 ${dbInfo.liveBytes} 字节 + wal ${dbInfo.liveWalBytes} 字节）\n` +
+  `快照 ${dbInfo.snapshotPath}（${dbInfo.bytes} 字节）\nsha256 ${dbInfo.sha256}\n`,
 )
 if (evidence.verdict !== 'pass') process.exitCode = 1
 
-function checkpointAndHash(path) {
+function snapshotAndHash(path) {
+  const snapshotPath = path.replace(/\.sqlite$/i, '.evidence.sqlite')
+  try {
+    unlinkSync(snapshotPath)
+  } catch { /* 第一次跑就没有，正常 */ }
+  // SQL 字符串里的路径用正斜杠，避免 Windows 反斜杠被当成转义。
+  const target = snapshotPath.replace(/\\/g, '/').replace(/'/g, "''")
   const db = new DatabaseSync(path)
   try {
-    db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+    /**
+     * `next dev` 会起子进程，父进程被 kill 后那一小段时间里文件仍被映射着，
+     * `VACUUM INTO` 会报 `SQLITE_IOERR`（10）。这不是数据坏了，是锁还没放干净 ——
+     * 重试几次就过。**不重试的话，取证脚本会在最不该失败的地方随机红。**
+     */
+    let lastError
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        db.exec(`VACUUM INTO '${target}'`)
+        lastError = undefined
+        break
+      } catch (error) {
+        lastError = error
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500)
+      }
+    }
+    if (lastError) throw lastError
+    // 快照必须自洽：不然「哈希漂亮」但内容坏了。
+    const check = db.prepare('PRAGMA integrity_check').get().integrity_check
+    if (check !== 'ok') throw new Error(`快照 integrity_check 不是 ok：${check}`)
   } finally {
     db.close()
   }
-  const bytes = readFileSync(path)
-  // checkpoint 后仍要确认 WAL 已空：若这里不是 0，说明还有连接没放锁，哈希不可信。
-  let walBytes = 0
+  const bytes = readFileSync(snapshotPath)
+  let liveWalBytes = 0
   try {
-    walBytes = readFileSync(`${path}-wal`).length
-  } catch { /* 没有 wal 文件就是最干净的情况 */ }
-  if (walBytes !== 0) throw new Error(`checkpoint 后 WAL 仍有 ${walBytes} 字节，主文件哈希不代表全内容`)
-  return { path, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), walBytes }
+    liveWalBytes = readFileSync(`${path}-wal`).length
+  } catch { /* 没有 wal 文件 */ }
+  return {
+    path,
+    liveBytes: readFileSync(path).length,
+    liveWalBytes,
+    snapshotPath,
+    bytes: bytes.length,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  }
 }
