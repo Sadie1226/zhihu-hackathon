@@ -1,0 +1,6 @@
+{
+  "defaultInbox": true,
+  "invitationFailureDoesNotBlockInbox": true,
+  "invitationRetryRecovers": true,
+  "pageErrors": []
+}

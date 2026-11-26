@@ -324,6 +324,19 @@ export function checkExchangeProvenance(payload: unknown, context: {
   return { ok: true }
 }
 
+export interface ChatRequest {
+  dogId: string
+  text: string
+  clientMessageId: string
+}
+
+export interface ChatResponse {
+  id: string
+  dogId: string
+  text: string
+  createdAt: IsoTime
+}
+
 /** 归来的一句话（2.3）。写入方：b。**必须和 trip 分表。** */
 export interface Message {
   id: string

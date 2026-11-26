@@ -1,0 +1,27 @@
+[
+  {
+    "view": "375x667",
+    "horizontalOverflow": false,
+    "composeEntryVisible": true
+  },
+  {
+    "view": "320x568",
+    "horizontalOverflow": false,
+    "composeEntryVisible": true
+  },
+  {
+    "view": "1440x900",
+    "horizontalOverflow": false,
+    "composeEntryVisible": true
+  },
+  {
+    "pendingIncomingContentHidden": true,
+    "seedWarning": true,
+    "lengthLimit": true,
+    "previewSendQueued": true,
+    "emptyErrorLoadingDistinct": true,
+    "readFailureVisible": true,
+    "blockedRecipientExcluded": true,
+    "pageErrors": []
+  }
+]
