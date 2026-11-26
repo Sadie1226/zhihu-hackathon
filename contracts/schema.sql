@@ -758,3 +758,11 @@ BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
 
 CREATE TRIGGER IF NOT EXISTS trip_discovery_receipt_v8_no_delete BEFORE DELETE ON trip_discovery_receipt
 BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
+
+CREATE TABLE IF NOT EXISTS trip_discovery_legacy_hold (
+  trip_id          TEXT    NOT NULL PRIMARY KEY REFERENCES trip(id),
+  dog_id           TEXT    NOT NULL REFERENCES dog(id),
+  find_count       INTEGER NOT NULL CHECK (find_count > 0),
+  captured_at      TEXT    NOT NULL,
+  source_version   INTEGER NOT NULL CHECK (source_version = 7)
+) STRICT;

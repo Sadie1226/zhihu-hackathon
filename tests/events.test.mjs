@@ -63,7 +63,7 @@ test('event has exactly 12 columns, trip_event exactly 4, defaults and indexes a
   assert.deepEqual(db.prepare("PRAGMA table_info('event')").all().map(c => c.name), columns)
   assert.deepEqual(db.prepare("PRAGMA table_info('trip_event')").all().map(c => c.name),
     ['trip_id', 'event_id', 'dog_id', 'happened_at'])
-  assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 16)
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 17)
   assert.deepEqual(db.prepare("SELECT name FROM sqlite_schema WHERE type='view' ORDER BY name").all().map(row => row.name),
     ['v_invitation_state', 'v_wish_active'])
   assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1)

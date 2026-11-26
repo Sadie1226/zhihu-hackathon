@@ -4,9 +4,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { test } from 'node:test'
 import { openDatabase } from '../lib/db/bootstrap.ts'
 import { migrations } from '../lib/db/migrations.ts'
-import { DISCOVERY_RECEIPT_V8_SQL } from '../lib/db/migrations/008-discovery-receipt.ts'
+import { DISCOVERY_RECEIPT_V8_SQL, discoveryReceiptV8Migration } from '../lib/db/migrations/008-discovery-receipt.ts'
 import { createTripEventSelector } from '../lib/events/select.ts'
-import { createTripDiscoveryComposer } from '../lib/trips/composer.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import { mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
 
@@ -20,6 +19,7 @@ const objects = db => rawObjects(db).map(({ type, name, sql }) => ({
   type, name, sql: sql === null ? null : sql.replace(/\r\n?/g, '\n'),
 }))
 const version = db => db.prepare('PRAGMA user_version').get().user_version
+const holds = db => db.prepare('SELECT * FROM trip_discovery_legacy_hold ORDER BY trip_id').all()
 const seedRecord = db => {
   const owner = ownedDog(db, 'migration-dog')
   const service = createTripService(db, { now })
@@ -47,7 +47,7 @@ test('fresh schema and migrated v7 have identical v8 objects; reopen does not in
   assert.equal(version(fresh), 8)
   assert.equal(version(legacy), 7)
   assert.deepEqual(objects(legacy), [])
-  const { id, owner, eventText } = seedRecord(legacy)
+  const { id, owner } = seedRecord(legacy)
   const before = history(legacy)
   legacy.close()
 
@@ -60,9 +60,11 @@ test('fresh schema and migrated v7 have identical v8 objects; reopen does not in
     assert.equal(migrated.prepare('SELECT count(*) n FROM trip_discovery_receipt').get().n, 0)
     assert.throws(() => migrated.exec("UPDATE trip_event_fact SET public_text_at_occurrence='改写'"), /immutable/)
     assert.throws(() => migrated.exec("UPDATE trip_snapshot SET snapshot_version=3"), /immutable/)
-    const partial = createTripDiscoveryComposer(migrated, { now })(id, owner.sessionId)
-    assert.equal(partial.status, 'partial')
-    assert.deepEqual(partial.finds.map(row => row.title), [eventText])
+    assert.deepEqual(holds(fresh), [])
+    assert.equal(holds(migrated).length, 1)
+    const [hold] = holds(migrated)
+    assert.deepEqual({ ...hold }, { trip_id: id, dog_id: owner.id, find_count: 3,
+      captured_at: new Date(hold.captured_at).toISOString(), source_version: 7 })
     assert.equal(migrated.prepare('SELECT count(*) n FROM trip_discovery_receipt').get().n, 0)
     assert.equal(migrated.prepare('PRAGMA integrity_check').get().integrity_check, 'ok')
     assert.deepEqual(migrated.prepare('PRAGMA foreign_key_check').all(), [])
@@ -72,6 +74,7 @@ test('fresh schema and migrated v7 have identical v8 objects; reopen does not in
     assert.equal(version(reopened), 8)
     assert.deepEqual(objects(reopened), objects(fresh))
     assert.equal(reopened.prepare('SELECT count(*) n FROM trip_discovery_receipt').get().n, 0)
+    assert.equal(holds(reopened).length, 1)
   } finally { reopened.close() }
 })
 
@@ -81,18 +84,20 @@ test('an error after v8 DDL rolls back objects and version and allows a clean up
   const before = history(db)
   db.close()
   const broken = [...v7, { ...migrations.find(migration => migration.version === 8),
-    sql: DISCOVERY_RECEIPT_V8_SQL + '\n INVALID SQL;' }]
+    sql: db => discoveryReceiptV8Migration(db) + '\n INVALID SQL;' }]
   assert.throws(() => openDatabase(path, broken), /syntax error/)
   const unchanged = new DatabaseSync(path, { readOnly: true })
   try {
     assert.equal(version(unchanged), 7)
     assert.deepEqual(objects(unchanged), [])
+    assert.equal(unchanged.prepare("SELECT 1 FROM sqlite_schema WHERE name='trip_discovery_legacy_hold'").get(), undefined)
     assert.deepEqual(history(unchanged), before)
   } finally { unchanged.close() }
   const upgraded = openDatabase(path)
   try {
     assert.equal(version(upgraded), 8)
     assert.deepEqual(history(upgraded), before)
+    assert.equal(holds(upgraded).length, 1)
   } finally { upgraded.close() }
 })
 

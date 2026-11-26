@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { resolve, join, sep } from 'node:path'
+import { resolve, dirname, join, sep } from 'node:path'
 import { spawn } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { APPLICATION_ID, BUSY_TIMEOUT_MS, initializeDatabase, openDatabase } from '../lib/db/bootstrap.ts'
@@ -27,7 +27,7 @@ function insertMarker(db) {
 test('new file: contract tables, foreign keys, WAL, timeout and version are initialized', (t) => {
   const db = openDatabase(temporary(t))
   try {
-    assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 18)
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM sqlite_schema WHERE type='table'").get().n, 19)
     assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1)
     assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal')
     assert.equal(db.prepare('PRAGMA busy_timeout').get().timeout, BUSY_TIMEOUT_MS)
@@ -125,18 +125,71 @@ test('foreign application ID and nonconsecutive migrations are refused', (t) => 
   } finally { clean.close() }
 })
 
-test('parallel processes can initialize the same new database safely', async (t) => {
-  const path = temporary(t)
+async function initializeInParallel(path) {
   const moduleUrl = new URL('../lib/db/bootstrap.ts', import.meta.url).href
-  const script = `import { openDatabase } from ${JSON.stringify(moduleUrl)}; const db=openDatabase(${JSON.stringify(path)}); db.close();`
-  await Promise.all(Array.from({ length: 4 }, () => new Promise((resolveChild, reject) => {
+  const script = `
+    import { openDatabase } from ${JSON.stringify(moduleUrl)};
+    const path = ${JSON.stringify(path)};
+    console.log('ready');
+    await new Promise(resolve => process.stdin.once('data', resolve));
+    process.stdin.pause();
+    let stage = 'openDatabase';
+    try {
+      const db = openDatabase(path);
+      stage = 'verify';
+      try {
+        if (db.prepare('PRAGMA journal_mode').get().journal_mode !== 'wal') throw new Error('Expected WAL');
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      console.error(JSON.stringify({ pid: process.pid, path, stage, code: error.code,
+        errcode: error.errcode, errstr: error.errstr, stack: error.stack }));
+      process.exitCode = 1;
+    }`
+  let ready = 0
+  const children = []
+  let released = false
+  function releaseChildren() {
+    if (released) return
+    released = true
+    for (const child of children) if (child.stdin.writable) child.stdin.end('initialize')
+  }
+  const results = await Promise.allSettled(Array.from({ length: 4 }, () => new Promise((resolveChild, reject) => {
     const child = spawn(process.execPath, ['--input-type=module', '-e', script], { windowsHide: true })
+    children.push(child)
     let stderr = ''
+    child.stdout.once('data', () => {
+      if (++ready === 4) releaseChildren()
+    })
+    child.stdin.on('error', error => { stderr += `stdin: ${error.message}\n` })
     child.stderr.on('data', (chunk) => { stderr += chunk })
-    child.on('error', reject)
-    child.on('exit', (code) => code === 0 ? resolveChild() : reject(new Error(stderr)))
+    child.on('error', error => { stderr += `spawn: ${error.message}\n` })
+    child.on('close', (code) => {
+      releaseChildren()
+      if (code === 0) resolveChild()
+      else reject(new Error(`child pid=${child.pid}, path=${path}, exit=${code}: ${stderr}`))
+    })
   })))
-  const db = openDatabase(path)
-  try { assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8) }
+  // Wait for every child and its output before the fixture cleanup can remove the database.
+  const failures = results.flatMap(result => result.status === 'rejected' ? [result.reason.message] : [])
+  assert.deepEqual(failures, [])
+  const db = new DatabaseSync(path, { readOnly: true })
+  try {
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, migrations.at(-1).version)
+    assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok')
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
+  }
   finally { db.close() }
+}
+
+test('parallel processes initialize a missing file and its parent directory', async t => {
+  await initializeInParallel(temporary(t))
+})
+
+test('parallel processes initialize schema in a precreated empty database file', async t => {
+  const path = temporary(t)
+  mkdirSync(dirname(path), { recursive: true })
+  new DatabaseSync(path).close()
+  await initializeInParallel(path)
 })

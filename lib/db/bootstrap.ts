@@ -1,11 +1,35 @@
 import { mkdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { performance } from 'node:perf_hooks'
 import { migrations as defaultMigrations } from './migrations.ts'
 import type { Migration } from './migrations.ts'
 
 export const APPLICATION_ID = 0x5a484831
 export const BUSY_TIMEOUT_MS = 5000
+const journalRetryWait = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT))
+
+function enableWal(db: DatabaseSync): void {
+  const deadline = performance.now() + BUSY_TIMEOUT_MS
+  try {
+    for (;;) {
+      const remaining = Math.max(0, Math.floor(deadline - performance.now()))
+      db.exec(`PRAGMA busy_timeout = ${remaining}`)
+      try {
+        db.prepare('PRAGMA journal_mode = WAL').get()
+        return
+      } catch (error) {
+        // Rollback-mode readers can contend with the exclusive WAL transition.
+        // SQLite can fail that lock promotion without invoking the busy handler.
+        if (!(error instanceof Error && 'errcode' in error && typeof error.errcode === 'number' &&
+          (error.errcode & 0xff) === 5) || performance.now() >= deadline) throw error
+        Atomics.wait(journalRetryWait, 0, 0, Math.min(10, remaining))
+      }
+    }
+  } finally {
+    db.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`)
+  }
+}
 
 export function databasePath(): string {
   const configured = process.env.DATABASE_PATH ?? './data/app.sqlite'
@@ -75,9 +99,9 @@ export function openDatabase(
   try {
     db.exec(`PRAGMA foreign_keys = ON; PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`)
     initializeDatabase(db, () => readFileSync(resolve('contracts/schema.sql'), 'utf8'), migrations)
-    // WAL may be unavailable on some filesystems. SQLite's returned mode is
-    // authoritative; filesystem/locking errors must propagate, not be hidden.
-    db.prepare('PRAGMA journal_mode = WAL').get()
+    // Keep application/DDL validation before changing the file's journal mode.
+    // SQLite's returned mode remains authoritative when WAL is unavailable.
+    enableWal(db)
     if (db.prepare('PRAGMA foreign_keys').get()?.foreign_keys !== 1) {
       throw new Error('Foreign key enforcement is unavailable')
     }
