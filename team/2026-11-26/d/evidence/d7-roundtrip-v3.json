@@ -1,21 +1,21 @@
 {
   "kind": "d7-roundtrip",
   "code": {
-    "sha": "dbbcfdd4d5bb9a9e425f16a07598d1388c3ca0f1"
+    "sha": "5926ea1274f5dace503ba5aa0c03f009f82b2e64"
   },
   "meta": {
-    "base": "http://127.0.0.1:62749",
+    "base": "http://127.0.0.1:50152",
     "dbPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.sqlite",
     "words": "楼下的桂花开了，你那边闻得到吗"
   },
   "dogs": {
     "sender": {
-      "id": "dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "id": "dog_b8620dce-23fa-49bc-8c1e-d8d3f2935380",
       "owner": "ownerA",
       "name": "阿桂"
     },
     "receiver": {
-      "id": "dog_d344e5f2-e5e8-4eef-987c-366e9163a178",
+      "id": "dog_d19cfe10-0da0-4511-af04-20c0acea5f86",
       "owner": "ownerB",
       "name": "小满"
     }
@@ -143,7 +143,7 @@
       "step": "receiver.onTheWay",
       "note": "乙尚在路上的收件箱",
       "method": "GET",
-      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=onTheWay",
+      "path": "/api/dogs/dog_d19cfe10-0da0-4511-af04-20c0acea5f86/inbox?filter=onTheWay",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -151,7 +151,7 @@
       "step": "receiver.arrived.before",
       "note": "乙已到收件箱（应为空）",
       "method": "GET",
-      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=arrived",
+      "path": "/api/dogs/dog_d19cfe10-0da0-4511-af04-20c0acea5f86/inbox?filter=arrived",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -159,7 +159,7 @@
       "step": "trip.create",
       "note": "乙的狗安排一次出行",
       "method": "POST",
-      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/trips",
+      "path": "/api/dogs/dog_d19cfe10-0da0-4511-af04-20c0acea5f86/trips",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -167,7 +167,7 @@
       "step": "trip.start",
       "note": "乙的狗出发（投递器在此刻写 delivered_at）",
       "method": "POST",
-      "path": "/api/trips/trip_13eaf6a1-aaf4-4f48-b450-384a98b36d91/start",
+      "path": "/api/trips/trip_54f05675-7b45-442f-b388-3b629503d60d/start",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -175,7 +175,7 @@
       "step": "receiver.arrived",
       "note": "乙的收件箱里看到这句话",
       "method": "GET",
-      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=arrived",
+      "path": "/api/dogs/dog_d19cfe10-0da0-4511-af04-20c0acea5f86/inbox?filter=arrived",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -183,7 +183,7 @@
       "step": "receiver.read",
       "note": "乙点开这封来信",
       "method": "PATCH",
-      "path": "/api/exchanges/ex_66f2cff85021f685202421a1/read",
+      "path": "/api/exchanges/ex_ed5b377605f5af217b436f4a/read",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -191,7 +191,7 @@
       "step": "sender.waiting",
       "note": "甲的发件箱：已到、在等回音",
       "method": "GET",
-      "path": "/api/exchanges?from_dog=dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "path": "/api/exchanges?from_dog=dog_b8620dce-23fa-49bc-8c1e-d8d3f2935380",
       "status": 200,
       "cacheControl": "no-store"
     },
@@ -200,13 +200,13 @@
       "note": "乙回一句（B 的回应服务，见边界说明）",
       "transport": "service:writeReply",
       "result": "created",
-      "replyId": "r_011bc8e9a4c04866860fc13bc157d4f4"
+      "replyId": "r_4d979aaf98474bd7815881c480de936a"
     },
     {
       "step": "sender.inbox.after",
       "note": "甲的发件箱：回过之后不再等",
       "method": "GET",
-      "path": "/api/exchanges?from_dog=dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "path": "/api/exchanges?from_dog=dog_b8620dce-23fa-49bc-8c1e-d8d3f2935380",
       "status": 200,
       "cacheControl": "no-store"
     }
@@ -215,24 +215,24 @@
     "integrity": "ok",
     "foreignKeys": 0,
     "exchange": {
-      "id": "ex_66f2cff85021f685202421a1",
-      "fromDog": "dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
-      "toDog": "dog_d344e5f2-e5e8-4eef-987c-366e9163a178",
+      "id": "ex_ed5b377605f5af217b436f4a",
+      "fromDog": "dog_b8620dce-23fa-49bc-8c1e-d8d3f2935380",
+      "toDog": "dog_d19cfe10-0da0-4511-af04-20c0acea5f86",
       "kind": "co_owner_message",
-      "payload": "{\"kind\":\"co_owner_message\",\"message\":\"楼下的桂花开了，你那边闻得到吗\",\"fromOwnerOf\":\"dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7\"}",
+      "payload": "{\"kind\":\"co_owner_message\",\"message\":\"楼下的桂花开了，你那边闻得到吗\",\"fromOwnerOf\":\"dog_b8620dce-23fa-49bc-8c1e-d8d3f2935380\"}",
       "seq": 1,
-      "createdAt": "2026-11-26T07:06:16Z",
-      "deliveredAt": "2026-11-26T07:06:22.392Z",
-      "repliedAt": "2026-11-26T07:06:24.466Z",
-      "readAt": "2026-11-26T07:06:24.409Z"
+      "createdAt": "2026-11-26T07:09:11Z",
+      "deliveredAt": "2026-11-26T07:09:17.571Z",
+      "repliedAt": "2026-11-26T07:09:19.663Z",
+      "readAt": "2026-11-26T07:09:19.592Z"
     },
     "replyRows": 1,
     "trips": [
       {
-        "id": "trip_13eaf6a1-aaf4-4f48-b450-384a98b36d91",
+        "id": "trip_54f05675-7b45-442f-b388-3b629503d60d",
         "seq": 1,
         "status": "running",
-        "startedAt": "2026-11-26T07:06:22.392Z"
+        "startedAt": "2026-11-26T07:09:17.571Z"
       }
     ]
   },
@@ -241,13 +241,13 @@
     "httpRoute": "本分支尚无（B 未落地）"
   },
   "verdict": "pass",
-  "elapsedMs": 20496,
+  "elapsedMs": 21286,
   "db": {
     "path": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.sqlite",
     "liveBytes": 266240,
     "liveWalBytes": 0,
     "snapshotPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.evidence.sqlite",
     "bytes": 262144,
-    "sha256": "eca7b5ea7c97f1e6b7e7b34fff05fdd7dfb230159c7d90274672a65c49359a49"
+    "sha256": "a0d161fc815d63666b39439d32159ca54e13040578d8e93b1f41126e2be7ee11"
   }
 }
