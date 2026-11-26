@@ -1,3 +1,5 @@
+import type { DatabaseSync } from 'node:sqlite'
+
 // Also declared in contracts/schema.sql for fresh databases.
 export const DISCOVERY_RECEIPT_V8_SQL = `
 CREATE TABLE IF NOT EXISTS trip_discovery_receipt (
@@ -39,4 +41,37 @@ BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
 
 CREATE TRIGGER IF NOT EXISTS trip_discovery_receipt_v8_no_delete BEFORE DELETE ON trip_discovery_receipt
 BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
+
+CREATE TABLE IF NOT EXISTS trip_discovery_legacy_hold (
+  trip_id          TEXT    NOT NULL PRIMARY KEY REFERENCES trip(id),
+  dog_id           TEXT    NOT NULL REFERENCES dog(id),
+  find_count       INTEGER NOT NULL CHECK (find_count > 0),
+  captured_at      TEXT    NOT NULL,
+  source_version   INTEGER NOT NULL CHECK (source_version = 7)
+) STRICT;
 `
+
+/** Authentic v7 has no receipt rows. Reject an unexpected populated receipt table. */
+export const LEGACY_DISCOVERY_CANDIDATES_SQL = `
+  SELECT t.id AS trip_id, t.dog_id, count(*) AS find_count
+  FROM trip t JOIN find f ON f.trip_id = t.id
+  WHERE t.status = 'running'
+  GROUP BY t.id, t.dog_id`
+
+export function assertV7DiscoveryCutoverSource(db: DatabaseSync): void {
+  if (db.prepare('PRAGMA user_version').get()?.user_version !== 7) {
+    throw new Error('Discovery history cutover requires schema v7')
+  }
+  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE name = 'trip_discovery_receipt'").get() &&
+      db.prepare('SELECT 1 FROM trip_discovery_receipt LIMIT 1').get()) {
+    throw new Error('Unexpected receipt data in a schema v7 database')
+  }
+}
+
+export function discoveryReceiptV8Migration(db: DatabaseSync): string {
+  assertV7DiscoveryCutoverSource(db)
+  return DISCOVERY_RECEIPT_V8_SQL + `
+    INSERT INTO trip_discovery_legacy_hold(trip_id, dog_id, find_count, captured_at, source_version)
+    SELECT trip_id, dog_id, find_count, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 7
+    FROM (${LEGACY_DISCOVERY_CANDIDATES_SQL});`
+}
