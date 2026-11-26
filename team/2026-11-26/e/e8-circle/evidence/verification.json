@@ -1,0 +1,29 @@
+[
+  {
+    "width": 375,
+    "height": 667,
+    "fixtureOnly": true,
+    "noHumanWriteControls": true,
+    "loadingEmptyErrorUnavailable": true,
+    "pageErrors": [],
+    "apiWrites": []
+  },
+  {
+    "width": 320,
+    "height": 568,
+    "fixtureOnly": true,
+    "noHumanWriteControls": true,
+    "loadingEmptyErrorUnavailable": true,
+    "pageErrors": [],
+    "apiWrites": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "fixtureOnly": true,
+    "noHumanWriteControls": true,
+    "loadingEmptyErrorUnavailable": true,
+    "pageErrors": [],
+    "apiWrites": []
+  }
+]
