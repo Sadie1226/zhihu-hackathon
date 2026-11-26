@@ -46,6 +46,7 @@ export function startsOnShanghaiDay(db: DatabaseSync, dogId: string, at: string)
 type TripOptions = {
   now?: () => Date
   newId?: () => string
+  authorizeOwner?: (dogId: string, ownerId: string) => void
 }
 type OwnerScope = { kind: 'owner'; sessionId: string }
 type SampleScope = { kind: 'sample'; dogId: string; tripId: string }
@@ -54,6 +55,7 @@ type TripScope = OwnerScope | SampleScope
 function tripService(db: DatabaseSync, options: TripOptions) {
   const timestamp = () => (options.now ?? (() => new Date()))().toISOString()
   function ownedDog(dogId: string, scope: TripScope) {
+    if (scope.kind === 'owner') options.authorizeOwner?.(dogId, scope.sessionId)
     if (scope.kind === 'sample' && dogId !== scope.dogId) missing()
     const dog = scope.kind === 'sample'
       ? db.prepare('SELECT 1 FROM dog WHERE id = ? AND is_sample = 1 AND owner_id IS NULL').get(dogId)
@@ -68,7 +70,9 @@ function tripService(db: DatabaseSync, options: TripOptions) {
         .get(id, scope.dogId)
       : db.prepare(`SELECT t.* FROM trip t JOIN dog d ON d.id = t.dog_id
           WHERE t.id = ? AND d.session_id = ?`).get(id, scope.sessionId)) as TripRow | undefined
-    return row ? tripDto(row) : missing()
+    if (!row) return missing()
+    if (scope.kind === 'owner') options.authorizeOwner?.(row.dog_id, scope.sessionId)
+    return tripDto(row)
   }
   function quota(dogId: string, at: string) {
     if (startsOnShanghaiDay(db, dogId, at) >= TRIPS_PER_DAY_MAX) conflict('今天已经出门两次')
@@ -188,6 +192,7 @@ export function sampleTripLifecycle(db: DatabaseSync, dogId: string, intentId: s
   const scope: SampleScope = { kind: 'sample', dogId, tripId }
   const service = tripService(db, options)
   return {
+    get: () => service.get(tripId, scope),
     create: () => service.create(dogId, scope, 'auto'),
     start: () => service.start(tripId, scope),
     finish: (status: TerminalStatus) => service.finish(tripId, scope, status),

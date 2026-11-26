@@ -90,6 +90,11 @@ type SelectCandidates = (trip: BatchContext) => readonly BatchFindCandidate[]
 export type EventOmission = 'EVENT_TOPICS_UNVERIFIABLE' | 'EVENT_FIND_MISMATCH'
 type VisibilityReason = 'BLOCKED_TOPICS' | 'TOPIC_EVIDENCE_UNAVAILABLE'
 export type DiscoveryConfirmation = { completedAt: string; replayed: boolean; visibilityReasons: VisibilityReason[] }
+export class LegacyDiscoveryHoldError extends TripError {
+  constructor() {
+    super('CONFLICT', 'LEGACY_DISCOVERY_HOLD: 这次出行的历史发现仅供读取')
+  }
+}
 type BatchResult = { finds: Find[]; confirmation: DiscoveryConfirmation | null; eventOmission?: EventOmission }
 type ConfirmedBatch = { finds: Find[]; confirmation: DiscoveryConfirmation }
 
@@ -167,7 +172,7 @@ function sameContent(existing: Find, data: PreparedFind['data']): boolean {
 export function createFindStore(db: DatabaseSync, options: { now?: () => Date } = {}) {
   function assertDiscoveryWritable(tripId: string) {
     if (db.prepare('SELECT 1 FROM trip_discovery_legacy_hold WHERE trip_id = ?').get(tripId)) {
-      throw new TripError('CONFLICT', 'LEGACY_DISCOVERY_HOLD: 这次出行的历史发现仅供读取')
+      throw new LegacyDiscoveryHoldError()
     }
   }
 
@@ -181,6 +186,11 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     assertDiscoveryWritable(tripId)
     return { tripId, ownerId: trip.ownerId, intentId: ownerDiscoveryIntent(tripId, intentId),
       ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
+  }
+  function runningSeedTrip(scope: SeedFindScope) {
+    const trip = requireRunningSeedEventTrip(db, scope)
+    assertDiscoveryWritable(scope.tripId)
+    return { ...scope, ownerId: null, ...batchContext(scope.dogId, trip.startedAt, trip.blockedTopics) }
   }
   function history(tripId: string): Find[] {
     return db.prepare('SELECT ' + projection + ' FROM find f WHERE f.trip_id=? ORDER BY f.created_at,f.id')
@@ -325,6 +335,13 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     return { ...checked, eventOmission, confirmation: { ...checked.confirmation, replayed: false } }
   }
   return {
+    /** Read the current projection under an existing transaction or a short read transaction. */
+    readConfirmation(scope: { tripId: string; owner: OwnerFindScope; intentId?: string } | SeedFindScope) {
+      const read = () => replayBatch('owner' in scope
+        ? runningOwnerTrip(scope.tripId, readOwnerFindTrip(db, scope.tripId, scope.owner), scope.intentId)
+        : runningSeedTrip(scope))
+      return db.isTransaction ? read() : transaction(db, false, read)
+    },
     list(tripId: string, ownerId: string): Find[] {
       return transaction(db, false, () => {
         readOwnerFindTrip(db, tripId, ownerId)
@@ -339,11 +356,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
       return transaction(db, true, () => persistBatch(runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId), select))
     },
     writeSeedBatch(scope: SeedFindScope, select: SelectCandidates) {
-      return transaction(db, true, () => {
-        const trip = requireRunningSeedEventTrip(db, scope)
-        assertDiscoveryWritable(scope.tripId)
-        return persistBatch({ ...scope, ownerId: null, ...batchContext(scope.dogId, trip.startedAt, trip.blockedTopics) }, select)
-      })
+      return transaction(db, true, () => persistBatch(runningSeedTrip(scope), select))
     },
     prepareOwnerSearch(tripId: string, scope: OwnerFindScope, intentId?: string) {
       return transaction(db, false, () => {
