@@ -11,17 +11,20 @@
  *   2. 甲的主人写一句话，托自己的狗带给乙的狗   POST /api/exchanges
  *   3. 乙的狗出门                                POST /api/dogs/:id/trips + POST /api/trips/:id/start
  *   4. 乙在收件箱里看到这句话、点开                GET inbox?filter=arrived + PATCH /api/exchanges/:id/read
- *   5. 乙回一句                                  ⚠ 见下面的「边界」
+ *   5. 乙回一句（真实 HTTP）                       POST /api/replies
  *   6. 甲在自己的发件箱里看到回音，不再「在等」     GET /api/exchanges?from_dog=
  *
- * **边界（必须写清楚，别让证据看起来比事实多）**：
- * 第 5 步走的是 `lib/replies/idempotency.ts` 的 `writeReply()` —— 本分支还没有
- * `POST /api/exchanges/:id/reply` 这条路由（B 的回应 HTTP 未落地）。也就是说：
- * 「收」是 HTTP 证明的，「回」是服务层证明的。等 B 的回应路由合并，把 `--reply-transport=http`
- * 打开重跑一次即可，本脚本的其余步骤不必改。
+ * 第 5 步走 `POST /api/replies`（实现在 `app/(b)/api/replies/route.ts`，B 的路由组）。
+ * 抓路由时别只扫 `app/api/` —— 路由组 `(b)` 不改 URL，但会藏住文件。
  *
- * 跑法（需要先 `next build`）：
+ * 除主链外还挡三个反例，都在同一个真服务上：
+ *   · 同一请求重放 → `duplicate: true`，同一个 reply id，库里仍 1 行，`replied_at` 不动
+ *   · 还没送达就回 → 409（「这条交换还没送达」）
+ *   · 替别人的交换回 → 404（来源不属于当前会话）
+ *
+ * 跑法（dev server 按需编译，不必先 build）：
  *   node scripts/d7/roundtrip-http.mjs --db <新库路径> --out <证据路径> [--code-sha <sha>]
+ *   `--reply-transport=service` 可退回服务层直写，仅用于对照排查。
  */
 
 import { spawn } from 'node:child_process'
@@ -49,7 +52,10 @@ function arg(name, fallback = null) {
 const dbPath = resolve(arg('db') ?? './tmp-d7/a5-development-d7.sqlite')
 const outPath = resolve(arg('out') ?? './tmp-d7/d7-roundtrip.json')
 const codeSha = arg('code-sha', 'unknown')
-const replyTransport = arg('reply-transport', 'service')
+const replyTransport = arg('reply-transport', 'http')
+if (!['http', 'service'].includes(replyTransport)) {
+  throw new Error(`--reply-transport 只接受 http 或 service，收到 ${replyTransport}`)
+}
 
 /**
  * 为什么是 `next dev` 而不是 `next start`：
@@ -253,21 +259,42 @@ try {
   const waitingRow = waitingBox.exchanges.find((row) => row.id === exchange.id)
 
   // ---- 5. 乙回一句 ----
-  if (replyTransport !== 'service') throw new Error(`本分支只支持 service 回应，收到 ${replyTransport}`)
-  const db = new DatabaseSync(dbPath)
-  let reply, repliedAtAfter
-  try {
-    reply = writeReply(db, { source: { kind: 'exchange', id: exchange.id }, text: ANSWER, photoUrl: null })
-    repliedAtAfter = db.prepare('SELECT replied_at FROM exchange WHERE id = ?').get(exchange.id).replied_at
-  } finally {
-    db.close()
+  let replyId, repliedAtAfter, replayOk = false
+  if (replyTransport === 'http') {
+    const { json: replied } = await call(server.base, 'receiver.reply', '乙回一句（POST /api/replies，真实 HTTP）', {
+      method: 'POST', path: '/api/replies', cookie: beta.cookie,
+      body: { exchangeId: exchange.id, text: ANSWER },
+    })
+    if (!replied.reply?.id) throw new Error('回应返回 200 但没有 reply')
+    if (replied.duplicate) throw new Error('首次回应就被判成 duplicate')
+    replyId = replied.reply.id
+
+    // 同一条原样再打一次：必须还是这一条，不许多一行、不许改时间。
+    const { json: replay } = await call(server.base, 'receiver.reply.replay', '同一请求重放（幂等）', {
+      method: 'POST', path: '/api/replies', cookie: beta.cookie,
+      body: { exchangeId: exchange.id, text: ANSWER },
+    })
+    replayOk = replay.reply?.id === replyId && replay.duplicate === true
+    record('receiver.reply.idempotent', '重放仍是同一 reply，标 duplicate', { replyId, duplicate: replay.duplicate })
+  } else {
+    const db = new DatabaseSync(dbPath)
+    try {
+      const created = writeReply(db, { source: { kind: 'exchange', id: exchange.id }, text: ANSWER, photoUrl: null })
+      if (created.kind !== 'created') throw new Error(`回应没写进去：${created.kind}`)
+      replyId = created.reply.id
+    } finally {
+      db.close()
+    }
+    record('receiver.reply', '乙回一句（服务层直写，仅对照用）', { transport: 'service:writeReply', replyId })
   }
-  record('receiver.reply', '乙回一句（B 的回应服务，见边界说明）', {
-    transport: 'service:writeReply',
-    result: reply.kind,
-    replyId: reply.reply.id,
-  })
-  if (reply.kind !== 'created') throw new Error(`回应没写进去：${reply.kind}`)
+  {
+    const readBack = new DatabaseSync(dbPath, { readOnly: true })
+    try {
+      repliedAtAfter = readBack.prepare('SELECT replied_at FROM exchange WHERE id = ?').get(exchange.id).replied_at
+    } finally {
+      readBack.close()
+    }
+  }
   if (!repliedAtAfter) throw new Error('replied_at 没被写上')
 
   // ---- 6. 甲看到回音 ----
@@ -276,6 +303,28 @@ try {
   })
   const finalRow = finalBox.exchanges.find((row) => row.id === exchange.id)
   if (finalRow.repliedAt !== repliedAtAfter) throw new Error('甲看到的 repliedAt 与库里不一致')
+
+  // ---- 反例：这两条必须被挡住，否则「能回」等于「谁都能回、随时能回」 ----
+  const { json: pending } = await call(server.base, 'send.pending', '甲再寄一句（乙这次不出门）', {
+    method: 'POST', path: '/api/exchanges', cookie: alpha.cookie,
+    headers: { 'idempotency-key': `d7-pending-${randomUUID()}` },
+    body: {
+      fromDog: alpha.dog.id,
+      toDog: beta.dog.id,
+      kind: 'co_owner_message',
+      payload: { kind: 'co_owner_message', message: '第二句，还没到' },
+    },
+  })
+  await call(server.base, 'reply.beforeArrival', '还没到就回：应被拒（409）', {
+    method: 'POST', path: '/api/replies', cookie: beta.cookie,
+    body: { exchangeId: pending.exchange.id, text: '还没看到就回' },
+    expect: 409,
+  })
+  await call(server.base, 'reply.notMine', '替别人的交换回：应被拒（404）', {
+    method: 'POST', path: '/api/replies', cookie: alpha.cookie,
+    body: { exchangeId: exchange.id, text: '我不是收件人' },
+    expect: 404,
+  })
 
   // ---- 收尾：库侧对账 ----
   const after = new DatabaseSync(dbPath, { readOnly: true })
@@ -289,6 +338,9 @@ try {
         deliver_after_trip_seq AS seq, created_at AS createdAt, delivered_at AS deliveredAt,
         replied_at AS repliedAt, read_at AS readAt FROM exchange WHERE id = ?`, exchange.id),
       replyRows: q('SELECT count(*) AS n FROM reply WHERE exchange_id = ?', exchange.id).n,
+      replyRow: q('SELECT id, text, kind FROM reply WHERE exchange_id = ?', exchange.id),
+      // 被 409 挡下的那条不能留下任何残行 —— 「拒了但偷偷写了」比不拒更糟。
+      pendingReplyRows: q('SELECT count(*) AS n FROM reply WHERE exchange_id = ?', pending.exchange.id).n,
       trips: after.prepare('SELECT id, seq, status, started_at AS startedAt FROM trip WHERE dog_id = ? ORDER BY seq')
         .all(beta.dog.id),
     }
@@ -308,6 +360,11 @@ try {
     ['乙点开后 readAt 有值', Boolean(readBack.exchange.readAt)],
     ['到达后甲在等回音', waitingRow ? isWaitingForReply(waitingRow) : false],
     ['回应落了库（1 行）', facts.replyRows === 1],
+    ['回应的文字是乙写的那句', facts.replyRow?.text === ANSWER],
+    ...(replyTransport === 'http'
+      ? [['重放仍是同一 reply 且未新增行', replayOk && facts.replyRows === 1]]
+      : []),
+    ['没到就回没留下残行', facts.pendingReplyRows === 0],
     ['回应后甲不再等', finalRow ? !isWaitingForReply(finalRow) : false],
     ['回应不改到达时间', facts.exchange.deliveredAt === received.deliveredAt],
     ['库里 replied_at 与回执一致', facts.exchange.repliedAt === repliedAtAfter],
@@ -319,7 +376,15 @@ try {
   evidence.path = { words: WORDS, answer: ANSWER }
   evidence.steps = trail
   evidence.facts = facts
-  evidence.replyTransport = { used: 'service:writeReply', httpRoute: '本分支尚无（B 未落地）' }
+  evidence.replyTransport = replyTransport === 'http'
+    ? {
+        used: 'http:POST /api/replies',
+        route: 'app/(b)/api/replies/route.ts',
+        body: 'application/json { exchangeId, text }',
+        firstReplyId: replyId,
+        replayDuplicate: replayOk,
+      }
+    : { used: 'service:writeReply', route: null, firstReplyId: replyId }
   evidence.verdict = failed.length === 0 ? 'pass' : `fail: ${failed.join(' / ')}`
   evidence.elapsedMs = Date.now() - started
 } finally {
