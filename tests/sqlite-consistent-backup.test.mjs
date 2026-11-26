@@ -11,6 +11,7 @@ import { migrations } from '../lib/db/migrations.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import { createTripDiscoverySearch } from '../lib/trips/discover.ts'
 import { createTripDiscoveryComposer } from '../lib/trips/composer.ts'
+import { ownerDiscoveryIntent, readDiscoveryReceipt } from '../lib/trips/discovery-receipt.ts'
 import { createMemorySearchCache } from '../lib/trips/search-cache.ts'
 import { mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
 
@@ -27,7 +28,7 @@ const tables = db => [
 
 test('VACUUM INTO includes committed WAL contents and preserves a readable app/database pair', async t => {
   const v8 = migrations.filter(migration => migration.version <= 8)
-  const { db, path } = mailboxDatabase(t, v8)
+  const { db, path } = mailboxDatabase(t, v8, readFileSync('tests/fixtures/schema-v1.sql', 'utf8'))
   db.exec('PRAGMA wal_autocheckpoint = 0; PRAGMA wal_checkpoint(TRUNCATE)')
   let at = '2026-11-25T02:00:00.000Z'
   const now = () => new Date(at)
@@ -54,6 +55,9 @@ test('VACUUM INTO includes committed WAL contents and preserves a readable app/d
   const first = newTrip()
   const initialFinds = await confirm(first, request, provider)
   const frozenRows = tables(db)
+  // Reproduce the original v8 schema, which did not yet define the cutover table.
+  const holdTable = db.prepare("SELECT sql FROM sqlite_schema WHERE name = 'trip_discovery_legacy_hold'").get().sql
+  db.exec('DROP TABLE trip_discovery_legacy_hold')
   const output = join(dirname(path), 'stop-point')
   const result = command(path, output)
   assert.equal(result.status, 0, result.stderr)
@@ -62,7 +66,7 @@ test('VACUUM INTO includes committed WAL contents and preserves a readable app/d
   assert.equal(manifest.app_sha, oldSha)
   assert.equal(manifest.user_version, 8)
   assert.equal(manifest.application_id, APPLICATION_ID)
-  assert.equal(manifest.legacy_hold_capability, true)
+  assert.equal(manifest.legacy_hold_capability, false)
   assert.equal(manifest.manifest_version, 1)
   assert.match(manifest.schema_hash, /^[0-9a-f]{64}$/)
   assert.ok(manifest.source_wal_bytes > 0)
@@ -72,6 +76,7 @@ test('VACUUM INTO includes committed WAL contents and preserves a readable app/d
   assert.equal(manifest.backup_sha256, createHash('sha256').update(readFileSync(backup)).digest('hex'))
   assert.equal(command(path, output).status, 1)
 
+  db.exec(holdTable)
   lifecycle.finish(first.id, owner.sessionId, 'done')
   at = '2026-11-25T09:00:00.000Z'
   const second = newTrip()
@@ -88,8 +93,9 @@ test('VACUUM INTO includes committed WAL contents and preserves a readable app/d
     assert.deepEqual(tables(restored), frozenRows)
     assert.equal(restored.prepare('SELECT 1 FROM trip WHERE id=?').get(second.id), undefined)
     assert.equal(restored.prepare('SELECT status FROM trip WHERE id=?').get(first.id).status, 'running')
-    const replay = await createTripDiscoverySearch(restored, never, { now })(first.id, request)
-    assert.deepEqual(replay.replay.finds, initialFinds)
+    const replay = readDiscoveryReceipt(restored, { tripId: first.id, dogId: owner.id,
+      ownerId: owner.sessionId, intentId: ownerDiscoveryIntent(first.id) })
+    assert.deepEqual(replay.members.map(([id]) => id), initialFinds.map(row => row.id))
 
     // The release rehearsal supplies an exact checkout of the original v8 application.
     if (process.env.TRAVEL_OLD_READER_ROOT) {
