@@ -165,6 +165,12 @@ function sameContent(existing: Find, data: PreparedFind['data']): boolean {
  * Call write() outside another transaction; it owns the complete write-lock boundary.
  */
 export function createFindStore(db: DatabaseSync, options: { now?: () => Date } = {}) {
+  function assertDiscoveryWritable(tripId: string) {
+    if (db.prepare('SELECT 1 FROM trip_discovery_legacy_hold WHERE trip_id = ?').get(tripId)) {
+      throw new TripError('CONFLICT', 'LEGACY_DISCOVERY_HOLD: 这次出行的历史发现仅供读取')
+    }
+  }
+
   function batchContext(dogId: string, startedAt: string, blockedTopics: unknown): BatchContext {
     const at = (options.now ?? (() => new Date()))().toISOString()
     if (!(Date.parse(at) >= Date.parse(startedAt))) return conflict()
@@ -172,6 +178,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
   }
   function runningOwnerTrip(tripId: string, trip: ReturnType<typeof readOwnerFindTrip>, intentId?: string) {
     if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
+    assertDiscoveryWritable(tripId)
     return { tripId, ownerId: trip.ownerId, intentId: ownerDiscoveryIntent(tripId, intentId),
       ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
   }
@@ -334,6 +341,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     writeSeedBatch(scope: SeedFindScope, select: SelectCandidates) {
       return transaction(db, true, () => {
         const trip = requireRunningSeedEventTrip(db, scope)
+        assertDiscoveryWritable(scope.tripId)
         return persistBatch({ ...scope, ownerId: null, ...batchContext(scope.dogId, trip.startedAt, trip.blockedTopics) }, select)
       })
     },

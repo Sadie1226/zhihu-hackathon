@@ -434,6 +434,38 @@ for (const [status, code] of [[429, 'RATE_LIMITED'], [401, 'AUTH']]) {
     })
 }
 
+test('C9: an older partial cache Find keeps its row while a next-day proof supplies the confirmation timestamp',
+  { timeout: 15000 }, async t => {
+    const f = fixture(t)
+    const first = await launch(t, f, { warmAt: startedAt, fallbackStatus: 429, observations: [] }).result()
+    assert.deepEqual(io(first), [1, 1, 1, 1])
+    assert.equal(first.composition.status, 'partial')
+    const [saved] = first.composition.finds
+    assert.equal(saved.sourceMode, 'cache')
+    assert.equal(saved.createdAt, at)
+    assert.equal(first.fetchedAt, startedAt)
+    assert.deepEqual(first.receipts, [])
+
+    const newFetchedAt = '2026-11-26T04:00:00.000Z'
+    const confirmedAt = '2026-11-26T04:01:00.000Z'
+    assert.ok(Date.parse(confirmedAt) - Date.parse(saved.createdAt) > 24 * 60 * 60 * 1000)
+    const second = await launch(t, f, { warmAt: newFetchedAt, at: confirmedAt, fallbackStatus: 429 }).result()
+    assert.deepEqual(io(second), [1, 1, 1, 1])
+    assert.equal(second.composition.status, 'complete')
+    assert.deepEqual(second.composition.finds.find(row => row.kind === 'zhihu'), saved)
+    assert.equal(second.fetchedAt, newFetchedAt)
+    const [confirmation] = second.receipts
+    assert.equal(confirmation.completed_at, confirmedAt)
+    const cacheMember = JSON.parse(confirmation.members_json).find(([id]) => id === saved.id)
+    assert.deepEqual(cacheMember[2], ['cache', query, '自然风景', newFetchedAt])
+    f.db.close()
+
+    const cold = await launch(t, f, { at: '2026-11-27T04:02:00.000Z', fallbackStatus: 401 }).result()
+    assert.deepEqual(io(cold), [0, 0, 0, 0])
+    assert.deepEqual(cold.composition, replayed(second.composition))
+    assert.deepEqual(cold.receipts, second.receipts)
+  })
+
 for (const winnerMode of ['live', 'cache']) {
   test(`C9: ${winnerMode} wins a two-process mixed live/cache race and the in-flight loser cannot replace it`,
     { timeout: 15000 }, async t => {
