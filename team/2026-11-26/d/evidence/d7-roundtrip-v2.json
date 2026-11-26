@@ -1,0 +1,253 @@
+{
+  "kind": "d7-roundtrip",
+  "code": {
+    "sha": "dbbcfdd4d5bb9a9e425f16a07598d1388c3ca0f1"
+  },
+  "meta": {
+    "base": "http://127.0.0.1:62749",
+    "dbPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.sqlite",
+    "words": "楼下的桂花开了，你那边闻得到吗"
+  },
+  "dogs": {
+    "sender": {
+      "id": "dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "owner": "ownerA",
+      "name": "阿桂"
+    },
+    "receiver": {
+      "id": "dog_d344e5f2-e5e8-4eef-987c-366e9163a178",
+      "owner": "ownerB",
+      "name": "小满"
+    }
+  },
+  "chains": [
+    {
+      "name": "寄出即在路上",
+      "ok": true
+    },
+    {
+      "name": "在路上时乙的已到箱为空",
+      "ok": true
+    },
+    {
+      "name": "在路上时乙的在途箱有它",
+      "ok": true
+    },
+    {
+      "name": "出发那一刻到达",
+      "ok": true
+    },
+    {
+      "name": "原话到达未改",
+      "ok": true
+    },
+    {
+      "name": "fromOwnerOf = 寄件狗",
+      "ok": true
+    },
+    {
+      "name": "乙点开后 readAt 有值",
+      "ok": true
+    },
+    {
+      "name": "到达后甲在等回音",
+      "ok": true
+    },
+    {
+      "name": "回应落了库（1 行）",
+      "ok": true
+    },
+    {
+      "name": "回应后甲不再等",
+      "ok": true
+    },
+    {
+      "name": "回应不改到达时间",
+      "ok": true
+    },
+    {
+      "name": "库里 replied_at 与回执一致",
+      "ok": true
+    },
+    {
+      "name": "整库无外键问题",
+      "ok": true
+    },
+    {
+      "name": "integrity ok",
+      "ok": true
+    }
+  ],
+  "path": {
+    "words": "楼下的桂花开了，你那边闻得到吗",
+    "answer": "闻得到，风是从西边来的"
+  },
+  "steps": [
+    {
+      "step": "ownerA.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerA.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerA.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "send",
+      "note": "甲托狗捎话（寄出即「在路上」）",
+      "method": "POST",
+      "path": "/api/exchanges",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.onTheWay",
+      "note": "乙尚在路上的收件箱",
+      "method": "GET",
+      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=onTheWay",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.arrived.before",
+      "note": "乙已到收件箱（应为空）",
+      "method": "GET",
+      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "trip.create",
+      "note": "乙的狗安排一次出行",
+      "method": "POST",
+      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/trips",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "trip.start",
+      "note": "乙的狗出发（投递器在此刻写 delivered_at）",
+      "method": "POST",
+      "path": "/api/trips/trip_13eaf6a1-aaf4-4f48-b450-384a98b36d91/start",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.arrived",
+      "note": "乙的收件箱里看到这句话",
+      "method": "GET",
+      "path": "/api/dogs/dog_d344e5f2-e5e8-4eef-987c-366e9163a178/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.read",
+      "note": "乙点开这封来信",
+      "method": "PATCH",
+      "path": "/api/exchanges/ex_66f2cff85021f685202421a1/read",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "sender.waiting",
+      "note": "甲的发件箱：已到、在等回音",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.reply",
+      "note": "乙回一句（B 的回应服务，见边界说明）",
+      "transport": "service:writeReply",
+      "result": "created",
+      "replyId": "r_011bc8e9a4c04866860fc13bc157d4f4"
+    },
+    {
+      "step": "sender.inbox.after",
+      "note": "甲的发件箱：回过之后不再等",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "status": 200,
+      "cacheControl": "no-store"
+    }
+  ],
+  "facts": {
+    "integrity": "ok",
+    "foreignKeys": 0,
+    "exchange": {
+      "id": "ex_66f2cff85021f685202421a1",
+      "fromDog": "dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7",
+      "toDog": "dog_d344e5f2-e5e8-4eef-987c-366e9163a178",
+      "kind": "co_owner_message",
+      "payload": "{\"kind\":\"co_owner_message\",\"message\":\"楼下的桂花开了，你那边闻得到吗\",\"fromOwnerOf\":\"dog_5b969c9a-83e8-4260-bf77-bf20d453d8a7\"}",
+      "seq": 1,
+      "createdAt": "2026-11-26T07:06:16Z",
+      "deliveredAt": "2026-11-26T07:06:22.392Z",
+      "repliedAt": "2026-11-26T07:06:24.466Z",
+      "readAt": "2026-11-26T07:06:24.409Z"
+    },
+    "replyRows": 1,
+    "trips": [
+      {
+        "id": "trip_13eaf6a1-aaf4-4f48-b450-384a98b36d91",
+        "seq": 1,
+        "status": "running",
+        "startedAt": "2026-11-26T07:06:22.392Z"
+      }
+    ]
+  },
+  "replyTransport": {
+    "used": "service:writeReply",
+    "httpRoute": "本分支尚无（B 未落地）"
+  },
+  "verdict": "pass",
+  "elapsedMs": 20496,
+  "db": {
+    "path": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.sqlite",
+    "liveBytes": 266240,
+    "liveWalBytes": 0,
+    "snapshotPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run\\a5-development-d7.evidence.sqlite",
+    "bytes": 262144,
+    "sha256": "eca7b5ea7c97f1e6b7e7b34fff05fdd7dfb230159c7d90274672a65c49359a49"
+  }
+}
