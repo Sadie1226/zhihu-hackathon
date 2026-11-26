@@ -1,0 +1,107 @@
+[
+  {
+    "width": 375,
+    "height": 667,
+    "level1": {
+      "buttons": [
+        {
+          "text": "留个回应",
+          "h": 46
+        },
+        {
+          "text": "收好，回到这一页",
+          "h": 46
+        },
+        {
+          "text": "阅读设置",
+          "h": 46
+        }
+      ],
+      "panel": 0,
+      "toggle": 0,
+      "overflow": true
+    },
+    "level2": {
+      "panel": true,
+      "ariaLabel": "阅读设置",
+      "text": "新到的信第一次打开时，文字会一个字一个字出现。点正文可以立即显示全文。 关掉逐字渐显",
+      "width": 283,
+      "withinViewport": true,
+      "buttonHeights": [
+        46
+      ],
+      "overflow": true
+    },
+    "pageErrors": []
+  },
+  {
+    "width": 320,
+    "height": 568,
+    "level1": {
+      "buttons": [
+        {
+          "text": "留个回应",
+          "h": 46
+        },
+        {
+          "text": "收好，回到这一页",
+          "h": 46
+        },
+        {
+          "text": "阅读设置",
+          "h": 46
+        }
+      ],
+      "panel": 0,
+      "toggle": 0,
+      "overflow": true
+    },
+    "level2": {
+      "panel": true,
+      "ariaLabel": "阅读设置",
+      "text": "新到的信第一次打开时，文字会一个字一个字出现。点正文可以立即显示全文。 关掉逐字渐显",
+      "width": 228,
+      "withinViewport": true,
+      "buttonHeights": [
+        46
+      ],
+      "overflow": true
+    },
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "level1": {
+      "buttons": [
+        {
+          "text": "留个回应",
+          "h": 46
+        },
+        {
+          "text": "收好，回到这一页",
+          "h": 46
+        },
+        {
+          "text": "阅读设置",
+          "h": 46
+        }
+      ],
+      "panel": 0,
+      "toggle": 0,
+      "overflow": true
+    },
+    "level2": {
+      "panel": true,
+      "ariaLabel": "阅读设置",
+      "text": "新到的信第一次打开时，文字会一个字一个字出现。点正文可以立即显示全文。 关掉逐字渐显",
+      "width": 988,
+      "withinViewport": true,
+      "buttonHeights": [
+        46
+      ],
+      "overflow": true
+    },
+    "pageErrors": []
+  }
+]

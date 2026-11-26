@@ -57,9 +57,9 @@
 .empty p{color:#786a57;margin:10px 0 0}
 .mark{width:28px;height:20px;margin:0 auto;border:2px solid #cdb693;background:#f6ebd7}
 
-/* 逐字渐显试样：只改透明度，不加模糊，避免像素字发虚。 */
+/* 逐字渐显试样：只改透明度，不加模糊，避免像素字发虚。64ms 错峰 / 单字 280ms。 */
 .reveal{cursor:pointer}
-.glyph{opacity:0;animation:glyphIn 200ms ease-out forwards}
+.glyph{opacity:0;animation:glyphIn 280ms ease-out forwards}
 @keyframes glyphIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.glyph{animation:none;opacity:1}}
 
@@ -71,3 +71,21 @@
 .card{padding:14px}
 .paper{padding:16px}
 }
+
+/* 手机反馈增量：回到现有小屋的像素字体、阶梯信纸及角色素材。 */
+@font-face{font-family:KanshanJournal;src:url('/assets/a5-v25/kanshan-pixel-v18.ttf');font-display:swap}
+.page{background:#fff8ed;background-image:none;color:#514337;font-family:KanshanJournal,'Microsoft YaHei',sans-serif}
+.page h1,.page h2,.page h3{font-weight:400}.page h3{font-size:19px;line-height:1.6;margin:8px 0}
+.heading{position:relative;padding:22px 80px 18px 0;min-height:130px}.headingIcon{float:left;margin:12px 18px 14px 0;image-rendering:pixelated}.cornerActor{position:absolute;right:8px;bottom:4px;image-rendering:pixelated;pointer-events:none}
+.card,.paper,.returnNote{border:10px solid transparent;border-image:url('/assets/a5-v25/stationery.png') 10 fill / 14px / 0 stretch;background:transparent;image-rendering:pixelated;padding:16px;position:relative}
+.card{margin-top:10px}.paper{margin-top:24px}.status{border-radius:0;font-size:14px}.list{gap:18px}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;min-height:22px;margin-left:8px;padding:0 5px;background:#a74635;color:#fff8ed;font:14px/1.4 KanshanJournal,sans-serif;vertical-align:middle;border-radius:0;box-shadow:2px 0 #a74635,-2px 0 #a74635,0 2px #a74635,0 -2px #a74635}
+.mailTabs{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #ddc7a8}.mailTabs button{flex:1}.mailTabs button[aria-pressed=true]{background:#f3e5ce;border-bottom:3px solid #98503f}
+.groupHeading{color:#75604d;margin:20px 0 8px!important;letter-spacing:2px}.letterCard{padding-left:72px;min-height:120px}.mailIcon{position:absolute;left:12px;top:18px;image-rendering:pixelated}.freshCard{box-shadow:inset 5px 0 #a74635}.freshStatus{background:#a74635;color:#fff8ed;border-color:#a74635}.freshCard h2{color:#823f30}.freshCard button{background:#98503f;color:#fff8ed}
+.returnNote{margin:10px 0 24px;padding:14px;background:#fff5df}.returnNote h3{display:flex;align-items:center;gap:12px}.returnNote img{image-rendering:pixelated;flex:none}.returnNote .quote{border:0;background:transparent;font-size:18px;margin:12px 0;padding:0}.returnNote button{background:#98503f;color:#fff8ed}.returnNote p{font-size:16px}.giftArt{display:flex;align-items:center;gap:18px;margin:14px 0}.giftArt img{image-rendering:pixelated;object-fit:contain}.finds li{padding:8px 0 8px 14px;margin:14px 0;border-left:3px solid #ddc7a8}
+@media(max-width:480px){.page{padding:20px}.letterCard{padding:12px 12px 12px 64px}.mailIcon{left:6px;width:40px;height:31px}.cardHead{gap:8px}.returnNote{padding:12px}.heading{padding-right:76px}.card h2{font-size:19px}.page main{max-width:720px}}
+
+/* 二级阅读设置：一级界面只留入口，展开后才出现开关与说明。 */
+.settings{margin-top:14px;padding:12px 16px;border-left:3px solid #c2a071;background:#fff5df}
+.settings p{margin:6px 0;font-size:15px}
+.settings button{margin-top:8px}

@@ -206,3 +206,49 @@ test('return-message failure and retry preserve successful finds, without a fals
   assert.deepEqual(anotherTrip.finds, [])
   assert.equal(anotherTrip.message, null)
 })
+
+test('new mail count excludes pending, outgoing, read and replied entries', async () => {
+  const { isNewIncoming } = await import('../components/e7/journal-model.ts')
+  assert.equal(isNewIncoming({ direction: 'in', exchange: exchange() }), true)
+  for (const entry of [
+    { direction: 'out', exchange: exchange() },
+    { direction: 'in', exchange: exchange({ deliveredAt: null }) },
+    { direction: 'in', exchange: exchange({ readAt: 't' }) },
+    { direction: 'in', exchange: exchange({ repliedAt: 't' }) },
+  ]) assert.equal(isNewIncoming(entry), false)
+})
+
+test('correspondence separates direction and pins undelivered without revealing contents', async () => {
+  const { correspondence } = await import('../components/e7/journal-model.ts')
+  const rows = [
+    { direction: 'in', exchange: exchange({ id: 'arrived', createdAt: '2026-11-25T10:00:00Z' }) },
+    { direction: 'out', exchange: exchange({ id: 'out' }) },
+    { direction: 'in', exchange: exchange({ id: 'pending', deliveredAt: null, createdAt: '2026-11-15T10:00:00Z' }) },
+  ]
+  const inbox = correspondence(rows, 'in')
+  assert.deepEqual(inbox.map(row => row.exchange.id), ['pending', 'arrived'])
+  assert.equal(entryBody(inbox[0]), null)
+  assert.equal(rows[0].exchange.id, 'arrived')
+})
+
+test('gift thumbnails only use existing public assets, not guessed private endpoints', async () => {
+  const { giftThumbnail } = await import('../components/e7/journal-model.ts')
+  assert.equal(giftThumbnail('/assets/gift.png'), '/assets/gift.png')
+  for (const path of [null, '/api/assets/private', '//evil.test/a', '/assets/../secret', '/assets/%2e%2e/a', '/assets/a?token=x']) assert.equal(giftThumbnail(path), null)
+})
+
+test('glyph stagger is 64ms and a single glyph fades in 280ms, opacity only', async () => {
+  const { GLYPH_STAGGER_MS, GLYPH_FADE_MS, glyphDelayMs } = await import('../components/e7/journal-model.ts')
+  assert.equal(GLYPH_STAGGER_MS, 64)
+  assert.equal(GLYPH_FADE_MS, 280)
+  assert.deepEqual([0, 1, 2, 3].map(glyphDelayMs), [0, 64, 128, 192])
+  assert.equal(glyphDelayMs(-3), 0)
+})
+
+test('reading settings stay collapsed unless explicitly opened, and reveal defaults on', async () => {
+  const { settingsOpenFrom, revealOnFrom } = await import('../components/e7/journal-model.ts')
+  for (const stored of [null, undefined, '', 'closed', 'anything']) assert.equal(settingsOpenFrom(stored), false)
+  assert.equal(settingsOpenFrom('open'), true)
+  for (const stored of [null, undefined, '', 'on']) assert.equal(revealOnFrom(stored), true)
+  assert.equal(revealOnFrom('off'), false)
+})

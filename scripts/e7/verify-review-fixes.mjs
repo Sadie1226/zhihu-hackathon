@@ -34,7 +34,9 @@ try {
     assert.equal(await trip.getByText('来源发现0', { exact: true }).count(), 1)
     await trip.getByText('湖面很静，我站了一会儿。', { exact: true }).waitFor()
     assert.equal(await trip.getByRole('button', { name: '重新读取归来话' }).count(), 0)
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    // 分栏后「来往」按钮会带新到计数徽标，可访问名不再等于纯文本，改用前缀匹配。
+    await page.getByRole('button', { name: /^来往/ }).click()
+    await page.getByRole('button', { name: '寄出', exact: true }).click()
     const outgoing = page.locator('article').filter({ has: page.getByText(/^寄出 ·/) })
     for (const text of ['在路上', '已寄出', '对方已读', '对方已回应']) {
       assert.equal(await outgoing.getByText(text, { exact: true }).count(), 1)

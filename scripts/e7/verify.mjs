@@ -68,13 +68,23 @@ async function styleOf(locator, keys) {
   }, keys)
 }
 
-/** 相对亮度只用来比较「页面底 / 卡片 / 信纸」的层次顺序，不做颜色合规判定。 */
-function luminance(color) {
+/** WCAG 相对亮度；只用来判断正文与纸底的对比度是否够读。 */
+function relativeLuminance(color) {
   const match = /rgba?\(([^)]+)\)/.exec(color ?? '')
   if (!match) return null
-  const parts = match[1].split(',').map(part => Number.parseFloat(part))
+  const parts = match[1].split(',').slice(0, 3).map(part => {
+    const value = Number.parseFloat(part) / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
   if (parts.length < 3 || parts.some(Number.isNaN)) return null
   return 0.2126 * parts[0] + 0.7152 * parts[1] + 0.0722 * parts[2]
+}
+
+function contrastRatio(foreground, background) {
+  const a = relativeLuminance(foreground)
+  const b = relativeLuminance(background)
+  if (a === null || b === null) return null
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
 
 /** 计算样式的时长可能是 '0.048s' 或 '48ms'，统一换算成毫秒。 */
@@ -89,7 +99,8 @@ function msOf(value) {
 async function tabUntil(page, text, max = 18) {
   for (let index = 0; index < max; index++) {
     await page.keyboard.press('Tab')
-    const hit = await page.evaluate(target => (document.activeElement?.textContent || '').trim() === target, text)
+    // 分类按钮会带新到计数徽标，文字变成「来往3」，按前缀匹配即可。
+    const hit = await page.evaluate(target => (document.activeElement?.textContent || '').trim().startsWith(target), text)
     if (hit) return true
   }
   return false
@@ -166,25 +177,41 @@ async function fixtureRun(browser) {
       row.checks.timeoutLabel === 1 && row.checks.doneLabel === 1 && row.checks.lateWording === 0,
       `timeout=${row.checks.timeoutLabel} done=${row.checks.doneLabel} late=${row.checks.lateWording}`)
 
-    // 三层暖色：页面底最暗、卡片居中、展开信纸最浅；卡片边框收轻到 1px
+    // 像素信纸口径：卡片用 stationery.png 的 10px 贴图边框，页面底是纯色纸底
+    const cardStyle = await styleOf(page.locator('article').first(),
+      ['borderTopWidth', 'borderImageSource', 'borderImageSlice', 'imageRendering', 'backgroundColor'])
     row.checks.layers = {
       page: await page.evaluate(() => {
         const root = document.querySelector('#content')?.parentElement
         return root ? getComputedStyle(root).backgroundColor : null
       }),
-      card: (await styleOf(page.locator('article').first(), ['backgroundColor', 'borderTopWidth'])),
+      card: cardStyle,
     }
-    const cardLevel = luminance(row.checks.layers.card.backgroundColor)
-    const pageLevel = luminance(row.checks.layers.page)
-    check(`${vp.name} 页面底比卡片更深`,
-      pageLevel !== null && cardLevel !== null && cardLevel > pageLevel,
-      JSON.stringify(row.checks.layers))
-    check(`${vp.name} 卡片边框为 1px 细线`,
-      row.checks.layers.card.borderTopWidth === '1px', String(row.checks.layers.card.borderTopWidth))
+    check(`${vp.name} 卡片用像素信纸边框（stationery.png / 10px）`,
+      /stationery\.png/.test(cardStyle.borderImageSource)
+        && cardStyle.borderTopWidth === '10px'
+        && cardStyle.imageRendering === 'pixelated'
+        && String(cardStyle.borderImageSlice).startsWith('10'),
+      JSON.stringify(cardStyle))
+    check(`${vp.name} 页面底为纯色纸底`,
+      row.checks.layers.page === 'rgb(255, 248, 237)', String(row.checks.layers.page))
+
+    // 贴图必须真的能取到，不能只是 CSS 里写了路径
+    const stationery = await page.evaluate(async source => {
+      const url = /url\(["']?([^"')]+)["']?\)/.exec(source || '')?.[1]
+      if (!url) return { url: null }
+      const response = await fetch(url, { cache: 'no-store' })
+      const body = await response.arrayBuffer()
+      return { url, status: response.status, type: response.headers.get('content-type'), bytes: body.byteLength }
+    }, cardStyle.borderImageSource)
+    row.checks.stationery = stationery
+    check(`${vp.name} 信纸贴图实际加载`,
+      stationery.status === 200 && /image\/png/.test(stationery.type || '') && stationery.bytes > 100,
+      JSON.stringify(stationery))
     await page.screenshot({ path: `${OUT}/fixture-${vp.name}-trip-open.png`, fullPage: true })
 
     // 来往：未送达的标题与正文都不能进 DOM
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    await page.getByRole('button', { name: /^来往/ }).click()
     await waitText(page, '收到')
     await sleep(200)
     const html = await page.content()
@@ -207,8 +234,28 @@ async function fixtureRun(browser) {
     check(`${vp.name} 来往触达区 ≥44px`, row.checks.lettersSmall.length === 0, JSON.stringify(row.checks.lettersSmall))
     await page.screenshot({ path: `${OUT}/fixture-${vp.name}-letters.png`, fullPage: true })
 
+    // 无遮挡：卡片左侧的信封图标不能压住标题文字（按文字实际占位算，不看块级盒）
+    row.checks.iconOverlap = await page.evaluate(() => {
+      const card = document.querySelector('section[aria-label="来往"] article')
+      const icon = card?.querySelector('img')
+      const title = card?.querySelector('h2')
+      if (!icon || !title) return null
+      const range = document.createRange()
+      range.selectNodeContents(title)
+      const a = icon.getBoundingClientRect()
+      const b = range.getBoundingClientRect()
+      return {
+        overlap: !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top),
+        icon: { left: Math.round(a.left), right: Math.round(a.right) },
+        title: { left: Math.round(b.left), top: Math.round(b.top) },
+      }
+    })
+    check(`${vp.name} 信封图标不压标题`,
+      row.checks.iconOverlap !== null && row.checks.iconOverlap.overlap === false,
+      JSON.stringify(row.checks.iconOverlap))
+
     // 选中分类：底色、字重、底部细标记三者共同区分，不能只靠颜色
-    const tabLetters = page.getByRole('button', { name: '来往', exact: true })
+    const tabLetters = page.getByRole('button', { name: /^来往/ })
     row.checks.tabStyle = {
       selected: await styleOf(tabLetters, ['backgroundColor', 'fontWeight', 'boxShadow']),
       idle: await styleOf(page.getByRole('button', { name: '旅途', exact: true }), ['backgroundColor', 'fontWeight', 'boxShadow']),
@@ -257,9 +304,9 @@ async function fixtureRun(browser) {
       : null
     reveal.durationMs = msOf(reveal.animationDuration)
     row.checks.reveal = reveal
-    check(`${vp.name} 新到信件首段逐字渐显（16ms 错峰 / 单字 180–240ms）`,
+    check(`${vp.name} 新到信件首段逐字渐显（64ms 错峰 / 单字 260–300ms）`,
       reveal.paragraph === 1 && reveal.glyphs > 0 && String(reveal.animationName).includes('glyphIn')
-        && reveal.fourthGapMs === 48 && reveal.durationMs !== null && reveal.durationMs >= 180 && reveal.durationMs <= 240,
+        && reveal.fourthGapMs === 192 && reveal.durationMs !== null && reveal.durationMs >= 260 && reveal.durationMs <= 300,
       JSON.stringify(reveal))
     check(`${vp.name} 渐显时读屏拿到完整原文`,
       reveal.ariaLabel === '这边下了两天雨，你那边呢', String(reveal.ariaLabel))
@@ -277,13 +324,24 @@ async function fixtureRun(browser) {
       row.checks.revealClick.glyphs === 0 && row.checks.revealClick.text && row.checks.revealClick.back,
       JSON.stringify(row.checks.revealClick))
 
-    // 展开的信纸是第三层，比卡片更浅
-    row.checks.layers.paper = (await styleOf(page.locator('section[aria-label="这一封的内容"]'), ['backgroundColor'])).backgroundColor
-    const paperLevel = luminance(row.checks.layers.paper)
-    check(`${vp.name} 信纸比卡片更浅（三层可分辨）`,
-      paperLevel !== null && cardLevel !== null && paperLevel > cardLevel
-        && new Set([row.checks.layers.page, row.checks.layers.card.backgroundColor, row.checks.layers.paper]).size === 3,
-      JSON.stringify(row.checks.layers))
+    // 展开的信纸沿用同一套像素信纸边框，正文保持可读
+    const paperStyle = await styleOf(page.locator('section[aria-label="这一封的内容"]'),
+      ['borderTopWidth', 'borderImageSource', 'imageRendering'])
+    row.checks.layers.paper = paperStyle
+    check(`${vp.name} 展开信纸沿用像素信纸边框`,
+      /stationery\.png/.test(paperStyle.borderImageSource) && paperStyle.borderTopWidth === '10px',
+      JSON.stringify(paperStyle))
+    const readable = await page.evaluate(() => {
+      const node = document.querySelector('section[aria-label="这一封的内容"] p[class*="text"]')
+      if (!node) return null
+      const style = getComputedStyle(node)
+      return { color: style.color, lineHeight: style.lineHeight, fontSize: style.fontSize }
+    })
+    row.checks.readable = readable
+    const ratio = readable ? contrastRatio(readable.color, row.checks.layers.page) : null
+    check(`${vp.name} 正文文字可读（对比度 ≥ 4.5、行高 ≥ 24）`,
+      readable !== null && ratio !== null && ratio >= 4.5 && Number.parseFloat(readable.lineHeight) >= 24,
+      JSON.stringify({ ...readable, contrast: ratio && Number(ratio.toFixed(2)) }))
     await page.screenshot({ path: `${OUT}/fixture-${vp.name}-letter-open.png`, fullPage: true })
 
     await page.getByRole('button', { name: '收好，回到这一页' }).click()
@@ -316,14 +374,32 @@ async function fixtureRun(browser) {
       row.checks.longText.tail && longBox.scrollWidth <= longBox.clientWidth + 1
         && Number.parseFloat(longStyle.lineHeight) >= 24,
       JSON.stringify(row.checks.longText))
-    // 等逐字渐显跑完再截图：这张图要证明「长信能读」，不能停在半透明中间帧
-    await sleep(900)
+    // 等逐字渐显全部落地再截图：64ms 错峰下长信要跑两秒多，不能停在半透明中间帧
+    await page.waitForFunction(sel => [...document.querySelectorAll(sel)]
+      .every(node => Number(getComputedStyle(node).opacity) > 0.99), `${REVEAL_P} ${GLYPH}`, { timeout: 8000 })
     await page.screenshot({ path: `${OUT}/fixture-${vp.name}-long-letter.png`, fullPage: true })
 
-    // 渐显开关：关掉后这一封之后的信都直接显示全文
+    // 一级阅读界面：只留「阅读设置」入口，开关与减少动效说明都不能直接出现
+    row.checks.settingsEntry = {
+      entry: await page.getByRole('button', { name: '阅读设置' }).count(),
+      expanded: await page.getByRole('button', { name: '阅读设置' }).getAttribute('aria-expanded'),
+      directToggle: await page.getByRole('button', { name: /逐字渐显/ }).count(),
+      directReducedNote: await page.getByText('系统已开启「减少动态效果」，这一封直接显示全文。', { exact: true }).count(),
+      panel: await page.locator('#e7-reading-settings').count(),
+    }
+    check(`${vp.name} 一级界面只留阅读设置入口`,
+      row.checks.settingsEntry.entry === 1 && row.checks.settingsEntry.expanded === 'false'
+        && row.checks.settingsEntry.directToggle === 0 && row.checks.settingsEntry.directReducedNote === 0
+        && row.checks.settingsEntry.panel === 0,
+      JSON.stringify(row.checks.settingsEntry))
+
+    // 展开二级设置后才出现开关；关掉后写入存储
+    await page.getByRole('button', { name: '阅读设置' }).click()
+    await sleep(120)
     const toggle = page.getByRole('button', { name: '关掉逐字渐显' })
     row.checks.toggleOff = {
       present: (await toggle.count()) > 0,
+      panel: await page.locator('#e7-reading-settings').count(),
       stored: null,
     }
     if (row.checks.toggleOff.present) {
@@ -333,16 +409,39 @@ async function fixtureRun(browser) {
       row.checks.toggleOff.stored = await page.evaluate(() => localStorage.getItem('e7-journal:reveal'))
     }
     check(`${vp.name} 渐显可关闭并记住选择`,
-      row.checks.toggleOff.present && row.checks.toggleOff.labelAfter === 1 && row.checks.toggleOff.stored === 'off',
+      row.checks.toggleOff.present && row.checks.toggleOff.panel === 1
+        && row.checks.toggleOff.labelAfter === 1 && row.checks.toggleOff.stored === 'off',
       JSON.stringify(row.checks.toggleOff))
 
-    // 关掉之后重新加载：新到的信也直接给全文
+    // 收起二级设置后刷新：设置仍收起，渐显仍是关的
+    await page.getByRole('button', { name: '阅读设置' }).click()
+    await sleep(120)
+    row.checks.settingsCollapsed = {
+      expanded: await page.getByRole('button', { name: '阅读设置' }).getAttribute('aria-expanded'),
+      panel: await page.locator('#e7-reading-settings').count(),
+      stored: await page.evaluate(() => localStorage.getItem('e7-journal:settings')),
+    }
+    check(`${vp.name} 收起二级设置并记住收起`,
+      row.checks.settingsCollapsed.expanded === 'false' && row.checks.settingsCollapsed.panel === 0
+        && row.checks.settingsCollapsed.stored === 'closed',
+      JSON.stringify(row.checks.settingsCollapsed))
+
+    // 关掉之后重新加载：设置仍是收起的，新到的信也直接给全文
     await page.reload({ waitUntil: 'domcontentloaded' })
     await waitText(page, '翻开这一趟')
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    await page.getByRole('button', { name: /^来往/ }).click()
     await waitText(page, '朋友的近况')
     await page.locator('article').filter({ hasText: '朋友的近况' }).getByRole('button', { name: '拆开看看' }).click()
     await waitText(page, '这边下了两天雨，你那边呢')
+    row.checks.settingsAfterReload = {
+      expanded: await page.getByRole('button', { name: '阅读设置' }).getAttribute('aria-expanded'),
+      panel: await page.locator('#e7-reading-settings').count(),
+      directToggle: await page.getByRole('button', { name: /逐字渐显/ }).count(),
+    }
+    check(`${vp.name} 刷新后设置仍收起且不直接露出开关`,
+      row.checks.settingsAfterReload.expanded === 'false' && row.checks.settingsAfterReload.panel === 0
+        && row.checks.settingsAfterReload.directToggle === 0,
+      JSON.stringify(row.checks.settingsAfterReload))
     const offState = await revealState(page)
     row.checks.revealOff = { glyphs: offState.glyphs, paragraph: offState.paragraph }
     check(`${vp.name} 关掉渐显后新信直接全文`,
@@ -353,7 +452,7 @@ async function fixtureRun(browser) {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.reload({ waitUntil: 'domcontentloaded' })
     await waitText(page, '翻开这一趟')
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    await page.getByRole('button', { name: /^来往/ }).click()
     await waitText(page, '朋友的近况')
     await page.locator('article').filter({ hasText: '朋友的近况' }).getByRole('button', { name: '拆开看看' }).click()
     await waitText(page, '这边下了两天雨，你那边呢')
@@ -399,7 +498,7 @@ async function fixtureRun(browser) {
 
     await selectScenario(page, 'partial')
     await waitText(page, '翻开这一趟')
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    await page.getByRole('button', { name: /^来往/ }).click()
     await waitText(page, '发件暂时读不到')
     row.checks.partial = (await page.getByText(/发件暂时读不到/).count()) > 0
     check(`${vp.name} 单侧失败不拖垮整页`, row.checks.partial === true)
@@ -413,7 +512,7 @@ async function fixtureRun(browser) {
 
     await selectScenario(page, 'sealed')
     await waitText(page, '翻开这一趟')
-    await page.getByRole('button', { name: '来往', exact: true }).click()
+    await page.getByRole('button', { name: /^来往/ }).click()
     await sleep(400)
     const sealedHtml = await page.content()
     row.checks.sealedOnly = {
@@ -513,7 +612,7 @@ async function realRun(browser) {
     out.checks.trip.place && out.checks.trip.count && out.checks.trip.message, JSON.stringify(out.checks.trip))
   await page.screenshot({ path: `${OUT}/real-375x667-trip-open.png`, fullPage: true })
 
-  await page.getByRole('button', { name: '来往', exact: true }).click()
+  await page.getByRole('button', { name: /^来往/ }).click()
   await waitText(page, '收到')
   await sleep(300)
   const html = await page.content()

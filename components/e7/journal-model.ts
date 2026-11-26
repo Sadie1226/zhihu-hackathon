@@ -164,6 +164,24 @@ export function tripLabel(trip: Trip): string {
 /** 逐字渐显只处理「短首段」：第一行且不超过这个字数，超出就整段直接显示。 */
 export const REVEAL_LIMIT = 60
 
+/** 节奏：每个字错峰 64ms 起，单字只用 280ms 把透明度推到 1；不加模糊。 */
+export const GLYPH_STAGGER_MS = 64
+export const GLYPH_FADE_MS = 280
+
+export function glyphDelayMs(index: number): number {
+  return Math.max(0, Math.trunc(index)) * GLYPH_STAGGER_MS
+}
+
+/** 阅读设置默认收起；只有明确存过 open 才展开，关掉后刷新仍是收起。 */
+export function settingsOpenFrom(stored: string | null | undefined): boolean {
+  return stored === 'open'
+}
+
+/** 渐显默认开启；只有明确存过 off 才关闭。 */
+export function revealOnFrom(stored: string | null | undefined): boolean {
+  return stored !== 'off'
+}
+
 export function revealHead(text: string): string {
   const [firstLine] = text.split('\n')
   return firstLine.length <= REVEAL_LIMIT ? firstLine : ''
@@ -209,4 +227,22 @@ export function settleTripDetail(
     findsError: finds.status === 'rejected' ? '这一趟的发现暂时读不到。' : '',
     messageError: message.status === 'rejected' ? '归来话暂时读不到。' : '',
   }
+}
+
+
+/** 只数已经送达、未读且未回应的收件；在路上和自己的发件不冒新消息。 */
+export function isNewIncoming(entry: JournalEntry): boolean {
+  return entry.direction === 'in' && entry.exchange.deliveredAt !== null &&
+    entry.exchange.readAt === null && entry.exchange.repliedAt === null
+}
+
+/** 每个收寄分栏内将未投递项置顶，不改变投递事实或泄露封存内容。 */
+export function correspondence(entries: readonly JournalEntry[], direction: JournalDirection): JournalEntry[] {
+  return entries.filter(entry => entry.direction === direction).sort((a, b) =>
+    Number(a.exchange.deliveredAt !== null) - Number(b.exchange.deliveredAt !== null) || newerFirst(a, b))
+}
+
+/** 仅使用现有公共资产路径；私有图片等待授权 reader，不拼猜下载 URL。 */
+export function giftThumbnail(path: string | null | undefined): string | null {
+  return path && path.startsWith('/assets/') && !/[?%#\\]/.test(path) && !path.split('/').includes('..') ? path : null
 }

@@ -6,7 +6,12 @@ import type { Exchange, PublicDogSummary, Reply, Trip } from '@/contracts/types'
 import { journalClient, type JournalClient } from './journal-client'
 import {
   entryBody,
+  correspondence,
+  isNewIncoming,
+  giftThumbnail,
   formatTripMoment,
+  GLYPH_FADE_MS,
+  glyphDelayMs,
   isSealed,
   journalLetterState,
   provenanceNote,
@@ -14,7 +19,9 @@ import {
   mergeExchanges,
   receivedGifts,
   revealHead,
+  revealOnFrom,
   safeSource,
+  settingsOpenFrom,
   shouldMarkRead,
   shouldRevealOnOpen,
   sourceNote,
@@ -62,6 +69,7 @@ function messageOf(reason: unknown): string {
 
 export function JournalView({ dogId, client = journalClient, fixture = false, revision = 0, reducedMotion = false, renderReply }: Props) {
   const [tab, setTab] = useState<Tab>('trips')
+  const [mailDirection, setMailDirection] = useState<'in' | 'out'>('in')
 
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripPhase, setTripPhase] = useState<Phase>('loading')
@@ -85,14 +93,17 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
   const [revealId, setRevealId] = useState<string | null>(null)
   const [revealOn, setRevealOn] = useState(true)
   const [revealedNow, setRevealedNow] = useState(false)
+  // 二级设置默认收起：一级阅读界面只留一个入口，不直接摆开关和说明。
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const readRequest = useRef<AbortController | null>(null)
 
   // 渐显是试样，用户可以关掉；关掉后这一封和以后的信都直接显示全文。
   useEffect(() => {
     try {
-      if (localStorage.getItem('e7-journal:reveal') === 'off') setRevealOn(false)
+      setRevealOn(revealOnFrom(localStorage.getItem('e7-journal:reveal')))
+      setSettingsOpen(settingsOpenFrom(localStorage.getItem('e7-journal:settings')))
     } catch {
-      /* 存储不可用时保持默认开启，不影响阅读 */
+      /* 存储不可用时保持默认：渐显开启、设置收起，不影响阅读 */
     }
   }, [])
 
@@ -171,6 +182,8 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
   }, [dogId, client])
 
   const entries = mergeExchanges(mail.inbox, mail.outbox, dogId)
+  const unread = entries.filter(isNewIncoming).length
+  const visibleLetters = correspondence(entries, mailDirection)
   const gifts = receivedGifts(mail.inbox, dogId)
   const openEntry = entries.find(item => item.exchange.id === openLetterId) ?? null
   const openBody = openEntry ? entryBody(openEntry) : null
@@ -217,6 +230,16 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
     }
   }
 
+  function toggleSettings() {
+    const next = !settingsOpen
+    setSettingsOpen(next)
+    try {
+      localStorage.setItem('e7-journal:settings', next ? 'open' : 'closed')
+    } catch {
+      /* 存储不可用时只在本次生效 */
+    }
+  }
+
   async function openLetter(entry: JournalEntry) {
     if (isSealed(entry)) return
     setOpenLetterId(entry.exchange.id); setReadError(''); setReplying(false)
@@ -249,11 +272,12 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
     <main id="content">
       {fixture && <p className={s.notice}>示例预览 · 这一页的出行、来信与礼物都是夹具，不会写入真实数据。</p>}
       <div className={s.heading}>
-        <h1>手账</h1>
+        <img className={s.headingIcon} src="/assets/a5-v25/home/journal.png" alt="" width="42" height="60" /><h1>手账</h1>
+        <img className={s.cornerActor} src="/assets/a5-v25/head-success.png" alt="" width="72" height="59" />
         <p className={s.intro}>走过的路、收到的信，都留在这里。</p>
       </div>
       <nav className={s.tabs} aria-label="手账分类">
-        {TABS.map(([key, label]) => <button key={key} aria-pressed={tab === key} onClick={() => selectTab(key)}>{label}</button>)}
+        {TABS.map(([key, label]) => <button key={key} aria-pressed={tab === key} onClick={() => selectTab(key)}>{label}{key === 'letters' && unread > 0 && <span className={s.badge} aria-label={`${unread} 条新到来信`}>{unread}</span>}</button>)}
       </nav>
 
       {tab === 'trips' && <section className={s.section} aria-label="旅途">
@@ -278,29 +302,39 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
       </section>}
 
       {tab === 'letters' && <section className={s.section} aria-label="来往">
+        <nav className={s.mailTabs} aria-label="收寄分类">
+          <button aria-pressed={mailDirection === 'in'} onClick={() => { setMailDirection('in'); closeLetter() }}>收到{unread > 0 && <span className={s.badge} aria-label={`${unread} 条新到来信`}>{unread}</span>}</button>
+          <button aria-pressed={mailDirection === 'out'} onClick={() => { setMailDirection('out'); closeLetter() }}>寄出</button>
+        </nav>
         {mail.phase === 'loading' && <p role="status" className={s.notice}>正在整理收到的和寄出的…</p>}
         {mail.phase === 'error' && <Failure text={mail.error} onRetry={() => setMailTick(x => x + 1)} />}
         {mail.phase === 'ready' && <>
           {mail.inboxFailed && <p className={s.notice} role="status">收件暂时读不到，下面只有你寄出的部分。<button onClick={() => setMailTick(x => x + 1)}>重新读取</button></p>}
           {mail.outboxFailed && <p className={s.notice} role="status">发件暂时读不到，下面只有收到的部分。<button onClick={() => setMailTick(x => x + 1)}>重新读取</button></p>}
           {peersUnavailable && <p className={s.muted}>伙伴身份暂时读不到，名字与示例标记无法显示。内容本身不受影响。</p>}
-          {!openEntry && (entries.length === 0
-            ? <Empty text="这里还空着。收到的信和寄出的话，都会记在这一页。" />
-            : <div className={s.list}>{entries.map(entry => {
+          {!openEntry && (visibleLetters.length === 0
+            ? <Empty text="这一栏还安静着。有了新的来往，再来翻翻。" />
+            : <div className={s.list}>{visibleLetters.map((entry, index) => {
               const sealed = isSealed(entry)
               const inbound = entry.direction === 'in'
               const body = entryBody(entry)
-              return <article className={s.card} key={entry.exchange.id}>
+              const fresh = isNewIncoming(entry)
+              const pending = entry.exchange.deliveredAt === null
+              const groupStart = index === 0 || pending !== (visibleLetters[index - 1].exchange.deliveredAt === null)
+              return <div key={entry.exchange.id}>
+                {groupStart && <h2 className={s.groupHeading}>{pending ? '在路上' : inbound ? '收到的信' : '寄出的信'}</h2>}
+                <article className={`${s.card} ${s.letterCard} ${fresh ? s.freshCard : ''}`}>
+                <img className={s.mailIcon} src="/assets/a5-v25/home/mail.png" alt="" width="48" height="38" />
                 <p className={s.muted}>{inbound ? '收到' : '寄出'} · {peerLabel(entry.exchange)}</p>
                 <div className={s.cardHead}>
                   <h2>{letterTitle(entry.exchange, dogId)}</h2>
-                  <span className={s.status}>{journalLetterState(entry)}</span>
+                  <span className={`${s.status} ${fresh ? s.freshStatus : ''}`}>{fresh && <span aria-hidden="true">● </span>}{journalLetterState(entry)}</span>
                 </div>
                 {sealed && <p className={s.muted}>伙伴下次出行开始时，才会带来。不用守着等。</p>}
                 {!inbound && body !== null && <p className={s.text}>{body || '这份心意没有附言。'}</p>}
                 {!inbound && <p className={s.muted}>{entry.exchange.deliveredAt ? '已经送达。不必等对方马上回应。' : '已交给伙伴，尚未送达。'}</p>}
                 {inbound && !sealed && <button onClick={() => void openLetter(entry)}>拆开看看</button>}
-              </article>
+              </article></div>
             })}</div>)}
 
           {openEntry && <section className={s.paper} aria-label="这一封的内容">
@@ -318,10 +352,14 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
             <div className={s.actions}>
               {!openEntry.exchange.repliedAt && <button onClick={() => setReplying(!replying)} aria-expanded={replying}>留个回应</button>}
               <button onClick={closeLetter}>收好，回到这一页</button>
-              {canToggleReveal && (reducedMotion
-                ? <span className={s.muted}>系统已开启「减少动态效果」，这一封直接显示全文。</span>
-                : <button onClick={toggleReveal}>{revealOn ? '关掉逐字渐显' : '打开逐字渐显'}</button>)}
+              {canToggleReveal && <button onClick={toggleSettings} aria-expanded={settingsOpen}>阅读设置</button>}
             </div>
+            {canToggleReveal && settingsOpen && <section id="e7-reading-settings" className={s.settings} aria-label="阅读设置">
+              <p className={s.muted}>新到的信第一次打开时，文字会一个字一个字出现。点正文可以立即显示全文。</p>
+              {reducedMotion
+                ? <p className={s.muted}>系统已开启「减少动态效果」，这一封直接显示全文。</p>
+                : <button onClick={toggleReveal}>{revealOn ? '关掉逐字渐显' : '打开逐字渐显'}</button>}
+            </section>}
             {replying && (renderReply
               ? renderReply({ exchangeId: openEntry.exchange.id }, () => { setReplying(false); closeLetter(); setMailTick(x => x + 1) }, () => setReplying(false))
               : <p className={s.notice}>回应模块尚未接入，这封信仍可继续阅读。</p>)}
@@ -341,6 +379,10 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
               <span className={s.status}>已收到</span>
             </div>
             <p className={s.muted}>{peerLabel(item)}</p>
+            <div className={s.giftArt}>
+              <img src={item.payload.kind === 'gift' ? giftThumbnail(item.payload.imagePath) ?? '/assets/a5-v25/home/pouch.png' : '/assets/a5-v25/home/pouch.png'} alt="" width="68" height="80" />
+              {item.payload.kind === 'gift' && !giftThumbnail(item.payload.imagePath) && <span className={s.muted}>礼物示意</span>}
+            </div>
             {item.payload.kind === 'gift' && item.payload.note && <p className={s.text}>{item.payload.note}</p>}
             <p className={s.muted}>{item.payload.kind === 'gift' ? provenanceNote(item.payload.sourceMode) : '来源信息未提供'}</p>
           </article>)}</div>)}
@@ -361,7 +403,7 @@ function StaggerText({ text, onReveal }: { text: string; onReveal: () => void })
       {head
         ? <>
           {[...head].map((char, index) => (
-            <span key={index} className={s.glyph} style={{ animationDelay: `${index * 16}ms` }}>{char}</span>
+            <span key={index} className={s.glyph} style={{ animationDelay: `${glyphDelayMs(index)}ms`, animationDuration: `${GLYPH_FADE_MS}ms` }}>{char}</span>
           ))}
           {text.slice(head.length)}
         </>
@@ -377,6 +419,15 @@ function TripDetail({ detail, onRetry }: { detail: TripDetailState | null; onRet
   const place = tripPlace(detail.finds)
   const message = tripMessageText(detail.message)
   return <div className={s.detail}>
+    <section className={s.returnNote} aria-label="归来话">
+      <h3><img src="/assets/a5-v25/head-success.png" alt="" width="48" height="40" />看山回来说</h3>
+    {detail.messageError
+      ? <p className={s.muted}>归来话暂时读不到。<button disabled={detail.retrying} onClick={onRetry}>重新读取归来话</button></p>
+      : message
+        ? <blockquote className={s.quote}>{message}</blockquote>
+        : <p className={s.muted}>这一趟没有留下归来话。</p>}
+    </section>
+    <h3 className={s.groupHeading}>这趟的发现</h3>
     {place && <p>去了 <strong>{place}</strong></p>}
     {detail.retrying && <p role="status" className={s.muted}>正在重新读取这一趟…</p>}
     {detail.findsError && <p className={s.muted}>这一趟的发现暂时读不到。<button disabled={detail.retrying} onClick={onRetry}>重新读取</button></p>}
@@ -391,11 +442,7 @@ function TripDetail({ detail, onRetry }: { detail: TripDetailState | null; onRet
             {find.kind === 'zhihu' && safeSource(find.sourceUrl) && <a href={safeSource(find.sourceUrl)} target="_blank" rel="noopener noreferrer">阅读原文</a>}
           </li>)}</ul>
         </>}
-    {detail.messageError
-      ? <p className={s.muted}>归来话暂时读不到。<button disabled={detail.retrying} onClick={onRetry}>重新读取归来话</button></p>
-      : message
-        ? <blockquote className={s.quote}>{message}</blockquote>
-        : <p className={s.muted}>这一趟没有留下归来话。</p>}
+
   </div>
 }
 
