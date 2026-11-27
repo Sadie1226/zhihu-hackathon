@@ -184,3 +184,20 @@ test('B6 duplicate basedOnFindId reuses the waiting invitation', t => {
   assert.deepEqual(second, first)
   assert.equal(db.prepare('SELECT COUNT(*) n FROM invitation').get().n, 1)
 })
+
+test('B6 same-Find retry still reads back the waiting invitation when capacity is full', t => {
+  const { db, session } = setup(t)
+  const store = createInvitationStore(db, { now: () => new Date(at) })
+  const first = store.create('dog-owner', session, { basedOnFindId: 'find-1' })
+  assert.ok('invitation' in first)
+  for (const id of ['find-2', 'find-3']) {
+    db.prepare(`INSERT INTO find(id,trip_id,kind,title,excerpt,created_at) VALUES(?,?,'scene',?,'x',?)`)
+      .run(id, 'trip-done', id, at)
+    assert.ok('invitation' in store.create('dog-owner', session, { basedOnFindId: id }))
+  }
+  assert.ok(db.prepare("SELECT COUNT(*) n FROM v_invitation_state WHERE state = 'waiting'").get().n >= MAX_WAITING_INVITATIONS)
+  const retry = store.create('dog-owner', session, { basedOnFindId: 'find-1' })
+  assert.deepEqual(retry, first)
+  assert.ok(!('wentAlone' in retry))
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM invitation').get().n, 3)
+})

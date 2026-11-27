@@ -8,6 +8,7 @@ import type { Find, Message } from '../../contracts/types.ts'
 import { resolveAuthContext } from '../../lib/auth/session.ts'
 import { TripError } from '../../lib/trips/service.ts'
 import { createFindStore } from '../../lib/trips/finds.ts'
+import { validateMessageText } from '../../lib/messages/message-policy.ts'
 
 export const noStoreHeaders = { 'Cache-Control': 'no-store', Vary: 'Cookie' } as const
 
@@ -56,19 +57,6 @@ function transaction<T>(db: DatabaseSync, write: boolean, action: () => T): T {
   }
 }
 
-/** 话痨 20–35 字 / 寡言 8–15 字；去空白后标点算一字。没有标签时不限制在这两个区间。 */
-function checkLength(text: string, tags: string | null): void {
-  const length = [...text].length
-  if (length < 1 || length > 120) conflict('归来的一句话要在 1 到 120 字之间')
-  if (typeof tags !== 'string') return
-  let parsed: unknown
-  try { parsed = JSON.parse(tags) } catch { return }
-  if (!Array.isArray(parsed)) return
-  const labels = parsed.filter((tag): tag is string => typeof tag === 'string')
-  if (labels.includes('话痨') && (length < 20 || length > 35)) conflict('话痨的归来话要 20 到 35 字')
-  if (labels.includes('寡言') && (length < 8 || length > 15)) conflict('寡言的归来话要 8 到 15 字')
-}
-
 export function createMessageStore(
   db: DatabaseSync,
   options: { now?: () => Date; newId?: () => string } = {},
@@ -112,10 +100,7 @@ export function createMessageStore(
         }
         if (!input || typeof input !== 'object' || Array.isArray(input) ||
             Object.keys(input).some(key => !['text', 'mentionsFindId'].includes(key))) conflict()
-        if (typeof input.text !== 'string') conflict()
-        const text = input.text.trim()
-        if (/[\r\n\t]/.test(text) || [...text].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) conflict()
-        checkLength(text, trip.tags)
+        const text = validateMessageText(input.text, trip.tags)
 
         const mention = input.mentionsFindId ?? null
         if (mention !== null) {

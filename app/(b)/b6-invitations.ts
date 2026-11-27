@@ -94,6 +94,16 @@ export function createInvitationStore(db: DatabaseSync, options: { now?: () => D
           if (!source) conflict('这条发现不在这只狗的经历里')
         }
 
+        // 先回读同一 Find 的 waiting 邀请，再判断容量。
+        // 容量满时同源重试仍须幂等，不能变成 wentAlone；只有新意图才受三条上限约束。
+        if (basedOnFindId !== null) {
+          const duplicate = db.prepare(`SELECT i.* FROM invitation i
+            JOIN v_invitation_state v ON v.invitation_id = i.id
+            WHERE i.dog_id = ? AND i.based_on_find_id = ? AND v.state = 'waiting'
+            ORDER BY i.created_at DESC, i.id DESC LIMIT 1`).get(dogId, basedOnFindId) as InvitationRow | undefined
+          if (duplicate) return { invitation: dto(duplicate) }
+        }
+
         const waiting = Number(db.prepare(
           "SELECT COUNT(*) AS n FROM v_invitation_state WHERE dog_id = ? AND state = 'waiting'",
         ).get(dogId)!.n)
@@ -105,14 +115,6 @@ export function createInvitationStore(db: DatabaseSync, options: { now?: () => D
             ORDER BY t.started_at DESC, t.seq DESC LIMIT 1`).get(dogId, sessionId) as { id: string } | undefined
           if (!last) return conflict('还没有真实出行，不能先说它自己去了')
           return { wentAlone: true, tripId: last.id }
-        }
-
-        if (basedOnFindId !== null) {
-          const duplicate = db.prepare(`SELECT i.* FROM invitation i
-            JOIN v_invitation_state v ON v.invitation_id = i.id
-            WHERE i.dog_id = ? AND i.based_on_find_id = ? AND v.state = 'waiting'
-            ORDER BY i.created_at DESC, i.id DESC LIMIT 1`).get(dogId, basedOnFindId) as InvitationRow | undefined
-          if (duplicate) return { invitation: dto(duplicate) }
         }
 
         const text = invitationText(source)
