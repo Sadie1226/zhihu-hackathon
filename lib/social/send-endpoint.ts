@@ -183,7 +183,13 @@ export async function handleExchangeSend(
      * 注意 `sendGift` 自己也开事务，`createSqliteStore` 用 SAVEPOINT 支持嵌套。
      */
     const result = store.transaction(() => {
-      assertOwnedDog(db, fromDog, auth)
+      // Reading the request body yields; validate the same live session before writing.
+      const currentAuth = resolveAuthContext(request, db)
+      if (!currentAuth || currentAuth.tokenHash !== auth.tokenHash ||
+        currentAuth.ownerId !== auth.ownerId || currentAuth.namespace !== auth.namespace) {
+        throw new SendError('NOT_FOUND', '这条记录不在这里')
+      }
+      assertOwnedDog(db, fromDog, currentAuth)
       return kind === 'gift'
         ? sendGift(input as unknown as GiftInput)
         : sendCoOwnerMessage(input as unknown as CoOwnerMessageInput)

@@ -19,6 +19,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createTripService } from '../lib/trips/service.ts'
 import { isWaitingForReply, readOutbox } from '../lib/mailbox/service.ts'
+import { resolveAuthContext } from '../lib/auth/session.ts'
 import { handleExchangeSend } from '../lib/social/send-endpoint.ts'
 import { mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
 
@@ -210,3 +211,25 @@ test('拉黑的一对不再互寄', async (t) => {
   await json(response, 409)
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM exchange').get().n, 0)
 })
+
+for (const state of ['revoked', 'expired']) {
+  test(`session ${state} while reading body cannot send`, async (t) => {
+    const { db } = mailboxDatabase(t)
+    const sender = ownedDog(db, 'dog_late_sender')
+    ownedDog(db, 'dog_late_receiver')
+    const request = new Request('http://localhost/api/exchanges', {
+      method: 'POST', body: '{}', headers: { cookie: sender.cookie,
+        'content-type': 'application/json', 'idempotency-key': `late-${state}` },
+    })
+    const auth = resolveAuthContext(request, db)
+    assert.ok(auth)
+    request.json = async () => {
+      if (state === 'revoked') db.prepare('UPDATE owner_session SET revoked_at = created_at WHERE token_hash = ?').run(auth.tokenHash)
+      else db.prepare('UPDATE owner_session SET created_at = 0, expires_at = 1 WHERE token_hash = ?').run(auth.tokenHash)
+      assert.equal(resolveAuthContext(request, db), null)
+      return { fromDog: 'dog_late_sender', toDog: 'dog_late_receiver', kind: 'co_owner_message', payload: MESSAGE }
+    }
+    await json(await handleExchangeSend(request, () => db), 404)
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM exchange').get().n, 0)
+  })
+}
