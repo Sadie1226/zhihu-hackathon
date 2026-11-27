@@ -12,7 +12,7 @@ import { readBlockedTopics, readOwnerFindTrip } from './find-scope.ts'
 import type { OwnerFindScope, SeedFindScope } from './find-scope.ts'
 import { readOccurrenceFact } from './occurrence-facts.ts'
 import { isFreshSearchTime } from './search-cache.ts'
-import { requireRunningSeedEventTrip } from './seed-event-scope.ts'
+import { requireSeedDiscoveryTrip } from './seed-event-scope.ts'
 import {
   blockedBy, blockedByNormalizedText, eligibleSearchInput, normalizeBlockedText, proofTripId, verifiedSearchInput,
 } from './search-proof.ts'
@@ -181,14 +181,14 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     if (!(Date.parse(at) >= Date.parse(startedAt))) return conflict()
     return { dogId, startedAt, at, blockedTopics: readBlockedTopics(blockedTopics) }
   }
-  function runningOwnerTrip(tripId: string, trip: ReturnType<typeof readOwnerFindTrip>, intentId?: string) {
-    if (trip.status !== 'running' || typeof trip.startedAt !== 'string') return conflict()
+  function ownerBatch(tripId: string, trip: ReturnType<typeof readOwnerFindTrip>, intentId?: string, allowDone = false) {
+    if ((trip.status !== 'running' && !(allowDone && trip.status === 'done')) || typeof trip.startedAt !== 'string') return conflict()
     assertDiscoveryWritable(tripId)
     return { tripId, ownerId: trip.ownerId, intentId: ownerDiscoveryIntent(tripId, intentId),
       ...batchContext(trip.dogId, trip.startedAt, trip.blockedTopics) }
   }
-  function runningSeedTrip(scope: SeedFindScope) {
-    const trip = requireRunningSeedEventTrip(db, scope)
+  function seedBatch(scope: SeedFindScope, allowDone = false) {
+    const trip = requireSeedDiscoveryTrip(db, scope, allowDone)
     assertDiscoveryWritable(scope.tripId)
     return { ...scope, ownerId: null, ...batchContext(scope.dogId, trip.startedAt, trip.blockedTopics) }
   }
@@ -265,7 +265,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
   function write(inputOrProof: FindInput | SearchProof, scope: OwnerFindScope, verified: boolean, intentId?: string): Find {
     return transaction(db, true, () => {
       const tripId = verified ? proofTripId(inputOrProof as SearchProof) : (inputOrProof as FindInput)?.tripId
-      const trip = runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
+      const trip = ownerBatch(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
       const receipt = replayBatch(trip)
       const input = verified ? verifiedSearchInput(inputOrProof as SearchProof, trip, trip.blockedTopics, trip.at)
         : inputOrProof as FindInput
@@ -336,10 +336,10 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
   }
   return {
     /** Read the current projection under an existing transaction or a short read transaction. */
-    readConfirmation(scope: { tripId: string; owner: OwnerFindScope; intentId?: string } | SeedFindScope) {
+    readConfirmation(scope: { tripId: string; owner: OwnerFindScope; intentId?: string } | SeedFindScope, allowDone = false) {
       const read = () => replayBatch('owner' in scope
-        ? runningOwnerTrip(scope.tripId, readOwnerFindTrip(db, scope.tripId, scope.owner), scope.intentId)
-        : runningSeedTrip(scope))
+        ? ownerBatch(scope.tripId, readOwnerFindTrip(db, scope.tripId, scope.owner), scope.intentId, allowDone)
+        : seedBatch(scope, allowDone))
       return db.isTransaction ? read() : transaction(db, false, read)
     },
     list(tripId: string, ownerId: string): Find[] {
@@ -353,15 +353,15 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     },
     /** The selector may synchronously resolve existing facts from this connection. */
     writeBatch(tripId: string, scope: OwnerFindScope, select: SelectCandidates, intentId?: string) {
-      return transaction(db, true, () => persistBatch(runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId), select))
+      return transaction(db, true, () => persistBatch(ownerBatch(tripId, readOwnerFindTrip(db, tripId, scope), intentId), select))
     },
     writeSeedBatch(scope: SeedFindScope, select: SelectCandidates) {
-      return transaction(db, true, () => persistBatch(runningSeedTrip(scope), select))
+      return transaction(db, true, () => persistBatch(seedBatch(scope), select))
     },
     prepareOwnerSearch(tripId: string, scope: OwnerFindScope, intentId?: string) {
       return transaction(db, false, () => {
         const profile = readOwnerFindTrip(db, tripId, scope)
-        const trip = runningOwnerTrip(tripId, profile, intentId)
+        const trip = ownerBatch(tripId, profile, intentId)
         return { ...trip, interestCategories: profile.interestCategories, wishText: profile.wishText,
           wishCategory: profile.wishCategory, replay: replayBatch(trip) }
       })
@@ -374,7 +374,7 @@ export function createFindStore(db: DatabaseSync, options: { now?: () => Date } 
     commitSearchSelection(tripId: string, proof: SearchProof | null, scope: OwnerFindScope,
       intentId?: string): ConfirmedBatch | { finds: Find[] } {
       return transaction(db, true, () => {
-        const trip = runningOwnerTrip(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
+        const trip = ownerBatch(tripId, readOwnerFindTrip(db, tripId, scope), intentId)
         const prior = replayBatch(trip)
         if (prior) return prior
         if (!proof) return { finds: [] }
