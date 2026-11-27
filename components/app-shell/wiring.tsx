@@ -19,9 +19,9 @@ const bindings: ShellBindings = {
   Dog: SharedDog,
   resolveTripVisual: tripSceneFor,
   tripVisuals: { running: tripSceneFor([]), done: tripSceneFor([]) },
-  // Formal Dog/scenes and E routes await their owners.
+  // Approved E7 journal is available alongside the mailbox.
   // Missing bindings remain explicit; do not synthesize a successful empty response.
-  routes: { mailbox: true, journal: false },
+  routes: { mailbox: true, journal: true },
 }
 export function AppProviders({ children }: { children: ReactNode }) {
   return <AppShellProvider bindings={bindings}><FeedbackSurface>{children}</FeedbackSurface></AppShellProvider>

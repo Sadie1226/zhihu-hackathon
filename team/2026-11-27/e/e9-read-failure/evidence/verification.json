@@ -1,0 +1,41 @@
+{
+  "fixtureOnly": true,
+  "results": [
+    {
+      "width": 375,
+      "height": 667,
+      "failedSaveKeepsCount": true,
+      "failedSaveKeepsHighlight": true,
+      "retryDecrementsOnce": true,
+      "otherUnreadPreserved": true,
+      "rereadDoesNotDecrement": true,
+      "sealedContentHidden": true,
+      "pageErrors": [],
+      "apiWrites": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "failedSaveKeepsCount": true,
+      "failedSaveKeepsHighlight": true,
+      "retryDecrementsOnce": true,
+      "otherUnreadPreserved": true,
+      "rereadDoesNotDecrement": true,
+      "sealedContentHidden": true,
+      "pageErrors": [],
+      "apiWrites": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "failedSaveKeepsCount": true,
+      "failedSaveKeepsHighlight": true,
+      "retryDecrementsOnce": true,
+      "otherUnreadPreserved": true,
+      "rereadDoesNotDecrement": true,
+      "sealedContentHidden": true,
+      "pageErrors": [],
+      "apiWrites": []
+    }
+  ]
+}

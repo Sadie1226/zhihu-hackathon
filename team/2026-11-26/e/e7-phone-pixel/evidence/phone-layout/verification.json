@@ -1,0 +1,29 @@
+[
+  {
+    "width": 375,
+    "height": 667,
+    "splitMail": true,
+    "pendingPinned": true,
+    "unreadDecrementsOnRead": true,
+    "pixelAssets": true,
+    "pageErrors": []
+  },
+  {
+    "width": 320,
+    "height": 568,
+    "splitMail": true,
+    "pendingPinned": true,
+    "unreadDecrementsOnRead": true,
+    "pixelAssets": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "splitMail": true,
+    "pendingPinned": true,
+    "unreadDecrementsOnRead": true,
+    "pixelAssets": true,
+    "pageErrors": []
+  }
+]

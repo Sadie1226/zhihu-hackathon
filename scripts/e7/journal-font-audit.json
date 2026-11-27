@@ -1,0 +1,9 @@
+{
+  "originalGlyphs": 900,
+  "addedGlyphs": 27042,
+  "total": 27942,
+  "bytes": 1069960,
+  "sha256": "aa39f32dadf0680173404ff3ff80afa38d23533012b565c2ad0a4afb6d04f192",
+  "source": "Same SimSun 16px raster as existing font; original outlines, advances and vertical metrics preserved. Extends source-supported CJK U+3400–U+9FFF and punctuation/Latin. Not all Unicode.",
+  "missingReportedTitle": []
+}

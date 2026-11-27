@@ -1,0 +1,468 @@
+{
+  "base": "http://127.0.0.1:3109",
+  "ranAt": "2026-11-25T10:37:59.194Z",
+  "fixture": [
+    {
+      "viewport": "375x667",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(244, 233, 214)",
+          "card": {
+            "backgroundColor": "rgb(255, 250, 240)",
+            "borderTopWidth": "1px"
+          },
+          "paper": "rgb(255, 253, 247)"
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "lettersSmall": [],
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 54,
+            "height": 44
+          },
+          "focusBoxAfter": {
+            "width": 54,
+            "height": 44
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 54,
+            "height": 44
+          },
+          "pressDuring": {
+            "width": 54,
+            "height": 44
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.2s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.048s",
+          "firstOpacity": "0.591009",
+          "fourthGapMs": 48,
+          "durationMs": 200
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 375,
+            "clientWidth": 375
+          },
+          "tail": true
+        },
+        "toggleOff": {
+          "present": true,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "320x568",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(244, 233, 214)",
+          "card": {
+            "backgroundColor": "rgb(255, 250, 240)",
+            "borderTopWidth": "1px"
+          },
+          "paper": "rgb(255, 253, 247)"
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "lettersSmall": [],
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 54,
+            "height": 44
+          },
+          "focusBoxAfter": {
+            "width": 54,
+            "height": 44
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 54,
+            "height": 44
+          },
+          "pressDuring": {
+            "width": 54,
+            "height": 44
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.2s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.048s",
+          "firstOpacity": "0.488032",
+          "fourthGapMs": 48,
+          "durationMs": 200
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 320,
+            "clientWidth": 320
+          },
+          "tail": true
+        },
+        "toggleOff": {
+          "present": true,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "1440x900",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(244, 233, 214)",
+          "card": {
+            "backgroundColor": "rgb(255, 250, 240)",
+            "borderTopWidth": "1px"
+          },
+          "paper": "rgb(255, 253, 247)"
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "lettersSmall": [],
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 62,
+            "height": 46
+          },
+          "focusBoxAfter": {
+            "width": 62,
+            "height": 46
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 62,
+            "height": 46
+          },
+          "pressDuring": {
+            "width": 62,
+            "height": 46
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.2s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.048s",
+          "firstOpacity": "0.488536",
+          "fourthGapMs": 48,
+          "durationMs": 200
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 1440,
+            "clientWidth": 1440
+          },
+          "tail": true
+        },
+        "toggleOff": {
+          "present": true,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    }
+  ],
+  "real": {
+    "dogId": "dog_9b344b43-51e7-4b71-9378-14ae4d324b49",
+    "tripId": "trip_e7_1795603101174",
+    "errors": [],
+    "checks": {
+      "overflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375
+      },
+      "trip": {
+        "place": true,
+        "count": true,
+        "message": true
+      },
+      "letters": {
+        "arrivedVisible": true,
+        "sealedLeak": false,
+        "sealedPlaceholder": true,
+        "openButtons": 1
+      },
+      "read": {
+        "before": null,
+        "after": "2026-11-25T10:38:22.604Z",
+        "sealedUntouched": true,
+        "responseStatus": 200,
+        "responseHasReadAt": true,
+        "bodyVisible": true
+      },
+      "replay": {
+        "firstGlyphs": 7,
+        "replayGlyphs": 0,
+        "patchesAfterFirst": 1,
+        "patchesAfterReplay": 1
+      },
+      "gifts": true
+    },
+    "url": "http://127.0.0.1:3109/journal",
+    "heading": "手账",
+    "tabs": [
+      "旅途",
+      "来往",
+      "收到的礼物"
+    ]
+  },
+  "failures": []
+}

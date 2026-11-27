@@ -1,0 +1,195 @@
+{
+  "base": "http://127.0.0.1:3109",
+  "ranAt": "2026-11-25T10:08:37.372Z",
+  "fixture": [
+    {
+      "viewport": "375x667",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "doneLabel": 1,
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "lettersOverflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "lettersSmall": [],
+        "detail": {
+          "body": true,
+          "back": true,
+          "returned": true
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "320x568",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "doneLabel": 1,
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "lettersOverflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "lettersSmall": [],
+        "detail": {
+          "body": true,
+          "back": true,
+          "returned": true
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "1440x900",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "doneLabel": 1,
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "lettersOverflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "lettersSmall": [],
+        "detail": {
+          "body": true,
+          "back": true,
+          "returned": true
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    }
+  ],
+  "real": {
+    "dogId": "dog_f617ce32-1bcd-4580-ad84-8bc6c2ccd805",
+    "tripId": "trip_e7_1795601328832",
+    "errors": [],
+    "checks": {
+      "overflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375
+      },
+      "trip": {
+        "place": true,
+        "count": true,
+        "message": true
+      },
+      "letters": {
+        "arrivedVisible": true,
+        "sealedLeak": false,
+        "sealedPlaceholder": true,
+        "openButtons": 1
+      },
+      "read": {
+        "before": null,
+        "after": "2026-11-25T10:08:50.339Z",
+        "sealedUntouched": true,
+        "responseStatus": 200,
+        "responseHasReadAt": true,
+        "bodyVisible": true
+      },
+      "gifts": true
+    },
+    "url": "http://127.0.0.1:3109/journal",
+    "heading": "手账",
+    "tabs": [
+      "旅途",
+      "来往",
+      "收到的礼物"
+    ]
+  },
+  "failures": []
+}
