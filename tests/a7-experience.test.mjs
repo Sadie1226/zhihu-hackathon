@@ -65,3 +65,58 @@ test('no random growth: expression-only tags do not invent a learned preference'
   const items = [candidate('a', '普通文章甲'), candidate('b', '普通文章乙')]
   assert.deepEqual(choose(items).selectedIds, choose(items, [], { tags: ['好奇', '看物', '婉转'] }).selectedIds)
 })
+
+const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`)
+const multifacet = '酵母发酵与陶器植物观察'
+const contribution = (entries, beforeSeq = 4) => selectWithExperience([candidate('new-source', multifacet + '新材料')],
+  { context, history: { ...history(entries), beforeSeq } }).decisions[0]
+
+test('one historical source spanning three facets contributes only one decayed unit', () => {
+  const entry = { ...trip(3, 'verified-source'), title: multifacet }
+  const result = contribution([entry])
+  assert.equal(result.repeated, false)
+  assert.deepEqual(result.evidenceIds, [entry.id])
+  close(result.experienceAdjustment, 0.15 - 0.15)
+  const stale = contribution([{ ...entry, seq: 1 }])
+  close(stale.experienceAdjustment, 0.6 * 0.15)
+  assert.deepEqual(stale.evidenceIds, [entry.id])
+})
+
+test('independent sources spanning facets contribute their actual units and evidence IDs', () => {
+  const entries = [
+    { ...trip(1, 'fermentation-source'), title: '酵母发酵实验' },
+    { ...trip(2, 'making-source'), title: '陶器拉坯工具' },
+    { ...trip(3, 'plants-source'), title: '植物叶片观察' },
+  ]
+  const result = contribution(entries)
+  close(result.experienceAdjustment, (0.6 + 0.8 + 1) * 0.15 - 0.15)
+  assert.deepEqual(new Set(result.evidenceIds), new Set(entries.map(entry => entry.id)))
+})
+
+test('different sources in one trip contribute once per direction, with cross-direction units retained', () => {
+  const entries = [
+    { ...trip(3, 'a'), title: '酵母发酵', id: 'a' },
+    { ...trip(3, 'b'), title: '发酵温度', id: 'b' },
+    { ...trip(3, 'c'), title: '陶器拉坯', id: 'c' },
+  ]
+  const result = contribution(entries)
+  close(result.experienceAdjustment, 2 * 0.15 - 0.15)
+  assert.deepEqual(result.evidenceIds, ['a', 'c'])
+})
+
+test('multi-facet duplicated sources never add units across trips, input order or recipient kind', () => {
+  const entry = { ...trip(3, 'same-source'), title: multifacet }
+  const duplicates = [entry, { ...entry, seq: 2, tripId: 'other-trip', id: 'exchange-copy', kind: 'exchange' }]
+  assert.deepEqual(contribution(duplicates), contribution([entry]))
+  assert.deepEqual(contribution(duplicates.slice().reverse()), contribution([entry]))
+})
+
+test('independent multi-facet evidence respects the total cap and each ID counts once', () => {
+  const entries = Array.from({ length: 6 }, (_, index) => ({
+    ...trip(index + 1), title: multifacet,
+  }))
+  const result = contribution(entries, 7)
+  close(result.experienceAdjustment, 0.45 - 0.15)
+  assert.equal(result.evidenceIds.length, 6)
+  assert.equal(new Set(result.evidenceIds).size, 6)
+})

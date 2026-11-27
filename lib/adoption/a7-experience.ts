@@ -43,7 +43,7 @@ export function selectWithExperience(candidates: readonly SelectionCandidate[], 
   const baseline = selectForPersonality(candidates, context)
   const sourceIds = new Set<string>()
   const weights = [1, 0.8, 0.6, 0.4, 0.2, 0.1]
-  const support = new Map<Facet, Map<string, { weight: number; id: string }>>()
+  const support = new Map<Facet, Map<string, { weight: number; id: string; sourceId: string }>>()
   const recent = new Set<string>()
   const recentTitles = new Set<string>()
   const titleKey = (title: string) => title.normalize('NFKC').toLocaleLowerCase('zh-CN').replace(/[\s\p{P}\p{S}]/gu, '')
@@ -57,7 +57,7 @@ export function selectWithExperience(candidates: readonly SelectionCandidate[], 
     for (const facet of observed) {
       const trips = support.get(facet) ?? new Map()
       // Multiple articles/exchanges from one recipient trip do not create extra growth.
-      if (!trips.has(entry.tripId)) trips.set(entry.tripId, { weight: weights[age - 1], id: entry.id })
+      if (!trips.has(entry.tripId)) trips.set(entry.tripId, { weight: weights[age - 1], id: entry.id, sourceId: entry.sourceId })
       support.set(facet, trips)
       if (age <= 2) recentFacets.add(facet)
     }
@@ -67,7 +67,10 @@ export function selectWithExperience(candidates: readonly SelectionCandidate[], 
     const candidate = candidates[base.index]
     const observed = attentionFacets(candidate)
     const aligned = observed.some(facet => context.tags.includes(attention[facet === 'people' ? 1 : 0]))
-    const evidence = observed.flatMap(facet => [...support.get(facet)?.values() ?? []])
+    // One trusted source may support several facets, but remains one experience unit.
+    // Deduplicate BEFORE summing; reported evidence and actual weight must agree.
+    const evidence = [...new Map(observed.flatMap(facet => [...support.get(facet)?.values() ?? []])
+      .map(item => [item.sourceId, item] as const)).values()]
     const familiarity = Math.min(0.45, evidence.reduce((sum, item) => sum + item.weight * 0.15, 0))
     const repeated = recent.has(candidate.id) || recentTitles.has(titleKey(candidate.title))
     const repetition = observed.some(facet => recentFacets.has(facet)) ? 0.15 : 0
