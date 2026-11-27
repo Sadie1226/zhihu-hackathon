@@ -1,0 +1,313 @@
+{
+  "kind": "d7-roundtrip",
+  "code": {
+    "sha": "bdd86afe2d388b881955f6bf4c7b8050cdf0cf51"
+  },
+  "meta": {
+    "base": "http://127.0.0.1:53274",
+    "dbPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run2\\a5-development-d7.sqlite",
+    "words": "楼下的桂花开了，你那边闻得到吗"
+  },
+  "dogs": {
+    "sender": {
+      "id": "dog_47adb26b-a763-4488-9b6d-11429c429d3d",
+      "owner": "ownerA",
+      "name": "阿桂"
+    },
+    "receiver": {
+      "id": "dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d",
+      "owner": "ownerB",
+      "name": "小满"
+    }
+  },
+  "chains": [
+    {
+      "name": "寄出即在路上",
+      "ok": true
+    },
+    {
+      "name": "在路上时乙的已到箱为空",
+      "ok": true
+    },
+    {
+      "name": "在路上时乙的在途箱有它",
+      "ok": true
+    },
+    {
+      "name": "出发那一刻到达",
+      "ok": true
+    },
+    {
+      "name": "原话到达未改",
+      "ok": true
+    },
+    {
+      "name": "fromOwnerOf = 寄件狗",
+      "ok": true
+    },
+    {
+      "name": "乙点开后 readAt 有值",
+      "ok": true
+    },
+    {
+      "name": "到达后甲在等回音",
+      "ok": true
+    },
+    {
+      "name": "回应落了库（1 行）",
+      "ok": true
+    },
+    {
+      "name": "回应的文字是乙写的那句",
+      "ok": true
+    },
+    {
+      "name": "重放仍是同一 reply 且未新增行",
+      "ok": true
+    },
+    {
+      "name": "没到就回没留下残行",
+      "ok": true
+    },
+    {
+      "name": "回应后甲不再等",
+      "ok": true
+    },
+    {
+      "name": "回应不改到达时间",
+      "ok": true
+    },
+    {
+      "name": "库里 replied_at 与回执一致",
+      "ok": true
+    },
+    {
+      "name": "整库无外键问题",
+      "ok": true
+    },
+    {
+      "name": "integrity ok",
+      "ok": true
+    }
+  ],
+  "path": {
+    "words": "楼下的桂花开了，你那边闻得到吗",
+    "answer": "闻得到，风是从西边来的"
+  },
+  "steps": [
+    {
+      "step": "ownerA.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerA.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerA.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "ownerB.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "send",
+      "note": "甲托狗捎话（寄出即「在路上」）",
+      "method": "POST",
+      "path": "/api/exchanges",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.onTheWay",
+      "note": "乙尚在路上的收件箱",
+      "method": "GET",
+      "path": "/api/dogs/dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d/inbox?filter=onTheWay",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.arrived.before",
+      "note": "乙已到收件箱（应为空）",
+      "method": "GET",
+      "path": "/api/dogs/dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "trip.create",
+      "note": "乙的狗安排一次出行",
+      "method": "POST",
+      "path": "/api/dogs/dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d/trips",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "trip.start",
+      "note": "乙的狗出发（投递器在此刻写 delivered_at）",
+      "method": "POST",
+      "path": "/api/trips/trip_15d78e85-d2a4-4f50-922e-495300a5cfe8/start",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.arrived",
+      "note": "乙的收件箱里看到这句话",
+      "method": "GET",
+      "path": "/api/dogs/dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.read",
+      "note": "乙点开这封来信",
+      "method": "PATCH",
+      "path": "/api/exchanges/ex_44d4875f3b10089b2ca7892f/read",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "sender.waiting",
+      "note": "甲的发件箱：已到、在等回音",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_47adb26b-a763-4488-9b6d-11429c429d3d",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.reply",
+      "note": "乙回一句（POST /api/replies，真实 HTTP）",
+      "method": "POST",
+      "path": "/api/replies",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.reply.replay",
+      "note": "同一请求重放（幂等）",
+      "method": "POST",
+      "path": "/api/replies",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "receiver.reply.idempotent",
+      "note": "重放仍是同一 reply，标 duplicate",
+      "replyId": "r_de9eb29ebee14dc88c46467b3ec3d539",
+      "duplicate": true
+    },
+    {
+      "step": "sender.inbox.after",
+      "note": "甲的发件箱：回过之后不再等",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_47adb26b-a763-4488-9b6d-11429c429d3d",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "send.pending",
+      "note": "甲再寄一句（乙这次不出门）",
+      "method": "POST",
+      "path": "/api/exchanges",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "reply.beforeArrival",
+      "note": "还没到就回：应被拒（409）",
+      "method": "POST",
+      "path": "/api/replies",
+      "status": 409,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "reply.notMine",
+      "note": "替别人的交换回：应被拒（404）",
+      "method": "POST",
+      "path": "/api/replies",
+      "status": 404,
+      "cacheControl": "no-store"
+    }
+  ],
+  "facts": {
+    "integrity": "ok",
+    "foreignKeys": 0,
+    "exchange": {
+      "id": "ex_44d4875f3b10089b2ca7892f",
+      "fromDog": "dog_47adb26b-a763-4488-9b6d-11429c429d3d",
+      "toDog": "dog_62efc3cb-9f4c-48dc-9cd7-2f3d59e3175d",
+      "kind": "co_owner_message",
+      "payload": "{\"kind\":\"co_owner_message\",\"message\":\"楼下的桂花开了，你那边闻得到吗\",\"fromOwnerOf\":\"dog_47adb26b-a763-4488-9b6d-11429c429d3d\"}",
+      "seq": 1,
+      "createdAt": "2026-11-26T12:40:45Z",
+      "deliveredAt": "2026-11-26T12:40:50.530Z",
+      "repliedAt": "2026-11-26T12:40:53.732Z",
+      "readAt": "2026-11-26T12:40:52.973Z"
+    },
+    "replyRows": 1,
+    "replyRow": {
+      "id": "r_de9eb29ebee14dc88c46467b3ec3d539",
+      "text": "闻得到，风是从西边来的",
+      "kind": "text"
+    },
+    "pendingReplyRows": 0,
+    "trips": [
+      {
+        "id": "trip_15d78e85-d2a4-4f50-922e-495300a5cfe8",
+        "seq": 1,
+        "status": "running",
+        "startedAt": "2026-11-26T12:40:50.530Z"
+      }
+    ]
+  },
+  "replyTransport": {
+    "used": "http:POST /api/replies",
+    "route": "app/(b)/api/replies/route.ts",
+    "body": "application/json { exchangeId, text }",
+    "firstReplyId": "r_de9eb29ebee14dc88c46467b3ec3d539",
+    "replayDuplicate": true
+  },
+  "verdict": "pass",
+  "elapsedMs": 21279,
+  "db": {
+    "path": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run2\\a5-development-d7.sqlite",
+    "liveBytes": 266240,
+    "liveWalBytes": 0,
+    "snapshotPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d7-run2\\a5-development-d7.evidence.sqlite",
+    "bytes": 262144,
+    "sha256": "d6f4b36278aab593cd9b74b7c4195b28e587d8485704c8d7fed97a9606f5122f"
+  }
+}
