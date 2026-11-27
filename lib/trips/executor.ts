@@ -25,6 +25,7 @@ type MaterialContext = Readonly<{
 }>
 type Material<T> = T | Promise<T>
 type Options = SearchCacheOptions & {
+  offline?: boolean
   provider?: SearchProvider
   random?: () => number
   conditions?: (trip: Readonly<Trip>) => Material<EventConditions | null>
@@ -139,6 +140,7 @@ export function createTripExecutor(db: DatabaseSync, options: Options = {}) {
       selectEvent: conditions => selector({ dogId, tripId: trip.id, sessionId: ownerId, conditions }),
       async discover(context) {
         const observations = await options.ownerObservations?.(context)
+        if (options.offline) return compose(trip.id, request, { intentId, observations })
         const result = await search(trip.id, request, intentId)
         if (!result.ok) return { status: 'search-error', error: result.error, alert: result.alert }
         if ('replay' in result) return { ...result.replay, status: 'complete', reasons: [] }

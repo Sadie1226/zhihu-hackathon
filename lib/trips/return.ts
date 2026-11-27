@@ -27,16 +27,18 @@ type MessageTarget = Readonly<{
 type Options = {
   now?: () => Date
   generationTimeoutMs: number
-  generate: (input: GenerationInput, signal: AbortSignal) => Promise<unknown>
+  generate: (input: GenerationInput, signal: AbortSignal, profile: GenerationProfile) => Promise<unknown>
   /** B5: validate the draft and insert exactly one supplied ID on this connection, synchronously. */
   writeMessageInTransaction: (db: DatabaseSync, target: MessageTarget, draft: unknown) => undefined
 }
+type GenerationProfile = Readonly<{ personalityTags: string; blockedTopics: readonly string[] }>
 type Result =
   | { status: 'confirmed'; trip: Trip; message: Message; replayed: boolean }
   | { status: 'confirmed-hidden'; trip: Trip }
   | { status: 'not-ready'; trip: Trip; reason: 'pending' | 'no-receipt' | 'no-visible-finds' }
   | { status: 'held' | 'terminal'; trip: Trip }
   | { status: 'generation-failed'; trip: Trip; reason: 'failed' | 'timeout' }
+  | { status: 'expired'; trip: Trip }
 
 const missing = () => new TripError('NOT_FOUND', '这条记录不在这里')
 const changed = () => new TripError('CONFLICT', '归来分享的出行依据已变更')
@@ -48,7 +50,7 @@ function automaticId(scope: Scope, { dogId, tripId }: Input, intentId: string): 
 }
 
 async function generateWithDeadline(
-  generate: Options['generate'], input: GenerationInput, duration: number,
+  generate: Options['generate'], input: GenerationInput, profile: GenerationProfile, duration: number,
 ): Promise<{ draft: unknown } | { failure: 'failed' | 'timeout' }> {
   const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -59,7 +61,7 @@ async function generateWithDeadline(
     }, duration)
   })
   try {
-    const generated = Promise.resolve().then(() => generate(input, controller.signal))
+    const generated = Promise.resolve().then(() => generate(input, controller.signal, profile))
       .then(draft => ({ draft }), () => ({ failure: 'failed' as const }))
     return await Promise.race([deadline, generated])
   } finally {
@@ -74,11 +76,12 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
   const finds = createFindStore(db, { now: options.now })
   const messageById = db.prepare(`SELECT id, trip_id AS tripId, text,
     mentions_find_id AS mentionsFindId, created_at AS createdAt FROM message WHERE id = ?`)
-  const topicsByDog = db.prepare('SELECT blocked_topics FROM dog WHERE id = ?')
-  const topicsFor = (trip: Trip) => readBlockedTopics(topicsByDog.get(trip.dogId)?.blocked_topics)
+  const profileByDog = db.prepare('SELECT blocked_topics, personality_tags FROM dog WHERE id = ?')
+  const topicsFor = (trip: Trip) => readBlockedTopics(profileByDog.get(trip.dogId)?.blocked_topics)
   const run = async (input: Input, scope: Scope, intentId: string,
     transact: <T>(action: (trip: Trip, transition: (status: TerminalStatus) => Trip) => T) => T,
     confirmation: (allowDone?: boolean) => ReturnType<typeof finds.readConfirmation>,
+    expire: boolean,
   ): Promise<Result> => {
     const id = automaticId(scope, input, intentId)
     const saved = (): Message | undefined => {
@@ -89,7 +92,7 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
           typeof createdAt !== 'string' || (mentionsFindId !== null && typeof mentionsFindId !== 'string')) throw integrity()
       return { id, tripId, text, mentionsFindId, createdAt }
     }
-    function inspect(trip: Trip): Result | { basis: string; input: GenerationInput } {
+    function inspect(trip: Trip): Result | { basis: string; completedAt: string; input: GenerationInput; profile: GenerationProfile } {
       if (trip.dogId !== input.dogId) throw missing()
       const message = saved()
       if (message) {
@@ -113,15 +116,28 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
       if (!current) return { status: 'not-ready', trip, reason: 'no-receipt' }
       if (current.finds.length === 0) return { status: 'not-ready', trip, reason: 'no-visible-finds' }
       const visible = Object.freeze(current.finds.map(find => Object.freeze({ ...find })))
+      const dog = profileByDog.get(trip.dogId)
+      if (typeof dog?.personality_tags !== 'string') throw integrity()
+      const profile = Object.freeze({ personalityTags: dog.personality_tags,
+        blockedTopics: Object.freeze(readBlockedTopics(dog.blocked_topics)) })
       return {
-        basis: JSON.stringify([trip.startedAt, current.confirmation.completedAt, visible, topicsFor(trip)]),
+        basis: JSON.stringify([trip.startedAt, current.confirmation.completedAt, visible, profile]),
+        completedAt: current.confirmation.completedAt,
         input: Object.freeze({ scope: scope.kind, finds: visible }),
+        profile,
       }
     }
 
-    const prepared = transact(trip => inspect(trip))
+    const prepared = transact((trip, transition) => {
+      const current = inspect(trip)
+      // An upstream deadline policy can settle unfinished work without any new model I/O.
+      if (expire && trip.status === 'running' && ('basis' in current || current.status === 'not-ready')) {
+        return { status: 'expired' as const, trip: transition('timeout') }
+      }
+      return current
+    })
     if (!('basis' in prepared)) return prepared
-    const generated = await generateWithDeadline(options.generate, prepared.input, options.generationTimeoutMs)
+    const generated = await generateWithDeadline(options.generate, prepared.input, prepared.profile, options.generationTimeoutMs)
     return transact((trip, transition) => {
       const current = inspect(trip)
       if (!('basis' in current)) {
@@ -133,7 +149,7 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
         return { status: 'generation-failed', trip: transition(generated.failure), reason: generated.failure }
       }
       const ended = transition('done')
-      if (!ended.endedAt) throw integrity()
+      if (!ended.endedAt || Date.parse(ended.endedAt) < Date.parse(current.completedAt)) throw integrity()
       const allowedFindIds = Object.freeze(current.input.finds.map(find => find.id))
       const target = Object.freeze({ id, tripId: trip.id, createdAt: ended.endedAt, allowedFindIds })
       if (options.writeMessageInTransaction(db, target, generated.draft) !== undefined) {
@@ -148,7 +164,7 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
   }
 
   return {
-    async owner(input: Input & { request: Request }): Promise<Result> {
+    async owner(input: Input & { request: Request; expire?: boolean }): Promise<Result> {
       const { request, tripId, dogId } = input
       const auth = resolveAuthContext(request, db)
       if (!auth) throw missing()
@@ -159,14 +175,14 @@ export function createTripReturn(db: DatabaseSync, options: Options) {
       const intentId = ownerDiscoveryIntent(tripId)
       return run({ tripId, dogId }, { kind: 'owner', ownerId: auth.ownerId }, intentId,
         action => lifecycle.withFinishTransaction(tripId, auth.ownerId, action),
-        allowDone => finds.readConfirmation({ tripId, owner: request, intentId }, allowDone))
+        allowDone => finds.readConfirmation({ tripId, owner: request, intentId }, allowDone), input.expire === true)
     },
-    async seed(input: Input & { intentId: string }): Promise<Result> {
+    async seed(input: Input & { intentId: string; expire?: boolean }): Promise<Result> {
       const { dogId, tripId, intentId } = input
       if (seedIntentTripId(dogId, intentId) !== tripId) throw missing()
       const lifecycle = sampleTripLifecycle(db, dogId, intentId, { now: options.now })
       return run({ tripId, dogId }, { kind: 'seed' }, intentId, lifecycle.withFinishTransaction,
-        allowDone => finds.readConfirmation({ tripId, dogId, intentId }, allowDone))
+        allowDone => finds.readConfirmation({ tripId, dogId, intentId }, allowDone), input.expire === true)
     },
   }
 }

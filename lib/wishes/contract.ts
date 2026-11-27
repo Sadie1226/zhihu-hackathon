@@ -73,13 +73,18 @@ export function collectionWishFields(db: DatabaseSync, dogId: string, sessionId:
  * Source priority only: blocked_topics filtering remains mandatory before search.
  * Deterministic tie-break among owner wishes: most recently created, then id ASC.
  */
-export function selectActiveWish(db: DatabaseSync, dogId: string, sessionId: string): Wish | null {
+export function selectActiveWish(db: DatabaseSync, dogId: string, sessionId: string,
+  eligible: (wish: Wish) => boolean = () => true): Wish | null {
   requireDog(db, dogId, sessionId)
-  const row = db.prepare(`SELECT w.* FROM v_wish_active w JOIN dog d ON d.id = w.dog_id
+  const rows = db.prepare(`SELECT w.* FROM v_wish_active w JOIN dog d ON d.id = w.dog_id
     WHERE w.dog_id = ? AND d.session_id = ?
     ORDER BY CASE w.source WHEN 'owner' THEN 0 ELSE 1 END, julianday(w.created_at) DESC, w.id ASC
-    LIMIT 1`).get(dogId, sessionId) as WishRow | undefined
-  return row ? wishDto(row) : null
+    `).iterate(dogId, sessionId)
+  for (const row of rows) {
+    const wish = wishDto(row as WishRow)
+    if (eligible(wish)) return wish
+  }
+  return null
 }
 
 /** B's withdrawal boundary: one guarded write; returns the unchanged record on retry.
