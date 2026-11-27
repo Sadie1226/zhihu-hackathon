@@ -57,3 +57,9 @@ test('malformed successful receipts never become confirmed', () => {
     assert.equal(interpretChatResponse(200, { ...OK_BODY, ...patch }).kind, 'retriable')
   }
 })
+
+test('successful receipt timestamps use exact server UTC milliseconds', () => {
+  for (const createdAt of ['1', '2026-11-26', '2026-02-30T00:00:00.000Z', '2026-11-26T08:00:00Z', '2026-11-26T16:00:00.000+08:00']) {
+    assert.equal(interpretChatResponse(200, { ...OK_BODY, createdAt }).kind, 'retriable')
+  }
+})

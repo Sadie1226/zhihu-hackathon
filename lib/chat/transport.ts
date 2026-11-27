@@ -19,7 +19,8 @@ export function interpretChatResponse(status: number, body: unknown): ChatSendRe
       text: r.text as string, createdAt: r.createdAt as string,
     }
     if (!response.id.trim() || !response.dogId.trim() ||
-      !response.createdAt.trim() || !Number.isFinite(Date.parse(response.createdAt))) {
+      !response.createdAt.trim() || !Number.isFinite(Date.parse(response.createdAt)) ||
+      new Date(response.createdAt).toISOString() !== response.createdAt) {
       return { kind: 'retriable', reason: 'server' }
     }
     return { kind: 'ok', response }
