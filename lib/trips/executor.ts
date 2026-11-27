@@ -7,11 +7,12 @@ import { createTripDiscoveryComposer } from './composer.ts'
 import type { DiscoveryComposition, TripObservation } from './composer.ts'
 import { readDepartureSnapshot } from './departure-snapshot.ts'
 import { createTripDiscoverySearch } from './discover.ts'
+import type { DiscoverySearchOptions } from './discover.ts'
 import { ownerDiscoveryIntent } from './discovery-receipt.ts'
 import { TripError } from './errors.ts'
 import { createFindStore, LegacyDiscoveryHoldError } from './finds.ts'
 import { readOccurrenceFact } from './occurrence-facts.ts'
-import type { SearchCacheOptions, SearchProvider } from './search-proof.ts'
+import type { SearchProvider } from './search-proof.ts'
 import { seedIntentTripId } from './seed-event-scope.ts'
 import { createSeedTripRunner } from './seed-runner.ts'
 import { createTripService, isTerminal } from './service.ts'
@@ -24,7 +25,7 @@ type MaterialContext = Readonly<{
   occurrence: ReturnType<typeof readOccurrenceFact>
 }>
 type Material<T> = T | Promise<T>
-type Options = SearchCacheOptions & {
+type Options = DiscoverySearchOptions & {
   provider?: SearchProvider
   random?: () => number
   conditions?: (trip: Readonly<Trip>) => Material<EventConditions | null>
