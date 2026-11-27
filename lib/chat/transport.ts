@@ -9,13 +9,19 @@ export function interpretChatResponse(status: number, body: unknown): ChatSendRe
   if (status === 200) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) return { kind: 'retriable', reason: 'server' }
     const r = body as Record<string, unknown>
-    const response: ChatResponse = {
-      id: String(r.id ?? ''), dogId: String(r.dogId ?? ''),
-      text: String(r.text ?? ''), createdAt: String(r.createdAt ?? ''),
+    const keys = ['id', 'dogId', 'text', 'createdAt'] as const
+    if (Object.keys(r).length !== keys.length ||
+      !keys.every(key => Object.hasOwn(r, key) && typeof r[key] === 'string')) {
+      return { kind: 'retriable', reason: 'server' }
     }
-    if (!response.id || !response.dogId || !response.createdAt) return { kind: 'retriable', reason: 'server' }
-    // 四键严格：多字段或字段类型异常的 200 不采信，避免把诊断/生成字段当确认。
-    if (Object.keys(r).length !== 4) return { kind: 'retriable', reason: 'server' }
+    const response: ChatResponse = {
+      id: r.id as string, dogId: r.dogId as string,
+      text: r.text as string, createdAt: r.createdAt as string,
+    }
+    if (!response.id.trim() || !response.dogId.trim() ||
+      !response.createdAt.trim() || !Number.isFinite(Date.parse(response.createdAt))) {
+      return { kind: 'retriable', reason: 'server' }
+    }
     return { kind: 'ok', response }
   }
   if (status === 409) return { kind: 'conflict' }

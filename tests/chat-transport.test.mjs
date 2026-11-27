@@ -45,3 +45,15 @@ test('createChatTransport 请求三字段、同源凭据；网络异常按可重
   assert.deepEqual(await failing({ dogId: 'dog_a', text: '你好', clientMessageId: 'k' }),
     { kind: 'retriable', reason: 'network' })
 })
+
+test('malformed successful receipts never become confirmed', () => {
+  for (const key of ['id', 'dogId', 'text', 'createdAt']) {
+    for (const value of [17, null, {}, [], true]) {
+      assert.equal(interpretChatResponse(200, { ...OK_BODY, [key]: value }).kind, 'retriable')
+    }
+  }
+  for (const patch of [{ id: ' ' }, { dogId: '' }, { createdAt: 'invalid' }, { createdAt: '' },
+    { other: 'x', id: undefined }]) {
+    assert.equal(interpretChatResponse(200, { ...OK_BODY, ...patch }).kind, 'retriable')
+  }
+})
