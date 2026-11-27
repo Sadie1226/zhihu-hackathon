@@ -41,8 +41,14 @@ export default defineConfig([
   {
     // d7 取证脚本要起真服务、打真 HTTP，用的是 Node 内置的 fetch/AbortSignal。
     // 这类脚本不该因为「没声明全局」就进不了 lint —— 那等于自己给自己留盲区。
-    files: ['scripts/d7/**/*.mjs'],
-    languageOptions: { globals: { fetch: 'readonly', AbortSignal: 'readonly' } },
+    files: ['scripts/d7/**/*.mjs', 'scripts/d9/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        fetch: 'readonly', AbortSignal: 'readonly',
+        // d9 要把 body 分两截发（复现「读完 body 之前会话被撤销」），用到这两个全局。
+        ReadableStream: 'readonly', TextEncoder: 'readonly',
+      },
+    },
   },
   globalIgnores(['.next/**', '.local/**', 'data/**', 'node_modules/**', 'next-env.d.ts']),
 ])
