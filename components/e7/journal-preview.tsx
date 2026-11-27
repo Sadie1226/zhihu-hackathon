@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { Exchange, Find, Message, PublicDogSummary, Reply, Trip } from '@/contracts/types'
 import { JournalView } from './journal-view'
 import type { JournalClient } from './journal-client'
+import { createReadFailureFixture } from './journal-read-failure-fixture'
 
 const DOG = 'dog_owner'
 const peer: PublicDogSummary = {
@@ -127,6 +128,7 @@ function makeClient(scenario: string): JournalClient {
   const empty = scenario === 'empty'
   const sealedOnly = scenario === 'sealed'
   const inbox = INBOX.map(row => ({ ...row }))
+  const readFailure = createReadFailureFixture(inbox)
   let messageAttempts = 0
   const review = scenario === 'review'
   const modes = ['fixture', 'cache', 'live', null] as const
@@ -183,6 +185,7 @@ function makeClient(scenario: string): JournalClient {
     },
     read: async (id, signal) => {
       await guard(signal)
+      if (scenario === 'read-error') return readFailure(id, signal)
       const row = inbox.find(item => item.id === id)
       if (!row || !row.deliveredAt) throw new Error('这一封还没到。')
       row.readAt = row.readAt ?? new Date().toISOString()
@@ -220,6 +223,7 @@ export default function JournalPreview() {
       <label htmlFor="e7-case">本地验收场景：</label>
       <select id="e7-case" value={scenario} onChange={event => setScenario(event.target.value)} style={{ minHeight: 44, font: 'inherit' }}>
         <option value="normal">正常</option>
+        <option value="read-error">E9：已读首次保存失败，重试恢复</option>
         <option value="review">E7 修补：来源、归来话重试与发件状态</option>
         <option value="empty">空手账</option>
         <option value="error">全部读取失败</option>
