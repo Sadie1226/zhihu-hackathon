@@ -135,7 +135,7 @@ test('冒名、错 kind、缺幂等键、静默覆盖入参与跨站请求全部
   const sender = ownedDog(db, 'dog_a')
   ownedDog(db, 'dog_b')  // 属于另一个 owner
   db.prepare(`INSERT INTO dog(id, session_id, owner_id, personality_tags, assembly, is_sample, created_at)
-    VALUES ('dog_seed_01', 'seed', NULL, '["好奇","看物","直给"]', '{"cloth":"sweater","hat":null,"glasses":null,"face":"waiting"}', 1, ?)`)
+    VALUES ('dog_seed_01', 'seed', NULL, '["好奇","看物","直给"]', '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', 1, ?)`)
     .run('2026-11-24T00:00:00Z')
 
   const ok = { fromDog: 'dog_a', toDog: 'dog_b', kind: 'gift', payload: GIFT }
