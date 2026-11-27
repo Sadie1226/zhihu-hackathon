@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-27",
+  "version": "v10-1127",
+  "previousMain": "92c1ee57780dd0a1e6199156273bbee852ddc632",
+  "sourceCandidate": "9b6d069d81f88283dd657b46d574f673a8452e59",
+  "validatedMergeCommit": "d7e5a1bc2669f0351fe3c8e806f8dc13d5c36b9c",
+  "laterChanges": "daily documentation only",
+  "batches": [
+    {
+      "commit": "0ec957e2a0dd863b7fbc2b1028ae45ad9db6f893",
+      "subject": "merge: integrate reviewed travel v8 execution baseline"
+    },
+    {
+      "commit": "2f7a46487258fdb61f98c56bdf99edc018fc3f5b",
+      "subject": "merge: integrate reviewed C10 executor and return components"
+    },
+    {
+      "commit": "7626cca2472121f8ded3715d1016dfc2a53ee626",
+      "subject": "merge: integrate reviewed D6 D7 and sender-session fix"
+    },
+    {
+      "commit": "1d187d04195d325db6509fa7538996900f05c7db",
+      "subject": "merge: integrate reviewed journal navigation E9 and pixel typography"
+    },
+    {
+      "commit": "0aea09c806ff44ee058228ec1fa908b27bc7a2bd",
+      "subject": "merge: integrate current coordination requests and daily records"
+    },
+    {
+      "commit": "d7e5a1bc2669f0351fe3c8e806f8dc13d5c36b9c",
+      "subject": "docs(a): codify separate readiness gates and paired rollback procedure"
+    }
+  ],
+  "tests": {
+    "mainPassed": 381,
+    "mainFailed": 0,
+    "typecheck": 0,
+    "lint": 0,
+    "webpackBuild": 0,
+    "checkAll": 0,
+    "social": 207,
+    "d4E2E": "all passed",
+    "d7DevelopmentHttp": 17,
+    "productionHttp": 5
+  },
+  "targetDatabaseReady": false,
+  "deployed": false,
+  "frozenC01Touched": false,
+  "automaticReturnComplete": false,
+  "newA7Merged": false,
+  "chatV9Merged": false,
+  "privateRawEvidencePublished": false
+}
