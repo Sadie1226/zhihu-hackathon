@@ -91,3 +91,28 @@
 @media (max-height: 500px) and (orientation: landscape) {
   [data-v25] .v25-dialog { top: 12px; bottom: 12px; height: calc(100vh - 24px); }
 }
+/* E5: reserve label geometry; only the ink scales during dragging. */
+[data-v25] .trait { height: 64px; min-height: 64px; overflow-anchor: none; }
+[data-v25] .trait-end { font-size: 24px; transform: scale(var(--trait-scale, 1)); }
+[data-v25] .trait-end.left { transform-origin: left center; }
+[data-v25] .trait-end.right { transform-origin: right center; }
+[data-v25] #trait-feedback { min-height: 168px; overflow-anchor: none; }
+[data-v25] .slider-instructions { margin: 16px 0; font-size: 14px; }
+[data-v25] .slider-instructions summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+[data-v25] #steps .step-caption { flex-basis: 100%; font-size: 15px; color: var(--ink); font-weight: 400; }
+[data-v25] #steps > span { opacity: .65; border: 0; }
+[data-v25] #steps > span.current { opacity: 1; font-weight: bold; }
+[data-v25] .scope { gap: 20px 28px; }
+[data-v25] .scope + .fine { margin-top: 24px; }
+[data-v25] #outfit-preview > [data-dog-version] { width: 300px; max-width: 100%; }
+[data-v25] .entry-dog > [data-dog-version], [data-v25] .profile-character > [data-dog-version] { width: 100%; }
+[data-v25] .room-actor:has([data-dog-version='r2']) { aspect-ratio: 1; transform: translate(-50.9765625%, -92.7734375%); }
+[data-v25] .room-actor [data-dog-version] { width: 100%; height: auto; }
+[data-v25] .stationery-copy > div { display: block; }
+[data-v25] .skip { position: absolute; top: 8px; left: 8px; transform: translateY(-200%); z-index: 100; background: var(--bg); }
+[data-v25] .skip:focus { transform: none; }
+@media (max-width: 400px) {
+  [data-v25] .scope { grid-template-columns: 1fr; gap: 16px; }
+  [data-v25] #steps > span:not(.current) { display: none; }
+  [data-v25] #steps > span.current { display: none; }
+}

@@ -12,8 +12,8 @@ import { migrations } from '../lib/db/migrations.ts'
 import { handleTripRequest } from '../lib/trips/http.ts'
 
 const at = '2026-11-22T00:00:00Z'
-const dogSql = `INSERT INTO dog(id,session_id,personality_tags,assembly,created_at,is_sample)
-  VALUES (?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?,?)`
+const dogV6Sql = `INSERT INTO dog(id,session_id,personality_tags,assembly,created_at,is_sample)
+  VALUES (?,?,'["好奇","看物","直给"]','{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?,?)`
 const cookieOf = session => session.setCookie.split(';', 1)[0]
 const request = (cookie = '', method = 'GET') => new Request('http://localhost/api/session', { method, headers: { cookie } })
 const sha256 = input => createHash('sha256').update(input).digest('hex')
@@ -30,7 +30,7 @@ function workdir(t) {
 function claimDog(db, ownerId, id = 'receipt-1', content = 'fixture draft') {
   return recordAdoption(db, ownerId, { id, hash: sha256(content) }, (dogId, createdAt) => {
     db.prepare(`INSERT INTO dog (id,session_id,owner_id,personality_tags,assembly,created_at)
-      VALUES (?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
+      VALUES (?,?,?,'["好奇","看物","直给"]','{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`)
       .run(dogId, ownerId, ownerId, createdAt)
   })
 }
@@ -85,7 +85,7 @@ test('expired, unknown, duplicate and legacy cookies fail; logout revokes only t
     const dogId = claimDog(db, first.ownerId)
     const firstCookie = cookieOf(first)
     const unknown = `${sessionCookieName()}=${randomBytes(32).toString('base64url')}`
-    db.prepare(dogSql).run('legacy', `anon_${sha256(unknown.split('=')[1])}`, at, 0)
+    db.prepare(dogV6Sql).run('legacy', `anon_${sha256(unknown.split('=')[1])}`, at, 0)
     for (const credential of [unknown, firstCookie + '; ' + firstCookie]) {
       assert.equal(resolveAuthContext(request(credential), db), null)
     }
@@ -137,6 +137,10 @@ test('development requires the actual isolated database, opt-in and a non-produc
   }
 })
 
+
+const dogSql = `INSERT INTO dog(id,session_id,personality_tags,assembly,created_at,is_sample)
+  VALUES (?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?,?)`
+
 test('v4 to v5 is additive, rolls back failed DDL and preserves seed and legacy histories on reopen', t => {
   const path = join(workdir(t), 'historical.sqlite')
   let db = new DatabaseSync(path)
@@ -159,7 +163,7 @@ test('v4 to v5 is additive, rolls back failed DDL and preserves seed and legacy 
     assert.deepEqual(db.prepare('SELECT * FROM trip').all(), history)
     db.close()
     db = openDatabase(path)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8)
     assert.deepEqual(db.prepare('SELECT id,session_id,is_sample,created_at FROM dog ORDER BY id').all(), before)
     assert.deepEqual(db.prepare('SELECT * FROM trip').all(), history)
     assert.equal(db.prepare('SELECT count(*) n FROM owner').get().n, 0)

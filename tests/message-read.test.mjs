@@ -17,7 +17,7 @@ function setup(t) {
   const other = fixtureSession(db)
   for (const [id, owner] of [['fixture-dog', session.sessionId], ['other-dog', other.sessionId]]) {
     db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
-      VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(id, owner, owner, at)
+      VALUES(?,?,?,'["好奇","看物","直给"]','{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`).run(id, owner, owner, at)
   }
   function trip(id, status = 'done', dog = 'fixture-dog') {
     const seq = Number(db.prepare('SELECT COALESCE(MAX(seq),0)+1 n FROM trip WHERE dog_id=?').get(dog).n)

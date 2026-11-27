@@ -77,7 +77,7 @@ function freshFileDb(): { file: string; db: DatabaseSync } {
     ).run(
       id,
       JSON.stringify(['好奇', '看物', '当下']),
-      JSON.stringify({ cloth: 'sweater', hat: null, glasses: 'round', face: 'waiting' }),
+      JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' }),
       T0,
     )
   }

@@ -65,10 +65,7 @@ CREATE TABLE dog (
                                      OR (json_valid(interest_categories)
                                          AND json_array_length(interest_categories) BETWEEN 2 AND 3)),
 
-  -- a 写。装配单，**固定四个键，多一个都不许加**。渲染组件只吃这一个字段。
-  -- 形状：{"cloth","hat","glasses","face"}
-  -- 11-16 删掉 base / skin.color / skin.pattern：刘看山 IP 只有一种体型与一套配色。
-  -- 键数与键名校验在下面的触发器里（CHECK 写不了子查询）。
+  -- a 写。v6 新写入为 outfit/cloth/accessory/face；旧记录按原 JSON 读取。
   assembly            TEXT    NOT NULL,
 
   -- d 写。种子狗为 1。**界面必须据此标「示例伙伴」，这是五种阻断缺陷之一。**
@@ -136,33 +133,51 @@ BEGIN
   SELECT RAISE(ABORT, 'dog: invalid owner association');
 END;
 
--- 装配单校验：恰好四个键，且这四个键都在。写在触发器里因为 CHECK 不许子查询。
---
--- json_type(...) IS NULL 这个写法必须保留：它区分「键不存在」和「值是 JSON null」。
--- hat / glasses 允许 null（不戴），靠的就是 json_type 对 JSON null 返回字符串 'null'
--- 而不是 SQL NULL。改成 json_extract 会把「不戴」误判成「缺键」。
+-- K v6: adopted r2 whitelist and exclusive T/S/P/F selection.
 CREATE TRIGGER dog_assembly_ins BEFORE INSERT ON dog
 BEGIN
-  SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
-  WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
-     OR json_type(NEW.assembly, '$.cloth')  IS NULL
-     OR json_type(NEW.assembly, '$.hat')    IS NULL
-     OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL;
+  SELECT RAISE(ABORT, 'dog.assembly: invalid T/S/P/F') WHERE CASE
+    WHEN typeof(NEW.assembly) <> 'text' OR instr(NEW.assembly, char(0)) > 0 OR json_valid(NEW.assembly) <> 1 THEN 1
+    ELSE NOT COALESCE(
+      json_type(NEW.assembly) = 'object'
+      AND (SELECT count(*) FROM json_each(NEW.assembly)) = 4
+      AND json_type(NEW.assembly, '$.face') = 'text'
+        AND json_extract(NEW.assembly, '$.face') IN ('F01-neutral', 'F02-wink', 'F03-teary', 'F04-smile', 'F05-unimpressed', 'F06-sparkle', 'F07-shiny', 'F08-sleepy', 'F10-closed-smile')
+      AND (
+        (json_type(NEW.assembly, '$.outfit') = 'text'
+        AND json_extract(NEW.assembly, '$.outfit') IN ('T01-frog', 'T02-winter-post', 'T05-cloud-onesie', 'T06-starry-cloak', 'T07-striped-knit', 'T10-cowboy')
+          AND json_type(NEW.assembly, '$.cloth') = 'null'
+          AND json_type(NEW.assembly, '$.accessory') = 'null')
+        OR (json_type(NEW.assembly, '$.outfit') = 'null'
+          AND json_type(NEW.assembly, '$.cloth') = 'text'
+        AND json_extract(NEW.assembly, '$.cloth') IN ('S01-yellow-cardigan', 'S02-leaf-cape', 'S03-apron', 'S04-olive-vest', 'S05-cream-vest', 'S06-navy-varsity', 'S07-blue-cloud-hoodie', 'S08-blue-check-pajamas', 'S09-seaside-shell-cape')
+          AND (json_type(NEW.assembly, '$.accessory') = 'null' OR (json_type(NEW.assembly, '$.accessory') = 'text'
+        AND json_extract(NEW.assembly, '$.accessory') IN ('P05-daisy-crown', 'P12-orange-thermos', 'P13-blue-cap', 'P15-star-bag', 'P16-mint-sunglasses', 'P19-blue-wings', 'P22-gold-round-glasses', 'P23-black-sunglasses', 'P25-blue-check-nightcap'))))
+      ), 0)
+  END;
 END;
 
 CREATE TRIGGER dog_assembly_upd BEFORE UPDATE OF assembly ON dog
 BEGIN
-  SELECT RAISE(ABORT,
-    'dog.assembly 必须恰好四个键：cloth / hat / glasses / face')
-  WHERE json_valid(NEW.assembly) = 0
-     OR (SELECT COUNT(*) FROM json_each(NEW.assembly)) <> 4
-     OR json_type(NEW.assembly, '$.cloth')  IS NULL
-     OR json_type(NEW.assembly, '$.hat')    IS NULL
-     OR json_type(NEW.assembly, '$.glasses') IS NULL
-     OR json_type(NEW.assembly, '$.face')   IS NULL;
+  SELECT RAISE(ABORT, 'dog.assembly: invalid T/S/P/F') WHERE CASE
+    WHEN typeof(NEW.assembly) <> 'text' OR instr(NEW.assembly, char(0)) > 0 OR json_valid(NEW.assembly) <> 1 THEN 1
+    ELSE NOT COALESCE(
+      json_type(NEW.assembly) = 'object'
+      AND (SELECT count(*) FROM json_each(NEW.assembly)) = 4
+      AND json_type(NEW.assembly, '$.face') = 'text'
+        AND json_extract(NEW.assembly, '$.face') IN ('F01-neutral', 'F02-wink', 'F03-teary', 'F04-smile', 'F05-unimpressed', 'F06-sparkle', 'F07-shiny', 'F08-sleepy', 'F10-closed-smile')
+      AND (
+        (json_type(NEW.assembly, '$.outfit') = 'text'
+        AND json_extract(NEW.assembly, '$.outfit') IN ('T01-frog', 'T02-winter-post', 'T05-cloud-onesie', 'T06-starry-cloak', 'T07-striped-knit', 'T10-cowboy')
+          AND json_type(NEW.assembly, '$.cloth') = 'null'
+          AND json_type(NEW.assembly, '$.accessory') = 'null')
+        OR (json_type(NEW.assembly, '$.outfit') = 'null'
+          AND json_type(NEW.assembly, '$.cloth') = 'text'
+        AND json_extract(NEW.assembly, '$.cloth') IN ('S01-yellow-cardigan', 'S02-leaf-cape', 'S03-apron', 'S04-olive-vest', 'S05-cream-vest', 'S06-navy-varsity', 'S07-blue-cloud-hoodie', 'S08-blue-check-pajamas', 'S09-seaside-shell-cape')
+          AND (json_type(NEW.assembly, '$.accessory') = 'null' OR (json_type(NEW.assembly, '$.accessory') = 'text'
+        AND json_extract(NEW.assembly, '$.accessory') IN ('P05-daisy-crown', 'P12-orange-thermos', 'P13-blue-cap', 'P15-star-bag', 'P16-mint-sunglasses', 'P19-blue-wings', 'P22-gold-round-glasses', 'P23-black-sunglasses', 'P25-blue-check-nightcap'))))
+      ), 0)
+  END;
 END;
 
 CREATE INDEX idx_dog_session ON dog(session_id);
@@ -702,3 +717,52 @@ BEGIN
   SELECT RAISE(ABORT, 'trip: started trip wish association is immutable');
 END;
 -- c3-wish-v3: end
+
+-- v8: durable discovery receipts (internal; replay metadata is private)
+CREATE TABLE IF NOT EXISTS trip_discovery_receipt (
+  trip_id       TEXT    NOT NULL PRIMARY KEY REFERENCES trip(id),
+  dog_id        TEXT    NOT NULL REFERENCES dog(id),
+  owner_id      TEXT    REFERENCES owner(id),
+  intent_id     TEXT    NOT NULL CHECK (
+    length(intent_id) BETWEEN 1 AND 128 AND substr(intent_id, 1, 1) GLOB '[A-Za-z0-9]'
+    AND intent_id NOT GLOB '*[^A-Za-z0-9._:-]*'
+  ),
+  completed_at  TEXT    NOT NULL CHECK (
+    length(completed_at) = 24 AND strftime('%Y-%m-%dT%H:%M:%fZ', completed_at) IS NOT NULL
+    AND strftime('%Y-%m-%dT%H:%M:%fZ', completed_at) = completed_at
+  ),
+  hash_version  INTEGER NOT NULL CHECK (hash_version = 1),
+  members_json  TEXT    NOT NULL CHECK (
+    CASE WHEN json_valid(members_json) THEN
+      json_type(members_json) = 'array' AND json_array_length(members_json) BETWEEN 3 AND 5
+    ELSE 0 END
+  ),
+  receipt_hash  TEXT    NOT NULL CHECK (length(receipt_hash) = 64 AND receipt_hash NOT GLOB '*[^0-9a-f]*')
+) STRICT;
+
+CREATE TRIGGER IF NOT EXISTS trip_discovery_receipt_v8_insert_guard BEFORE INSERT ON trip_discovery_receipt
+BEGIN
+  SELECT RAISE(ABORT, 'trip discovery receipt already exists')
+  WHERE EXISTS (SELECT 1 FROM trip_discovery_receipt WHERE trip_id = NEW.trip_id);
+  SELECT RAISE(ABORT, 'trip discovery receipt requires matching running scope')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM trip t JOIN dog d ON d.id = t.dog_id
+    WHERE t.id = NEW.trip_id AND t.dog_id = NEW.dog_id AND t.status = 'running'
+      AND d.owner_id IS NEW.owner_id AND d.is_sample = (NEW.owner_id IS NULL)
+      AND julianday(NEW.completed_at) >= julianday(t.started_at)
+  );
+END;
+
+CREATE TRIGGER IF NOT EXISTS trip_discovery_receipt_v8_no_update BEFORE UPDATE ON trip_discovery_receipt
+BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
+
+CREATE TRIGGER IF NOT EXISTS trip_discovery_receipt_v8_no_delete BEFORE DELETE ON trip_discovery_receipt
+BEGIN SELECT RAISE(ABORT, 'trip discovery receipt is immutable'); END;
+
+CREATE TABLE IF NOT EXISTS trip_discovery_legacy_hold (
+  trip_id          TEXT    NOT NULL PRIMARY KEY REFERENCES trip(id),
+  dog_id           TEXT    NOT NULL REFERENCES dog(id),
+  find_count       INTEGER NOT NULL CHECK (find_count > 0),
+  captured_at      TEXT    NOT NULL,
+  source_version   INTEGER NOT NULL CHECK (source_version = 7)
+) STRICT;

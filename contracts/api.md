@@ -77,6 +77,15 @@ c3 v2 只补读取契约、查询参考、类型和索引，不表示 HTTP 路�
 
 ### 1. 领养（a 实现）
 
+#### K v6 装配写入与历史读取
+
+- 新写入使用 `TspfAssembly`，四键固定为 `outfit`、`cloth`、`accessory`、`face`。每个非空值必须是该类别在 A 的 r2 清单内的精确 ID。T 模式令 S/P 为 `null`，S 模式令 T 为 `null`，P 可为 `null`，F 必选。
+- 单衣示例为 `{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}`。套装示例为 `{"outfit":"T01-frog","cloth":null,"accessory":null,"face":"F02-wink"}`。
+- 存储读取使用 `StoredAssembly`，接受新版和原 `cloth/hat/glasses/face` 结构。`LegacyAssembly` 保留原选项，包括帽和镜。存储版本 6 对新增行和显式更新 `dog.assembly` 执行新版校验，历史行保留原 JSON，其余字段仍可更新。
+- 相近的 r2 款式只可作为重新选择时的建议。旧版可同时佩戴帽和镜，新版只有一个 P。旧装配保持原样，待主人完成重新选择并确认后才保存新版。
+- `Assembly` 与现有 A 领养编译接口暂沿用旧形状。发布 v6 领养写入前，A 需把解析、选择器和写入类型切换到 `TspfAssembly`，并让读取 DTO 和渲染入口接收 `StoredAssembly`。
+- C11b 和 C14 使用同一 `resolveTspfPlan`。路径相对于 r2 资源根，图层为背部 P → 底身 → F → T/S → 前部 P。F01 只使用原中性底身。F02–F08、F10 使用 expression-ready 底身及对应 F 层。P19 在背部。r2 偏移均为 `(0,0)`，调整已烘焙。
+
 #### v5 内部身份与会话
 
 - 受保护接口从 HttpOnly Cookie 经 `resolveAuthContext(request, db)` 解析。认证要求随机凭据的哈希已登记、未撤销、未过期，并匹配当前数据库的身份命名空间。服务端以稳定 owner 归属狗和 Trip。
@@ -205,10 +214,11 @@ POST /api/dogs/:id/trips
 POST /api/trips/:id/start    入：{ }   出：{ trip: Trip, delivered: Exchange[] }
 ```
 
-**这个接口是全系统唯一会写 `delivered_at` 的地方。** 它做两件事，一个事务里：
+**C4 在同一事务内绑定快照、开始出发并投递。**
 
-1. 把 `status` 改成 `running`，写 `started_at`
-2. **投递**：找出所有 `to_dog = 这只狗`、`delivered_at IS NULL`、`deliver_after_trip_seq <= 本次 seq` 的 exchange，逐条写 `delivered_at`
+1. 检查归属、状态、配额和间隔，使用固定事件事实派生新快照，将该版本写入 `trip_snapshot`。
+2. 把 `status` 改成 `running`，写 `started_at`。
+3. 由既有投递器将本次到期的 exchange 逐条标为送达。
 
 ```
 POST /api/trips/:id/finish   入：{ status: 'done'|'failed'|'timeout' }
@@ -228,14 +238,29 @@ GET  /api/dogs/:id/trips?limit=10    出：{ trips: Trip[] }
 - 五个路由全部验证服务端会话与 owner 归属；缺少有效 Cookie、跨 owner、记录不存在均 HTTP 404 / `NOT_FOUND`。所有响应 `Cache-Control: no-store`，读取不触发状态更新或投递。
 - POST 接受 JSON 对象：创建只有 `trigger`，开始为 `{}`，结束只有 `status`。不接收 `session_id`、seq 或时间戳；不允许跨来源 POST。参数/状态/额度冲突均 HTTP 409 / `CONFLICT`；数据库不可用返回脱敏 HTTP 503 / `NETWORK`。成功 HTTP 200。
 - A 裁定：UTC 存储；自然日按上海固定 +8 小时切分，仅统计 `started_at IS NOT NULL`，`date(started_at, '+8 hours')` 为归属日。pending 不扣次数，failed/timeout 已出发则计数，跨午夜结束仍归出发日。每日上限 2；沿用 `TRIP_MIN_GAP_HOURS=6`，出发时检查间隔。
-- 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务、当日额度、分配 `MAX(seq)+1` 并插入；出发在同类事务内重新检查额度及间隔，再写 running/started_at 并调用现有投递器。投递失败整笔回滚。
+- 创建在 `BEGIN IMMEDIATE` 内检查所有权、单个活跃任务和当日额度，分配 `MAX(seq)+1` 并插入。出发在同类事务内重新检查额度及间隔。派生、绑定、出发和投递中任一步失败都会整体回滚。派生所需历史缺少固定事实时返回 HTTP 409 / `CONFLICT`，并保留 pending。
 - 重复 start：running 返回原 trip 和 `delivered: []`，不改 started_at、不再投递；终态不能重新开始。只有 running 可进入终态；重复相同终态返回既有数据且不改 ended_at，其他终态切换返回 CONFLICT。
 - finish 只读已有 finds（包含 assetPath），B 未接入前 `message: null`，不伪造发现；不写 replied_at 或 read_at。
 - `timeout` 可显式结束；自动超时毫秒数未获裁定，不设置默认值。服务端执行器可传 `timeoutIfDue(id, sessionId, timeoutMs)`，未传即禁用；C4 不启动调度器，不在 GET 中隐式结束任务。
 - 共用会话：`lib/auth/session.ts` 的 `ensureAnonymousSession` 给 A 领养使用，`readSessionId` 给服务端鉴权使用。cookie 为随机 32 字节，HttpOnly、SameSite=Lax、Path=/，生产 Secure；数据库只存 SHA-256 派生 sessionId，不向客户端暴露 sessionId。
 - 前端调用 `lib/trips/poll.ts` 的 `pollTrip(id, { onTrip, onError, signal? })`；立即读一次，之后每次响应后 700ms 再读，无重叠请求；三个终态停止，HTTP/网络错误回调后停止，返回停止函数供卸载清理。
 
+#### 种子狗内部出行
+
+- 可信服务端执行器通过 `createSeedTripRunner(db)(dogId, intentId)` 取得同一调度意图的 `create()`、`start()`、`finish(status)`。只允许数据库中 `is_sample=1` 且无 owner 的狗。内部能力不接收 Cookie 或 sessionId，现有 HTTP 路由继续要求真人 owner 归属。
+- 调用方为同一意图始终传相同 `intentId`，长度 1–128，首字符为 ASCII 字母或数字，其余可用字母、数字、点、下划线、冒号或连字符。相同狗和意图绑定同一 Trip ID，重启可恢复。另一意图在该狗已有 pending/running 时收到 `CONFLICT`。
+- 创建返回同一意图的既有记录。开始与主人出发共用快照及投递规则，失败可重试原 pending。重复开始返回既有 running 或终态 Trip，`delivered: []`。执行器在 start 提交后可调用同一意图的 `selectEvent(conditions)`。结束遵守既有终态规则。
+- 内部调用方先校验授权，再用 `readDepartureSnapshot(db, tripId, dogId)` 读取出发绑定版本。历史 running 或终态 Trip 若没有绑定，读取结果为 `null`。
+
 ### 4. 发现（c 实现）
+
+#### v8 发现批次内部回执
+
+C6 在首次完整批次的 SQLite 写事务中保存唯一的 `trip_discovery_receipt`，绑定 Trip、执行意图、完成时刻、有序 Find ID 和各成员持久内容的版本化哈希。主人路径由可信服务端传入稳定意图，种子沿用已验证的种子执行意图。公开接口没有回执或意图字段。
+
+发起搜索前和批写事务内均查回执。合法重放核对原成员的归属与完整性，再按当前屏蔽规则返回可显示的子集。可显示成员减少时仍保留原完成状态，不重新搜索或补位。回执缺损及成员不一致是内部完整性错误。旧 Find 及其来源档位不会自动生成回执。
+
+私有屏蔽核验信息仅供服务端重放。事件缺少发生时标签时保留未知状态；无法核实当前屏蔽规则则过滤该成员。回执和核验信息不进入 Find 的公开 DTO，终态 GET 继续按原归属读取历史 Find。
 
 #### 独立归来分享读取（C，2026-11-20）
 
@@ -508,8 +533,8 @@ POST /api/gen/image
   "purpose": "portrait" | "moment" | "gift" | "scene",  // 加第五种必须由 c 改 K
   "size":    { "w": 1200, "h": 800 },                   // 按资产规范的尺寸表取
   "place":   { "kind": "城市角落", "timeOfDay": "dusk", "weather": "雨" },  // 查 trip/find
-  "dogs": [                                             // 查 dog.assembly，四键
-    { "role": "owner",  "assembly": { "cloth": "hoodie", "hat": "beanie", "glasses": null, "face": "hopeful" },
+  "dogs": [                                             // 服务端查 dog.assembly，C14 新版计划使用 TspfAssembly
+    { "role": "owner",  "assembly": { "outfit": null, "cloth": "S02-leaf-cape", "accessory": null, "face": "F01-neutral" },
       "refImagePath": "/assets/gen/ref-dog_owner.webp" }
   ],
   "camera":  "single" | "group" | "empty"
@@ -770,7 +795,7 @@ fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenance
 ## 七、事件数据库契约（2026-11-18，内部数据访问，不新增 HTTP 路由）
 
 `event` 是 D 维护的候选池，尚未发生，不得当作 `find` 或真实出行经历。
-`trip_event` 是 C 独占写入的历史事实，D 只读。本轮只交数据库基础，未实现 pickEvent、抽签、冷却判断或渲染。
+`trip_event` 是 C 独占写入的历史事实，D 只读。
 
 ### event：固定 12 列
 
@@ -791,13 +816,20 @@ fixtures/exchange.json 保留原 4 条历史 exchanges，另有显式 provenance
 
 **没有 created_at。** 所有列非 NULL。JSON 在数据库中为 TEXT，读取边界解析为数组/对象，snake_case 映射为 camelCase。JSON 元素在插入和更新时均由触发器检查；不能只校验 JSON 语法。
 
-`place_tags=[]` 表示无地点限制，不能用来表示「素材尚未填」。非空数组与 `availablePlaces` 有非空交集时才匹配；当 `availablePlaces=[]` 时只有不限地点的候选适用。找不到匹配事件返回 `null`，属于正常结果，不是错误，也不制造替代事件。这里只确定后续选择器的语义，本轮没有运行筛选或加权随机。
+`place_tags=[]` 表示无粗地点标签限制。非空数组必须与 `availablePlaces` 相交。所有候选还须通过逐条事件的场景语义限制。
 
 `match_tags` 复用「自然风景、城市角落、手作与食物、人与故事、动物与植物、冷知识」，不引入新的兴趣字典。`asset_refs` 的对象内部结构待 E2c 的素材引用对齐；不得为凑素材清空 place_tags。
 
 ### trip_event：固定 4 列
 
 `trip_id` → trip.id；`event_id` → event.id；`dog_id` → dog.id；`happened_at` 为 UTC ISO-8601 TEXT。四列非空，主键 `(trip_id,event_id)`，索引 `idx_trip_event_dog(dog_id,happened_at)`。不新增独立 id 或其他时间列，不设置级联删除。C 后续写入时必须使用该 trip 所属 dog；外键校验三条引用存在，业务归属由 C 的写入方检查。
+
+### C7 内部运行时
+
+- `resolveSceneContext(sceneFile)` 只接受 E2c `scene-map.json` 的相对文件键。未知场景返回 `null`。粗标签来自 A 核准的 D 映射，事件级兼容还要看场景与已审文本。
+- `createTripEventSelector(db)(input)` 由可信 Trip 执行器调用。输入为 `dogId`、`tripId`、服务端 C4 归属键 `sessionId` 和 `conditions`。条件包含 `sceneFile`、`season`、`weather` 和 `timeOfDay`。缺失可信条件可传 `null`。`any` 只用于事件候选条件。
+- 按启用、时间和天气、粗标签、语义、兴趣与屏蔽主题、同狗冷却顺序筛选；`match_tags=[]` 不限制兴趣，`interest_categories=NULL` 表示主人跳过，匹配不受六类限制，存储仍为 NULL。冷却按 UTC 经过时长计算，满 `cooldown_days × 24h` 可再选。
+- 种子入口由内部意图调用，核对稳定 Trip ID、狗归属、种子标记和无 owner。主人入口拒绝样本狗。授权、抽签及 occurrence 写入在 start 提交后的独立事务，v7 触发器同时冻结事件代码和公开文本。已记录唯一事件的 running Trip 重试返回原记录。无匹配返回 `null`，旅途继续。数据库或历史一致性错误回滚并抛出。
 
 ### 初始化与 D 导入
 

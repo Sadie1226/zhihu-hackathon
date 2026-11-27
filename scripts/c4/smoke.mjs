@@ -20,7 +20,7 @@ const secondCookie = secondDevice.setCookie.split(';', 1)[0]
 for (const [id, owner, sample] of [['fixture-recipient', session.sessionId, 0], ['fixture-sender', null, 1]]) {
   db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,is_sample,created_at)
     VALUES(?,?,?,?,?,?,?)`).run(id, owner ?? 'fixture-other', owner, '["好奇","看物","直给"]',
-    '{"cloth":"hoodie","hat":"beanie","glasses":null,"face":"hopeful"}', sample, '2026-11-17T00:00:00Z')
+    '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', sample, '2026-11-17T00:00:00Z')
 }
 db.prepare(`INSERT INTO exchange(id,from_dog,to_dog,kind,payload,deliver_after_trip_seq,created_at)
   VALUES('fixture-gift','fixture-sender','fixture-recipient','gift',?,1,?)`)

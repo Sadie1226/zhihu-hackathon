@@ -11,7 +11,7 @@ function setup(t) {
   db.exec(readFileSync('contracts/schema.sql','utf8'))
   t.after(() => db.close())
   for (const [table,key] of [['dog','dogs'],['trip','trips'],['find','finds']]) {
-    for (const row of fixture(table)[key]) {
+    for (const row of fixture(table === 'dog' ? 'dog-v6' : table)[key]) {
       const keys = Object.keys(row)
       db.prepare(`INSERT INTO ${table}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')})`)
         .run(...Object.values(row).map(v => v !== null && typeof v === 'object' ? JSON.stringify(v) : typeof v === 'boolean' ? Number(v) : v))

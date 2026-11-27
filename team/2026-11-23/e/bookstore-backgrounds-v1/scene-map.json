@@ -1,0 +1,32 @@
+{
+  "canvas": [
+    750,
+    640
+  ],
+  "origin": "top-left",
+  "actorVisibleSize": [
+    132,
+    183
+  ],
+  "placement": "asset-review",
+  "scenes": [
+    {
+      "place": "街角书店外景",
+      "file": "scenes/bookstore-exterior-750w.png",
+      "source": "图片 55.png",
+      "foot": [
+        370,
+        550
+      ]
+    },
+    {
+      "place": "街角书店内景",
+      "file": "scenes/bookstore-interior-750w.png",
+      "source": "图片 56.png",
+      "foot": [
+        400,
+        550
+      ]
+    }
+  ]
+}

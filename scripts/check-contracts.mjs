@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { checkExchangeProvenance } from '../contracts/types.ts'
+import { isTspfAssembly } from '../contracts/assembly.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -50,7 +51,7 @@ const tables = db
   .prepare("select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name")
   .all()
   .map((r) => r.name)
-const EXPECTED_TABLES = ['adoption_receipt', 'dog', 'event', 'exchange', 'find', 'invitation', 'message', 'owner', 'owner_session', 'relation', 'reply', 'snapshot', 'trip', 'trip_event', 'wish']
+const EXPECTED_TABLES = ['adoption_receipt', 'dog', 'event', 'exchange', 'find', 'invitation', 'message', 'owner', 'owner_session', 'relation', 'reply', 'snapshot', 'trip', 'trip_discovery_legacy_hold', 'trip_discovery_receipt', 'trip_event', 'wish']
 if (JSON.stringify(tables) === JSON.stringify(EXPECTED_TABLES)) {
   ok(`${tables.length} 张表：${tables.join(' ')}`)
 } else {
@@ -63,9 +64,7 @@ else bad('外键没打开', '每个连接都要 PRAGMA foreign_keys = ON')
 // ---------------------------------------------------------------- 2. 约束真的拦得住
 console.log('\n2. 约束真的拦得住（故意塞错数据，必须报错）')
 
-const DOG_OK = JSON.stringify({
-  cloth: 'hoodie', hat: 'beanie', glasses: null, face: 'hopeful',
-})
+const DOG_OK = JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' })
 const insDog = () =>
   db.prepare(`insert into dog (id,name,session_id,personality_tags,interest_categories,assembly,is_sample,created_at)
               values (?,?,?,?,?,?,0,?)`)
@@ -84,6 +83,18 @@ const mustPass = (label, fn) => {
 mustPass('合法的狗能插进去', insDog)
 db.exec('delete from dog')
 
+mustPass('K v6 新夹具符合 T/S/P/F', () => {
+  const fixtures = JSON.parse(read('contracts/fixtures/dog-v6.json'))
+  assert.equal(fixtures.assemblyVersion, 6)
+  assert.ok(fixtures.dogs.every(dog => isTspfAssembly(dog.assembly)))
+})
+
+mustFail('K v6 拒绝旧装配新写入', () => {
+  const old = JSON.parse(read('contracts/fixtures/dog.json')).dogs[0].assembly
+  db.prepare(`insert into dog (id,session_id,personality_tags,assembly,created_at)
+              values ('old-dog','s','["好奇","看物","直给"]',?,'2026-11-16T00:00:00Z')`).run(JSON.stringify(old))
+})
+
 mustFail('装配单多一个键 → 拦', () => {
   const a = JSON.parse(DOG_OK); a.extra = 1
   db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
@@ -99,16 +110,16 @@ for (const gone of ['base', 'skin']) {
       .run(`d_gone_${gone}`, '旧', JSON.stringify(a))
   })
 }
-// 「不戴」是 JSON null，不是缺键。这两条一起证明 json_type 那个写法没被改坏。
-mustPass('hat = null（不戴）能通过', () => {
-  const a = JSON.parse(DOG_OK); a.hat = null
+// An optional accessory is explicit JSON null.
+mustPass('accessory = null（不戴）能通过', () => {
+  const a = JSON.parse(DOG_OK); a.accessory = null
   db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
               values ('d_null','空','s','["好奇","看物","直给"]',?,'2026-11-16T00:00:00Z')`)
     .run(JSON.stringify(a))
   db.exec("delete from dog where id = 'd_null'")
 })
 mustFail('装配单少一个键 → 拦', () => {
-  const a = JSON.parse(DOG_OK); delete a.glasses
+  const a = JSON.parse(DOG_OK); delete a.accessory
   db.prepare(`insert into dog (id,name,session_id,personality_tags,assembly,created_at)
               values ('d3','三','s','["好奇","看物","直给"]', ?, '2026-11-16T00:00:00Z')`).run(JSON.stringify(a))
 })
@@ -241,7 +252,7 @@ const FX_KEYS = {
 const fx = {}
 for (const [table, key] of Object.entries(FX_KEYS)) {
   try {
-    const raw = JSON.parse(read(`contracts/fixtures/${table}.json`))
+    const raw = JSON.parse(read(`contracts/fixtures/${table === 'dog' ? 'dog-v6' : table}.json`))
     if (!Array.isArray(raw[key])) throw new Error(`顶层缺少数组 "${key}"`)
     if (raw.sourceMode !== 'fixture') throw new Error('缺少 sourceMode: "fixture"（假数据必须自报身份）')
     fx[table] = raw[key]

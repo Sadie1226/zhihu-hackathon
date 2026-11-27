@@ -22,12 +22,8 @@ const draft = {
   interestCategories: null,
   tendencies: [-2, 0, 0, 0, 1, 0],
 }
-const assembly = {
-  cloth: 'hoodie',
-  hat: 'none',
-  glasses: 'none',
-  face: 'happy',
-}
+const assembly = { outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' }
+
 function payload() {
   return {
     ...draft,
@@ -48,6 +44,20 @@ function database(t) {
   t.after(() => { db.close(); rmSync(dir, { recursive: true, force: true }) })
   return db
 }
+
+test('strict v6 rejects legacy adoption for a new owner and preserves existing legacy dog reads', t => {
+  const db = database(t)
+  const dog = createDevelopmentDog(db, 'owner-a', payload())
+  const upgraded = openDatabase(db.location())
+  try {
+    assert.equal(upgraded.prepare('PRAGMA user_version').get().user_version, 8)
+    assert.deepEqual(ownedDog(upgraded, 'owner-a'), dog)
+    assert.deepEqual(createDevelopmentDog(upgraded, 'owner-a', payload()), dog)
+    assert.throws(() => createDevelopmentDog(upgraded, 'owner-b', { ...payload(), assembly: { cloth: 'hoodie', hat: null, glasses: null, face: 'happy' } }), /新版/)
+    assert.equal(upgraded.prepare('SELECT count(*) n FROM dog').get().n, 1)
+    assert.equal(upgraded.prepare('SELECT count(*) n FROM adoption_receipt').get().n, 1)
+  } finally { upgraded.close() }
+})
 
 test('development gate requires isolated filename and refuses production', () => {
   const env = {
@@ -95,7 +105,7 @@ test('creation is durable/idempotent; conflict cannot create another dog or spoo
     () =>
       createDevelopmentDog(db, 'owner-a', {
         ...input,
-        assembly: { ...assembly, hat: 'cap' },
+        assembly: { ...assembly, accessory: 'P13-blue-cap' },
       }),
     /内容已改变/,
   )

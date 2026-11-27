@@ -25,7 +25,7 @@ function setup(t) {
   })
   const session = fixtureSession(db)
   const dog = id => db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
-    VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
+    VALUES(?,?,?,'["好奇","看物","直给"]','{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`)
     .run(id, session.sessionId, session.sessionId, '2026-11-19T00:00:00Z')
   dog('fixture-owner')
   function trip(id, status = 'running', dogId = 'fixture-owner') {

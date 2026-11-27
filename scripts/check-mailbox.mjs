@@ -26,7 +26,7 @@ const db = new DatabaseSync(':memory:')
 db.exec('PRAGMA foreign_keys = ON')
 db.exec(readFileSync(join(ROOT, 'contracts/schema.sql'), 'utf8'))
 
-const A = JSON.stringify({ cloth: 'hoodie', hat: null, glasses: null, face: 'happy' })
+const A = JSON.stringify({ outfit: null, cloth: 'S02-leaf-cape', accessory: null, face: 'F01-neutral' })
 const insDog = (id, tags) => db.prepare(
   `insert into dog (id,session_id,personality_tags,assembly,created_at) values (?,?,?,?,'2026-11-16T00:00:00Z')`
 ).run(id, 's', JSON.stringify(tags), A)

@@ -9,6 +9,7 @@ import { createTripDiscoverer } from '../lib/trips/discover.ts'
 import { createFindStore, handleFindsRequest } from '../lib/trips/finds.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import { searchForTrip } from '../lib/trips/search-proof.ts'
+import { revokeSession } from '../lib/auth/session.ts'
 
 // Every provider response here is synthetic fixture input. No .env, secrets or network.
 const at = '2026-11-20T00:01:00Z'
@@ -32,13 +33,15 @@ function setup(t, legacy = false) {
   const session = legacy ? { sessionId: 'fixture-internal', setCookie: '' } : fixtureSession(db)
   db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,interest_categories,assembly,created_at)
     VALUES('fixture-dog',?,?,'["好奇","看物","直给"]','["自然风景","冷知识"]',
-    '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`).run(session.sessionId, legacy ? null : session.sessionId, at)
+    '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`).run(session.sessionId, legacy ? null : session.sessionId, at)
   db.prepare(`INSERT INTO wish(id,dog_id,text,category,created_at) VALUES('fixture-wish','fixture-dog','想看雪','自然风景',?)`).run(at)
   const service = createTripService(db, { now: () => new Date(at), newId: () => 'fixture-trip' })
   service.create('fixture-dog', session.sessionId, 'wish'); service.start('fixture-trip', session.sessionId)
-  const execute = p => createTripDiscoverer(db, { provider: p, now: () => new Date(at) })('fixture-trip', session.sessionId)
+  const cookie = session.setCookie.split(';')[0]
+  const request = new Request('http://localhost', { headers: { cookie } })
+  const execute = p => createTripDiscoverer(db, { provider: p, now: () => new Date(at) })('fixture-trip', request)
   const rows = () => db.prepare('SELECT * FROM find').all()
-  return { db, path, session: session.sessionId, cookie: session.setCookie.split(';')[0], service, execute, rows }
+  return { db, path, session: session.sessionId, cookie, request, service, execute, rows }
 }
 
 test('C4 start -> C5 protocol -> verified store -> authenticated GET -> finish -> restart history', async t => {
@@ -98,16 +101,23 @@ test('selection keeps the start-time wish rather than replacing it with a newer 
   assert.equal(db.prepare('SELECT wish_id FROM trip').get().wish_id, 'fixture-wish')
 })
 
-for (const [status, expected] of [[401, 'AUTH'], [429, 'RATE_LIMITED'], [503, 'NETWORK']]) {
-  test(`provider ${expected} remains internal failure with no fabricated live/fallback or retry`, async t => {
+for (const [status, expected] of [[401, 'AUTH'], [429, 'RATE_LIMITED']]) {
+  test(`provider ${expected} cache miss yields an empty result with internal metadata and no retry`, async t => {
     const { execute, rows } = setup(t), p = provider(() => Response.json({}, { status }))
     const result = await execute(p.search)
-    assert.equal(result.ok, false); assert.equal(result.error.code, expected)
-    assert.equal(result.error.retriable, expected === 'NETWORK'); assert.equal(p.calls, 1)
-    assert.equal(result.fallback, expected === 'NETWORK' ? null : 'cache-or-fixture')
-    assert.equal(rows().length, 0); assert.ok(!('finds' in result))
+    assert.equal(result.ok, true); assert.deepEqual(result.finds, [])
+    assert.deepEqual(result.degradation, { code: expected, alert: expected === 'AUTH' })
+    assert.equal(p.calls, 1); assert.equal(rows().length, 0)
   })
 }
+
+test('ordinary server failure stays NETWORK and does not initiate a fallback or retry', async t => {
+  const { execute, rows } = setup(t), p = provider(() => Response.json({}, { status: 503 }))
+  const result = await execute(p.search)
+  assert.equal(result.ok, false); assert.equal(result.error.code, 'NETWORK')
+  assert.equal(result.error.retriable, true); assert.equal(result.fallback, null)
+  assert.equal(p.calls, 1); assert.equal(rows().length, 0)
+})
 
 test('network exception and successful empty response never fabricate findings', async t => {
   const { execute, rows } = setup(t)
@@ -134,7 +144,7 @@ test('forged/cloned proofs and plain sourceMode=live cannot authorize storage', 
   for (const fake of [{ verifiedSearch: true }, {}, null, { sourceMode: 'live', tripId: 'fixture-trip' }]) {
     assert.throws(() => store.writeVerified(fake, session), { code: 'CONFLICT' })
   }
-  const result = await searchForTrip({ tripId: 'fixture-trip', sessionId: session,
+  const result = await searchForTrip({ tripId: 'fixture-trip', dogId: 'fixture-dog', ownerId: session,
     query: '想看雪', category: '自然风景', blockedTopics: [] }, provider().search)
   assert.throws(() => store.writeVerified(JSON.parse(JSON.stringify(result.proof)), session), { code: 'CONFLICT' })
   assert.throws(() => store.write({ tripId: 'fixture-trip', kind: 'zhihu', title: 'fixture', excerpt: null,
@@ -157,18 +167,18 @@ test('trip finishing during network request prevents commit and network holds no
 })
 
 test('ownership and latest blocked topics are rechecked when committing', async t => {
-  const { db, execute, rows } = setup(t, true)
+  const { db, execute, request, rows } = setup(t)
   const p = provider(() => {
     db.exec(`UPDATE dog SET blocked_topics='["雪"]'`)
     return Response.json(envelope([item]))
   })
   await assert.rejects(execute(p.search), { code: 'CONFLICT' }); assert.equal(rows().length, 0)
   db.exec("UPDATE dog SET blocked_topics='[]'")
-  const changedOwner = provider(() => {
-    db.prepare('UPDATE dog SET session_id=?').run('fixture-other-owner')
+  const revokedOwner = provider(() => {
+    revokeSession(request, db)
     return Response.json(envelope([item]))
   })
-  await assert.rejects(execute(changedOwner.search), { code: 'NOT_FOUND' }); assert.equal(rows().length, 0)
+  await assert.rejects(execute(revokedOwner.search), { code: 'NOT_FOUND' }); assert.equal(rows().length, 0)
 })
 
 test('cross-owner, missing session and terminal trips fail before search; historical GET still works', async t => {
@@ -184,14 +194,13 @@ test('cross-owner, missing session and terminal trips fail before search; histor
   assert.equal(handleFindsRequest(new Request('http://localhost'), 'fixture-trip', () => db).status, 404)
 })
 
-test('sample dog never runs live search and cannot acquire live provenance during commit', async t => {
-  const { db, execute, rows } = setup(t, true), p = provider()
+test('legacy and sample ownership keys never reach live search', async t => {
+  const { db, session, rows } = setup(t, true), p = provider()
+  const discover = createTripDiscoverer(db, { provider: p.search })
+  await assert.rejects(discover('fixture-trip', session), { code: 'NOT_FOUND' })
   db.exec('UPDATE dog SET is_sample=1')
-  await assert.rejects(execute(p.search), { code: 'CONFLICT' }); assert.equal(p.calls, 0)
-  db.exec('UPDATE dog SET is_sample=0')
-  await assert.rejects(execute(provider(() => {
-    db.exec('UPDATE dog SET is_sample=1'); return Response.json(envelope([item]))
-  }).search), { code: 'CONFLICT' })
+  await assert.rejects(discover('fixture-trip', session), { code: 'NOT_FOUND' })
+  assert.equal(p.calls, 0)
   assert.equal(rows().length, 0)
 })
 

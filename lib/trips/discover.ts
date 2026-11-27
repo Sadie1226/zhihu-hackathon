@@ -1,48 +1,60 @@
-import type { DatabaseSync } from 'node:sqlite'
+﻿import type { DatabaseSync } from 'node:sqlite'
 import { CATEGORY_KEYWORDS, INTEREST_CATEGORIES } from '../../contracts/types.ts'
 import type { InterestCategory } from '../../contracts/types.ts'
-import { readTripWish } from '../wishes/contract.ts'
+import { TripError } from './errors.ts'
+import type { OwnerFindScope } from './find-scope.ts'
 import { createFindStore } from './finds.ts'
+import { createMemorySearchCache } from './search-cache.ts'
 import { blockedBy, searchForTrip } from './search-proof.ts'
-import type { SearchProvider } from './search-proof.ts'
-import { createTripService, TripError } from './service.ts'
+import type { SearchCacheOptions, SearchProvider } from './search-proof.ts'
 
-/** Internal server executor, not an HTTP handler or an automatic scheduler.
- * The ownership key comes from trusted server context. Query, mode and time are server-controlled.
- * Provider/clock overrides are trusted server test configuration, never request data.
- */
-export function createTripDiscoverer(db: DatabaseSync, options: { provider?: SearchProvider; now?: () => Date } = {}) {
-  return async function discover(tripId: string, sessionId: string) {
-    if (!sessionId || !tripId) throw new TripError('NOT_FOUND', '这条记录不在这里')
-    const trip = createTripService(db).get(tripId, sessionId)
-    if (trip.status !== 'running' || !trip.startedAt) throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
-    const dog = db.prepare('SELECT interest_categories,blocked_topics,is_sample FROM dog WHERE id=? AND session_id=?')
-      .get(trip.dogId, sessionId)!
-    if (dog.is_sample === 1) throw new TripError('CONFLICT', '示例伙伴不执行真实搜索')
-    const blockedTopics = JSON.parse(String(dog.blocked_topics)) as string[]
+const processCache = createMemorySearchCache()
+
+/** Trusted server configuration supplies the provider. Search only, outside the write lock. */
+export function createTripDiscoverySearch(db: DatabaseSync, provider?: SearchProvider,
+  { cache = processCache, now }: SearchCacheOptions = {}) {
+  const store = createFindStore(db, { now })
+  return async function search(tripId: string, scope: OwnerFindScope, intentId?: string) {
+    if (db.isTransaction) throw new Error('Trip discovery search requires a committed trip')
+    const trip = store.prepareOwnerSearch(tripId, scope, intentId)
+    const { replay, blockedTopics } = trip
+    if (replay) {
+      return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null, replay }
+    }
     let candidate: { query: string; category: string } | undefined
-    const wish = trip.trigger === 'wish' ? readTripWish(db, tripId, sessionId) : null
-    if (wish) {
-      // Use only the wish fixed at start; do not replace historical provenance on retry.
-      const query = wish.text.trim()
+    if (typeof trip.wishText === 'string' && typeof trip.wishCategory === 'string') {
+      const category = trip.wishCategory
+      const query = trip.wishText.trim()
       if (!query || [...query].length > 200 || [...query].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) {
         throw new TripError('CONFLICT', '心愿搜索内容不符合要求')
       }
-      if (!blockedBy(blockedTopics, query, wish.category)) candidate = { query, category: wish.category }
+      if (!blockedBy(blockedTopics, query, category)) candidate = { query, category }
     } else {
-      const categories = dog.interest_categories === null ? INTEREST_CATEGORIES
-        : JSON.parse(String(dog.interest_categories)) as InterestCategory[]
+      const categories = trip.interestCategories === null ? INTEREST_CATEGORIES
+        : JSON.parse(String(trip.interestCategories)) as InterestCategory[]
       for (const category of categories) {
         if (!INTEREST_CATEGORIES.includes(category)) throw new TripError('CONFLICT', '兴趣类目不符合契约')
         const query = CATEGORY_KEYWORDS[category].find(text => !blockedBy(blockedTopics, category, text))
         if (query) { candidate = { query, category }; break }
       }
     }
-    if (!candidate) return { ok: true as const, finds: [], httpStatus: null, fetchedAt: null }
-    // No SQLite transaction spans this await. C4 can finish while the provider runs.
-    const result = await searchForTrip({ tripId, sessionId, ...candidate, blockedTopics }, options.provider)
-    if (!result.ok) return result // internal only: AUTH/RATE_LIMITED are never sent to UI here
-    const finds = result.proof ? [createFindStore(db, { now: options.now }).writeVerified(result.proof, sessionId)] : []
-    return { ok: true as const, finds, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt }
+    if (!candidate) return { ok: true as const, proof: null, proofs: [], httpStatus: null, fetchedAt: null }
+    return searchForTrip({ tripId, dogId: trip.dogId, ownerId: trip.ownerId, intentId: trip.intentId,
+      ...candidate, blockedTopics }, provider, { cache, now })
+  }
+}
+
+/** Single Find compatibility entry. HTTP callers pass the same request to both phases. */
+export function createTripDiscoverer(db: DatabaseSync, options: SearchCacheOptions & { provider?: SearchProvider } = {}) {
+  const store = createFindStore(db, options)
+  const search = createTripDiscoverySearch(db, options.provider, options)
+  return async function discover(tripId: string, scope: OwnerFindScope, intentId?: string) {
+    const result = await search(tripId, scope, intentId)
+    if (!result.ok) return result
+    if ('replay' in result) return { ok: true as const, ...result.replay, httpStatus: null, fetchedAt: null }
+    const saved = store.commitSearchSelection(tripId, result.proof, scope, intentId)
+    const diagnostic = 'degradation' in result && { degradation: result.degradation }
+    if ('confirmation' in saved) return { ok: true as const, ...saved, httpStatus: null, fetchedAt: null, ...diagnostic }
+    return { ok: true as const, ...saved, httpStatus: result.httpStatus, fetchedAt: result.fetchedAt, ...diagnostic }
   }
 }

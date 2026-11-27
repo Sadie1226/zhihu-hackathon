@@ -23,7 +23,7 @@ function setup(t) {
   })
   const dog = (id, session) => db.prepare(
     `INSERT INTO dog(id,session_id,personality_tags,assembly,created_at) VALUES(?,?,'["好奇","看物","直给"]',?,?)`,
-  ).run(id, session, '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}', '2026-11-21T00:00:00Z')
+  ).run(id, session, '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', '2026-11-21T00:00:00Z')
   dog('dog-a', 'session-a')
   dog('dog-b', 'session-b')
   // 一条已送达、一条未送达的 exchange；一条 invitation。

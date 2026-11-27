@@ -23,7 +23,7 @@ function setup(t) {
   const session = fixtureSession(db)
   const cookie = session.setCookie.split(';')[0]
   const insertDog = (id, sessionId) => db.prepare(`INSERT INTO dog(id,session_id,owner_id,personality_tags,assembly,created_at)
-    VALUES(?,?,?,'["好奇","看物","直给"]','{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}',?)`)
+    VALUES(?,?,?,'["好奇","看物","直给"]','{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}',?)`)
     .run(id, sessionId, db.prepare('SELECT id FROM owner WHERE id = ?').get(sessionId) ? sessionId : null, '2026-11-20T00:00:00Z')
   insertDog('dog-owner', session.sessionId)
   insertDog('dog-other', 'anon_other_dog_session')

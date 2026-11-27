@@ -81,7 +81,7 @@ function setup(t) {
   const dog = (id, session, name, blocked) => db.prepare(
     `INSERT INTO dog(id,session_id,name,personality_tags,assembly,blocked_topics,created_at)
      VALUES(?,?,?,'["好奇","看物","直给"]',? ,?,?)`,
-  ).run(id, session, name, '{"cloth":"hoodie","hat":null,"glasses":null,"face":"hopeful"}', blocked, '2026-11-25T00:00:00Z')
+  ).run(id, session, name, '{"outfit":null,"cloth":"S02-leaf-cape","accessory":null,"face":"F01-neutral"}', blocked, '2026-11-25T00:00:00Z')
   dog('dog-a', 'session-a', '小雪', '[]')
   dog('dog-b', 'session-b', '小风', '[]')
   return { db }
