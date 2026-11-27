@@ -65,8 +65,13 @@ function draw(candidates: Candidate[], random: () => number): Candidate | undefi
 }
 
 /** Run outside any other transaction. Exactly one recorded occurrence is reused on retry. */
-export function createTripEventSelector(db: DatabaseSync, options: { now?: () => Date; random?: () => number } = {}) {
-  const trips = createTripService(db)
+export function createTripEventSelector(db: DatabaseSync, options: {
+  now?: () => Date
+  random?: () => number
+  authorizeOwner?: (dogId: string, ownerId: string) => void
+  shouldSelect?: () => boolean
+} = {}) {
+  const trips = createTripService(db, { authorizeOwner: options.authorizeOwner })
   const now = options.now ?? (() => new Date())
   const random = options.random ?? Math.random
   const occurrence = db.prepare(`SELECT trip_id AS tripId, event_id AS eventId, dog_id AS dogId,
@@ -127,7 +132,7 @@ export function createTripEventSelector(db: DatabaseSync, options: { now?: () =>
           throw new Error('Inconsistent trip event history')
         }
         result = { ...recorded }
-      } else {
+      } else if (options.shouldSelect?.() ?? true) {
         const current = now()
         const happenedAt = current.toISOString()
         if (current.getTime() < started) throw new TripError('CONFLICT', '事件时间早于出发')

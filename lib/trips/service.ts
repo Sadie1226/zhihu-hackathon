@@ -46,14 +46,17 @@ export function startsOnShanghaiDay(db: DatabaseSync, dogId: string, at: string)
 type TripOptions = {
   now?: () => Date
   newId?: () => string
+  authorizeOwner?: (dogId: string, ownerId: string) => void
 }
 type OwnerScope = { kind: 'owner'; sessionId: string }
 type SampleScope = { kind: 'sample'; dogId: string; tripId: string }
 type TripScope = OwnerScope | SampleScope
+type FinishAction<T> = (trip: Trip, transition: (status: TerminalStatus) => Trip) => T
 
 function tripService(db: DatabaseSync, options: TripOptions) {
   const timestamp = () => (options.now ?? (() => new Date()))().toISOString()
   function ownedDog(dogId: string, scope: TripScope) {
+    if (scope.kind === 'owner') options.authorizeOwner?.(dogId, scope.sessionId)
     if (scope.kind === 'sample' && dogId !== scope.dogId) missing()
     const dog = scope.kind === 'sample'
       ? db.prepare('SELECT 1 FROM dog WHERE id = ? AND is_sample = 1 AND owner_id IS NULL').get(dogId)
@@ -68,7 +71,9 @@ function tripService(db: DatabaseSync, options: TripOptions) {
         .get(id, scope.dogId)
       : db.prepare(`SELECT t.* FROM trip t JOIN dog d ON d.id = t.dog_id
           WHERE t.id = ? AND d.session_id = ?`).get(id, scope.sessionId)) as TripRow | undefined
-    return row ? tripDto(row) : missing()
+    if (!row) return missing()
+    if (scope.kind === 'owner') options.authorizeOwner?.(row.dog_id, scope.sessionId)
+    return tripDto(row)
   }
   function quota(dogId: string, at: string) {
     if (startsOnShanghaiDay(db, dogId, at) >= TRIPS_PER_DAY_MAX) conflict('今天已经出门两次')
@@ -82,12 +87,12 @@ function tripService(db: DatabaseSync, options: TripOptions) {
   }
   function finishInside(id: string, scope: TripScope, status: TerminalStatus, at: () => string) {
     const trip = ownedTrip(id, scope)
-    if (trip.status === status) return finishResult(trip)
+    if (trip.status === status) return trip
     if (trip.status !== 'running') conflict('这次出行的状态不能这样更改')
     const endedAt = at()
     if (Date.parse(endedAt) < Date.parse(trip.startedAt!)) conflict('结束时间不能早于出发时间')
     db.prepare('UPDATE trip SET status = ?, ended_at = ? WHERE id = ?').run(status, endedAt, id)
-    return finishResult(ownedTrip(id, scope))
+    return ownedTrip(id, scope)
   }
   return {
     get: ownedTrip,
@@ -151,7 +156,14 @@ function tripService(db: DatabaseSync, options: TripOptions) {
     },
     finish(id: string, scope: TripScope, status: TerminalStatus) {
       if (!isTerminal(status)) conflict('status 应为 done、failed 或 timeout')
-      return transaction(db, () => finishInside(id, scope, status, timestamp))
+      return transaction(db, () => finishResult(finishInside(id, scope, status, timestamp)))
+    },
+    /** Trusted, synchronous automatic-return composition point. */
+    withFinishTransaction<T>(id: string, scope: TripScope, action: FinishAction<T>): T {
+      return transaction(db, () => action(ownedTrip(id, scope), status => {
+        if (!isTerminal(status)) throw new Error('Invalid terminal status')
+        return finishInside(id, scope, status, timestamp)
+      }))
     },
     /** Internal executor hook. Undefined duration disables elapsed-time termination; no scheduler here. */
     timeoutIfDue(id: string, scope: OwnerScope, timeoutMs?: number) {
@@ -163,7 +175,7 @@ function tripService(db: DatabaseSync, options: TripOptions) {
         if (timeoutMs === undefined || trip.status !== 'running') return null
         const at = timestamp()
         if (Date.parse(at) - Date.parse(trip.startedAt!) < timeoutMs) return null
-        return finishInside(id, scope, 'timeout', () => at)
+        return finishResult(finishInside(id, scope, 'timeout', () => at))
       })
     },
   }
@@ -178,6 +190,8 @@ export function createTripService(db: DatabaseSync, options: TripOptions = {}) {
     create: (dogId: string, sessionId: string, trigger: TripTrigger) => service.create(dogId, owner(sessionId), trigger),
     start: (id: string, sessionId: string) => service.start(id, owner(sessionId)),
     finish: (id: string, sessionId: string, status: TerminalStatus) => service.finish(id, owner(sessionId), status),
+    withFinishTransaction: <T>(id: string, sessionId: string, action: FinishAction<T>) =>
+      service.withFinishTransaction(id, owner(sessionId), action),
     timeoutIfDue: (id: string, sessionId: string, timeoutMs?: number) => service.timeoutIfDue(id, owner(sessionId), timeoutMs),
   }
 }
@@ -188,8 +202,10 @@ export function sampleTripLifecycle(db: DatabaseSync, dogId: string, intentId: s
   const scope: SampleScope = { kind: 'sample', dogId, tripId }
   const service = tripService(db, options)
   return {
+    get: () => service.get(tripId, scope),
     create: () => service.create(dogId, scope, 'auto'),
     start: () => service.start(tripId, scope),
     finish: (status: TerminalStatus) => service.finish(tripId, scope, status),
+    withFinishTransaction: <T>(action: FinishAction<T>) => service.withFinishTransaction(tripId, scope, action),
   }
 }
