@@ -91,6 +91,30 @@ export function readOutbox(db: DatabaseSync, dogId: string, sessionId: string): 
   return listOwned(db, dogId, sessionId)
 }
 
+/**
+ * 「我在等它的回音」—— **寄件方视角，不是收件方**。
+ *
+ * 三个条件缺一不可：
+ *   1. `deliveredAt !== null`：还没到的东西谈不上等；在路上的期待是另一回事。
+ *   2. `repliedAt === null`：已经回过就不再等。
+ *   3. 只有 `gift` / `co_owner_message` 这两种「带投递语义」的东西会等；
+ *      `find` / `greeting` 是相遇当场交换的，没人会等一句「今天有风」的回音。
+ *
+ * **为什么收件方不在这个判定里**：收件狗收到东西≠欠一个回应（不变量三：不回应不惩罚）。
+ * 只有**寄出的那一方**才有「等回音」这件事，而且这只是一句陈述，不是待办、不该有红点。
+ *
+ * 这是唯一一份实现。d5 的快照派生器（`lib/social/snapshot-derive.ts` 里的 SQL）、
+ * e6 的来信页、以及 `tests/exchange-send.test.mjs` 都按它对齐；SQL 那份改条件时，
+ * 这里必须一起改，否则会出现「手账说在等、快照说不等」这种对不上的状态。
+ */
+export function isWaitingForReply(exchange: Exchange): boolean {
+  return (
+    exchange.deliveredAt !== null &&
+    exchange.repliedAt === null &&
+    (exchange.kind === 'gift' || exchange.kind === 'co_owner_message')
+  )
+}
+
 /** Called after E opens a single delivered exchange. The lock covers authorization and the returned row. */
 export function markExchangeRead(db: DatabaseSync, id: string, sessionId: string): Exchange {
   db.exec('BEGIN IMMEDIATE')

@@ -38,5 +38,11 @@ export default defineConfig([
     languageOptions: { globals: { ...commonjsGlobals, ...browserGlobals } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
+  {
+    // d7 取证脚本要起真服务、打真 HTTP，用的是 Node 内置的 fetch/AbortSignal。
+    // 这类脚本不该因为「没声明全局」就进不了 lint —— 那等于自己给自己留盲区。
+    files: ['scripts/d7/**/*.mjs'],
+    languageOptions: { globals: { fetch: 'readonly', AbortSignal: 'readonly' } },
+  },
   globalIgnores(['.next/**', '.local/**', 'data/**', 'node_modules/**', 'next-env.d.ts']),
 ])
