@@ -295,7 +295,7 @@ async function adopt(base, who, name) {
     cookie,
     body: {
       ...draft,
-      assembly: { cloth: 'hoodie', hat: 'beanie', glasses: null, face: 'hopeful' },
+      assembly: { outfit: 'T01-frog', cloth: null, accessory: null, face: 'F04-smile' },
       fingerprint: generated.fingerprint,
       requestId: randomUUID(),
     },
@@ -315,7 +315,7 @@ const server = await startServer()
 const evidence = { kind: 'd7-roundtrip', code: codeEvidence, meta: { base: server.base, dbPath, outPath, words: WORDS } }
 
 try {
-  // ---- 1. 两台设备，两只真狗 ----
+  // ---- 1. 两个会话，两只真狗 ----
   const alpha = await adopt(server.base, 'ownerA', '阿桂')
   const beta = await adopt(server.base, 'ownerB', '小满')
   evidence.dogs = {
