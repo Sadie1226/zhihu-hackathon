@@ -1,0 +1,29 @@
+[
+  {
+    "width": 375,
+    "height": 667,
+    "sourceModes": true,
+    "messageRetryRetainsFinds": true,
+    "outgoingStates": true,
+    "sealedContentHidden": true,
+    "pageErrors": []
+  },
+  {
+    "width": 320,
+    "height": 568,
+    "sourceModes": true,
+    "messageRetryRetainsFinds": true,
+    "outgoingStates": true,
+    "sealedContentHidden": true,
+    "pageErrors": []
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "sourceModes": true,
+    "messageRetryRetainsFinds": true,
+    "outgoingStates": true,
+    "sealedContentHidden": true,
+    "pageErrors": []
+  }
+]

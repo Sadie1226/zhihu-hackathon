@@ -1,0 +1,566 @@
+{
+  "base": "http://localhost:3113",
+  "ranAt": "2026-11-26T14:12:16.318Z",
+  "fixture": [
+    {
+      "viewport": "375x667",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(255, 248, 237)",
+          "card": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "borderImageSlice": "10 fill",
+            "imageRendering": "pixelated",
+            "backgroundColor": "rgba(0, 0, 0, 0)"
+          },
+          "paper": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "imageRendering": "pixelated"
+          }
+        },
+        "stationery": {
+          "url": "http://localhost:3113/assets/a5-v25/stationery.png",
+          "status": 200,
+          "type": "image/png",
+          "bytes": 459
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "lettersSmall": [],
+        "iconOverlap": {
+          "overlap": false,
+          "icon": {
+            "left": 36,
+            "right": 76
+          },
+          "title": {
+            "left": 94,
+            "top": 710
+          }
+        },
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 84,
+            "height": 44
+          },
+          "focusBoxAfter": {
+            "width": 84,
+            "height": 44
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 84,
+            "height": 44
+          },
+          "pressDuring": {
+            "width": 84,
+            "height": 44
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.28s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.192s",
+          "firstOpacity": "0.780493",
+          "fourthGapMs": 192,
+          "durationMs": 280
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "readable": {
+          "color": "rgb(81, 67, 55)",
+          "lineHeight": "31.2px",
+          "fontSize": "16px"
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 375,
+            "clientWidth": 375
+          },
+          "tail": true
+        },
+        "settingsEntry": {
+          "entry": 1,
+          "expanded": "false",
+          "directToggle": 0,
+          "directReducedNote": 0,
+          "panel": 0
+        },
+        "toggleOff": {
+          "present": true,
+          "panel": 1,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "settingsCollapsed": {
+          "expanded": "false",
+          "panel": 0,
+          "stored": "closed"
+        },
+        "settingsAfterReload": {
+          "expanded": "false",
+          "panel": 0,
+          "directToggle": 0
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "320x568",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(255, 248, 237)",
+          "card": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "borderImageSlice": "10 fill",
+            "imageRendering": "pixelated",
+            "backgroundColor": "rgba(0, 0, 0, 0)"
+          },
+          "paper": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "imageRendering": "pixelated"
+          }
+        },
+        "stationery": {
+          "url": "http://localhost:3113/assets/a5-v25/stationery.png",
+          "status": 200,
+          "type": "image/png",
+          "bytes": 459
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "lettersSmall": [],
+        "iconOverlap": {
+          "overlap": false,
+          "icon": {
+            "left": 36,
+            "right": 76
+          },
+          "title": {
+            "left": 94,
+            "top": 350
+          }
+        },
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 84,
+            "height": 44
+          },
+          "focusBoxAfter": {
+            "width": 84,
+            "height": 44
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 84,
+            "height": 44
+          },
+          "pressDuring": {
+            "width": 84,
+            "height": 44
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.28s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.192s",
+          "firstOpacity": "0.442214",
+          "fourthGapMs": 192,
+          "durationMs": 280
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "readable": {
+          "color": "rgb(81, 67, 55)",
+          "lineHeight": "31.2px",
+          "fontSize": "16px"
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 320,
+            "clientWidth": 320
+          },
+          "tail": true
+        },
+        "settingsEntry": {
+          "entry": 1,
+          "expanded": "false",
+          "directToggle": 0,
+          "directReducedNote": 0,
+          "panel": 0
+        },
+        "toggleOff": {
+          "present": true,
+          "panel": 1,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "settingsCollapsed": {
+          "expanded": "false",
+          "panel": 0,
+          "stored": "closed"
+        },
+        "settingsAfterReload": {
+          "expanded": "false",
+          "panel": 0,
+          "directToggle": 0
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    },
+    {
+      "viewport": "1440x900",
+      "errors": [],
+      "checks": {
+        "defaultTab": "true",
+        "overflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "smallTargets": [],
+        "trip": {
+          "place": true,
+          "count": true,
+          "message": true
+        },
+        "timeoutLabel": 1,
+        "lateWording": 0,
+        "doneLabel": 1,
+        "layers": {
+          "page": "rgb(255, 248, 237)",
+          "card": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "borderImageSlice": "10 fill",
+            "imageRendering": "pixelated",
+            "backgroundColor": "rgba(0, 0, 0, 0)"
+          },
+          "paper": {
+            "borderTopWidth": "10px",
+            "borderImageSource": "url(\"http://localhost:3113/assets/a5-v25/stationery.png\")",
+            "imageRendering": "pixelated"
+          }
+        },
+        "stationery": {
+          "url": "http://localhost:3113/assets/a5-v25/stationery.png",
+          "status": 200,
+          "type": "image/png",
+          "bytes": 459
+        },
+        "sealed": {
+          "titleLeaked": false,
+          "bodyLeaked": false,
+          "sealedCard": true
+        },
+        "openable": 4,
+        "lettersOverflow": {
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "lettersSmall": [],
+        "iconOverlap": {
+          "overlap": false,
+          "icon": {
+            "left": 222,
+            "right": 270
+          },
+          "title": {
+            "left": 282,
+            "top": 682
+          }
+        },
+        "tabStyle": {
+          "selected": {
+            "backgroundColor": "rgb(237, 223, 196)",
+            "fontWeight": "600",
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset"
+          },
+          "idle": {
+            "backgroundColor": "rgb(255, 250, 241)",
+            "fontWeight": "400",
+            "boxShadow": "none"
+          }
+        },
+        "focus": {
+          "focusReached": true,
+          "focusStyle": {
+            "boxShadow": "rgb(139, 107, 66) 0px -3px 0px 0px inset, rgb(138, 102, 54) 0px 0px 0px 2px inset, rgba(138, 102, 54, 0.2) 0px 0px 0px 3px"
+          },
+          "focusBoxBefore": {
+            "width": 92,
+            "height": 46
+          },
+          "focusBoxAfter": {
+            "width": 92,
+            "height": 46
+          }
+        },
+        "press": {
+          "pressBefore": {
+            "width": 92,
+            "height": 46
+          },
+          "pressDuring": {
+            "width": 92,
+            "height": 46
+          },
+          "transform": "matrix(1, 0, 0, 1, 0, 1)"
+        },
+        "reveal": {
+          "paragraph": 1,
+          "glyphs": 12,
+          "ariaLabel": "这边下了两天雨，你那边呢",
+          "animationName": "journal-module__1a8cHW__glyphIn",
+          "animationDuration": "0.28s",
+          "firstDelay": "0s",
+          "fourthDelay": "0.192s",
+          "firstOpacity": "0.780574",
+          "fourthGapMs": 192,
+          "durationMs": 280
+        },
+        "revealClick": {
+          "glyphs": 0,
+          "text": true,
+          "back": true
+        },
+        "readable": {
+          "color": "rgb(81, 67, 55)",
+          "lineHeight": "31.2px",
+          "fontSize": "16px"
+        },
+        "detail": {
+          "returned": true
+        },
+        "replay": {
+          "paragraph": 0,
+          "glyphs": 0
+        },
+        "longText": {
+          "lineHeight": "31.2px",
+          "fontSize": "16px",
+          "overflow": {
+            "scrollWidth": 1440,
+            "clientWidth": 1440
+          },
+          "tail": true
+        },
+        "settingsEntry": {
+          "entry": 1,
+          "expanded": "false",
+          "directToggle": 0,
+          "directReducedNote": 0,
+          "panel": 0
+        },
+        "toggleOff": {
+          "present": true,
+          "panel": 1,
+          "stored": "off",
+          "labelAfter": 1
+        },
+        "settingsCollapsed": {
+          "expanded": "false",
+          "panel": 0,
+          "stored": "closed"
+        },
+        "settingsAfterReload": {
+          "expanded": "false",
+          "panel": 0,
+          "directToggle": 0
+        },
+        "revealOff": {
+          "glyphs": 0,
+          "paragraph": 0
+        },
+        "reducedMotion": {
+          "glyphs": 12,
+          "animationName": "none",
+          "opacity": "1"
+        },
+        "gifts": {
+          "received": true,
+          "outgoing": false,
+          "pendingGift": false
+        },
+        "errorState": {
+          "hasRetry": true,
+          "saysEmpty": false
+        },
+        "loadingState": true,
+        "partial": true,
+        "emptyState": true,
+        "sealedOnly": {
+          "leaked": false,
+          "openButtons": 0
+        }
+      }
+    }
+  ],
+  "real": null,
+  "failures": []
+}

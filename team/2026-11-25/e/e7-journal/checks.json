@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-25",
+  "branch": "e7-journal-20261125",
+  "base": "6f5282dc13b8273a7ac750ce0869bc5138d68b63",
+  "baseNote": "e6-mailbox-20261123，基于 dd5f53e；未合并 a-slider-fix-1124 或 a-d5-execution-ready-1125",
+  "runtime": {
+    "node": "v24.20.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "browser": "chromium_headless_shell-1223 (Chromium 148.0.7778.96)",
+    "port": 3109,
+    "database": "项目外独立测试库 a5-development-journal.sqlite"
+  },
+  "staticChecks": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "name": "eslint",
+      "command": "npx eslint components/e7 \"app/(e)\" tests/e7-journal.test.mjs scripts/e7/verify.mjs --max-warnings=0",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "name": "unitTests",
+      "command": "node --test tests/e7-journal.test.mjs",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "result": "pass"
+    }
+  ],
+  "browserChecks": {
+    "command": "E7_BASE_URL=http://127.0.0.1:3109 E7_DB_PATH=<独立测试库> E7_REAL=1 node scripts/e7/verify.mjs",
+    "result": "ALL CHECKS PASSED",
+    "failures": [],
+    "fixtureViewports": ["375x667", "320x568", "1440x900"],
+    "fixtureScenarios": ["normal", "empty", "error", "partial", "slow", "sealed"],
+    "realPage": {
+      "url": "/journal",
+      "viewport": "375x667",
+      "identity": "development",
+      "tripsRendered": true,
+      "undeliveredLeak": false,
+      "readPatchStatus": 200,
+      "readAtWritten": true,
+      "pageErrors": 0
+    },
+    "screenshots": 31,
+    "rawOutput": "evidence/verification.json"
+  },
+  "interfacesMeasured": {
+    "GET /api/dogs/:id/trips?limit=50": 200,
+    "GET /api/trips/:id/finds": 200,
+    "GET /api/trips/:id/message": 200,
+    "GET /api/dogs/:id/inbox?filter=all": 200,
+    "GET /api/exchanges?from_dog=:id": 200,
+    "PATCH /api/exchanges/:id/read": "200 且写入 read_at",
+    "GET /api/dogs/:id/relations": 404,
+    "gift list endpoint": "不存在，首版从 inbox 派生"
+  },
+  "notVerified": [
+    "真实两账号收发闭环",
+    "iPhone / 微信内置浏览器真机",
+    "离线打开（首版按任务要求不做缓存）"
+  ],
+  "pushed": false,
+  "mergedToMain": false
+}
