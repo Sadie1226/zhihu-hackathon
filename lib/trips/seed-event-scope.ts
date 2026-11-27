@@ -15,6 +15,14 @@ export function requireRunningSeedEventTrip(
   db: DatabaseSync,
   { dogId, tripId, intentId }: { dogId: string; tripId: string; intentId: string },
 ) {
+  return requireSeedDiscoveryTrip(db, { dogId, tripId, intentId })
+}
+
+export function requireSeedDiscoveryTrip(
+  db: DatabaseSync,
+  { dogId, tripId, intentId }: { dogId: string; tripId: string; intentId: string },
+  allowDone = false,
+) {
   if (!db.isTransaction) throw new Error('Seed event authorization requires a transaction')
   const row = tripId === seedIntentTripId(dogId, intentId) && db.prepare(`
     SELECT t.status, t.started_at AS startedAt,
@@ -23,7 +31,7 @@ export function requireRunningSeedEventTrip(
     WHERE t.id = ? AND d.id = ? AND t.trigger = 'auto' AND d.is_sample = 1 AND d.owner_id IS NULL
   `).get(tripId, dogId)
   if (!row) throw new TripError('NOT_FOUND', '这条记录不在这里')
-  if (row.status !== 'running' || typeof row.startedAt !== 'string') {
+  if ((row.status !== 'running' && !(allowDone && row.status === 'done')) || typeof row.startedAt !== 'string') {
     throw new TripError('CONFLICT', '这次出行尚未运行或已经结束')
   }
   return {
