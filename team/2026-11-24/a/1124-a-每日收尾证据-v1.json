@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-24",
+  "timezone": "Asia/Shanghai",
+  "scope": "review/request closeout only; no candidate merge",
+  "main": "dd5f53ebb214bc5f8ee4959b95bfeac74a055200",
+  "tag": "v9-1123",
+  "databaseVersionOnMain": 5,
+  "remoteSnapshot": [
+    {
+      "branch": "main",
+      "sha": "dd5f53ebb214bc5f8ee4959b95bfeac74a055200"
+    },
+    {
+      "branch": "a-requests-cde-1123",
+      "sha": "b5ff9c687e267e740920b028939222cd2c2154cf"
+    },
+    {
+      "branch": "d-d5-derive-1123",
+      "sha": "6db1622f6626502a270dec647005a4e501f7bae8"
+    },
+    {
+      "branch": "c7-event-selector-1123",
+      "sha": "d548a03b07a299a6a04f41af7c72b5812d2ce6fd"
+    },
+    {
+      "branch": "c8-seed-trigger-1124",
+      "sha": "3d26d81fe282fc121cd8ca3aec4a356a8838508a"
+    },
+    {
+      "branch": "c-k6-tspf-1123",
+      "sha": "008a88b439d5079c2aa389b6765982526639aa17"
+    },
+    {
+      "branch": "c6-discovery-composer-1123",
+      "sha": "59fac521c8d96083b2b4a3c08d2eec7aa3837448"
+    },
+    {
+      "branch": "b-1123",
+      "sha": "f95802b3a747f81a314a1b89205f829f3e5bb5a3"
+    },
+    {
+      "branch": "e5-scene-crop-20261123",
+      "sha": "cc38059c67bdad03ef89a00738fd7fa29d8e0d8c"
+    },
+    {
+      "branch": "e6-mailbox-20261123",
+      "sha": "6f5282dc13b8273a7ac750ce0869bc5138d68b63"
+    }
+  ],
+  "tests": {
+    "D": {
+      "selftest": 18,
+      "mainTests": 196,
+      "typecheck": "pass",
+      "newModuleLint": "pass",
+      "coverageWithEBookstorePngs": "pass"
+    },
+    "C7": {
+      "specialized": 10
+    },
+    "C8": {
+      "specialized": 5
+    },
+    "combinedCode": {
+      "specialized": 15,
+      "mainTests": 211,
+      "typecheck": "pass",
+      "targetedLint": "pass",
+      "contractsDocsMerged": false
+    }
+  },
+  "notRerun": [
+    "production build",
+    "full social suite",
+    "full E2E gates"
+  ],
+  "pending": [
+    "immutable occurrence summary",
+    "trip-bound snapshot before delivery",
+    "C7 internal seed capability",
+    "designated acceptance database and traceable 5-dog batch",
+    "E visual adoption and page integration"
+  ],
+  "acceptanceDatabase": {
+    "path": "E:\\Hackathon\\validation-1124\\d5-acceptance\\app.sqlite",
+    "status": "RESERVED_NOT_READY",
+    "created": false
+  },
+  "publicationBeforeCloseout": "b5ff9c687e267e740920b028939222cd2c2154cf",
+  "fetchBoundary": "63 branch heads checked; six primary candidate refs fully verified via API. Full E large-object import incomplete; selected reports and two bookstore PNGs verified. Ordinary fetch stopped after stall.",
+  "candidateMerges": [],
+  "deploymentPerformed": false,
+  "groupMessageSent": false
+}
