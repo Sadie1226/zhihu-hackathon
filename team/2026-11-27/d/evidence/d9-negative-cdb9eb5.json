@@ -1,0 +1,75 @@
+{
+  "kind": "negative-validation",
+  "title": "d9 时间窗反例是否真的依赖 A 的 cdb9eb5 复验",
+  "capturedAt": "2026-11-27T18:36:00+08:00",
+  "purpose": "上次只在回执里手工描述了「去掉复验后变 200 / 残行 1」，没有记录。本文件把它作为独立证据留档：证明 d9 的两条时间窗反面项测的是目标修复，不是恰好红的空跑项。本记录不与 d9-two-device-v2.json 的正式结论自动合并。",
+
+  "targetPatch": {
+    "commit": "cdb9eb51470bfb1b89a2cbed3b9a940578b8e5fe",
+    "author": "A",
+    "file": "lib/social/send-endpoint.ts",
+    "blob": "26aafef6e3c8bf3c30f9f2238fc0b4e0660c91d8",
+    "location": "store.transaction(() => { ... }) 内，assertOwnedDog 之前",
+    "content": "resolveAuthContext(request, db) 取当前会话；tokenHash / ownerId / namespace 三项不等则抛 SendError('NOT_FOUND', '这条记录不在这里')"
+  },
+
+  "baseline": {
+    "branch": "d9-two-device-parity-1127",
+    "head": "d65807de02f1f33eeb5e3b0067f6e61a989b3dd9",
+    "headShort": "d65807d",
+    "headNote": "本分支的小修提交；产品代码与 main 6bf08df 一致，本次未改产品代码",
+    "node": "v22.22.2",
+    "sendEndpointBlob": "26aafef6e3c8bf3c30f9f2238fc0b4e0660c91d8"
+  },
+
+  "temporaryChange": {
+    "description": "把复验整段注释掉（resolveAuthContext 调用 + 三个字段比对 + throw 共 6 行），assertOwnedDog 退回使用读 body 之前拿到的 auth",
+    "committed": false,
+    "diffFingerprint": "0f3e67d1fdbb06d876fff64670021bc3d0ce6517",
+    "diffFingerprintMethod": "git diff lib/social/send-endpoint.ts | git hash-object --stdin",
+    "patchedFileBlob": "4abadb8e4b3e1bbda476c2e9dc16c9928933093c",
+    "numstat": "8+ / 7-（含 6 行注释前缀，实际生效变化是移除复验、把 currentAuth 换成 auth）",
+    "otherFilesTouched": "none（next-env.d.ts 的改动由 next dev 自动产生，已在跑前和跑后分别还原）"
+  },
+
+  "command": "node scripts/d9/two-device-parity.mjs --db ../_d9-neg/a5-development-d9-neg.sqlite --out ../_d9-neg/d9-negative.json --expected-sha d65807de02f1f33eeb5e3b0067f6e61a989b3dd9 --allow-dirty",
+  "commandNote": "--allow-dirty 是必须的：本次故意让产品文件带改动。因此该证据 formal:false，只用于证明「反例会红」，不作为产品行为合规的依据。",
+
+  "result": {
+    "verdict": "fail: 读完 body 之前撤销 → 写被拒（404） / 被拒的那条没留在库里",
+    "chains": "24/26",
+    "redChecks": [
+      "读完 body 之前撤销 → 写被拒（404）",
+      "被拒的那条没留在库里"
+    ],
+    "observed": {
+      "revokedMidBodyStatus": 200,
+      "revokedRows": 1,
+      "liveProofStatus": 200,
+      "note": "同会话写入（liveProof）仍是 200，说明撤销时点会话有效；变的是被撤销后放行的那个挂起请求——它现在成功写入了"
+    },
+    "unchangedChecks": "其余 24 条全绿，包括对照组 200、对照那条正常落库、三边六字段一致、字段集合一致、快照核验",
+    "interpretation": "只有这两条红，且红的方式正好对应缺失的复验（200 + 残行 1）。因此这两条测的确实是 cdb9eb5 引入的修复，不是别的原因导致。"
+  },
+
+  "restoration": {
+    "method": "用编辑器把注释反向改回原文本（不用 git checkout，避免顺带覆盖别的改动）",
+    "fileBlobAfterRestore": "26aafef6e3c8bf3c30f9f2238fc0b4e0660c91d8",
+    "blobMatchesOriginal": true,
+    "gitDiffAfterRestore": "空（git diff --stat lib/social/send-endpoint.ts 无输出）",
+    "regressionAfterRestore": {
+      "command": "node --test tests/exchange-send.test.mjs",
+      "result": "7/7 通过",
+      "includes": [
+        "session revoked while reading body cannot send",
+        "session expired while reading body cannot send"
+      ]
+    }
+  },
+
+  "limits": [
+    "独立手工负验证，formal:false，不与 d9-two-device-v2.json（formal:true）的结论合并引用",
+    "只撤了一处复验；assertOwnedDog、会话过期判定、其它防线未动，不能由此推断「去掉任意防线都会红」",
+    "负验证本身也走 HTTP 分块时序，同样不承诺精确命中 await 窗口（见正式证据 toctou.claimLevel）"
+  ]
+}

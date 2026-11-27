@@ -1,0 +1,503 @@
+{
+  "kind": "d9-two-device-parity",
+  "code": {
+    "head": "d65807de02f1f33eeb5e3b0067f6e61a989b3dd9",
+    "expected": "d65807de02f1f33eeb5e3b0067f6e61a989b3dd9",
+    "matchesExpected": true,
+    "dirty": false,
+    "dirtyFiles": [],
+    "formal": true,
+    "formalScope": "formal 仅表示本次证据的代码身份（HEAD）与 tracked 干净状态；不代表 D9 全部验收，也不代表 P0 终验。",
+    "server": "next dev --webpack（开发服务，非生产构建）",
+    "login": "development（开发身份，非知乎身份）",
+    "deviceModel": "单机多会话（dev1 / dev2 / dev1b），非两台物理设备；其中 dev1b 由 issueOwnerSession 直接签发（simulated）",
+    "notCovered": [
+      "真双物理设备（需同一局域网内第二台机器/手机）",
+      "完整双账号 UI 长链（无 UI 操作，全部走 HTTP）",
+      "举报与屏蔽路径"
+    ],
+    "lanMode": false,
+    "lanModeNote": null,
+    "node": "v22.22.2",
+    "command": "C:\\Users\\zxl14\\.workbuddy\\binaries\\node\\versions\\22.22.2-6\\node.exe C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_wt-demo\\scripts\\d9\\two-device-parity.mjs --db ../_d9-run3/a5-development-d9.sqlite --out ../_d9-run3/d9-formal.json --expected-sha d65807de02f1f33eeb5e3b0067f6e61a989b3dd9",
+    "repoRoot": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_wt-demo",
+    "capturedAt": "2026-11-27T10:32:26.323Z"
+  },
+  "meta": {
+    "base": "http://127.0.0.1:54066",
+    "lanUrl": null,
+    "dbPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d9-run3\\a5-development-d9.sqlite",
+    "outPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d9-run3\\d9-formal.json",
+    "words": "楼下的桂花开了，你那边闻得到吗"
+  },
+  "devices": {
+    "dev1": {
+      "owner": "A",
+      "dogId": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "how": "http:POST /api/auth/development",
+      "simulated": false
+    },
+    "dev2": {
+      "owner": "B",
+      "dogId": "dog_c3af0342-a3bc-43ef-aabb-1aaef24890ff",
+      "how": "http:POST /api/auth/development",
+      "simulated": false
+    },
+    "dev1b": {
+      "owner": "A",
+      "dogId": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "how": "issueOwnerSession（同一 owner 的第二会话，不经过 HTTP 登录）",
+      "simulated": true
+    }
+  },
+  "chains": [
+    {
+      "name": "第二台设备（dev1b）看到的是同一只狗",
+      "ok": true
+    },
+    {
+      "name": "两套设备 cookie 不同",
+      "ok": true
+    },
+    {
+      "name": "寄出即在路上",
+      "ok": true
+    },
+    {
+      "name": "送达时刻 = 出发时刻",
+      "ok": true
+    },
+    {
+      "name": "乙点开两次，readAt 不变",
+      "ok": true
+    },
+    {
+      "name": "回应落了库（1 行）",
+      "ok": true
+    },
+    {
+      "name": "回应的文字是乙写的那句",
+      "ok": true
+    },
+    {
+      "name": "exchange 只有 1 行（不是每台设备一份）",
+      "ok": true
+    },
+    {
+      "name": "三边一致：id",
+      "ok": true
+    },
+    {
+      "name": "三边一致：kind",
+      "ok": true
+    },
+    {
+      "name": "三边一致：payload",
+      "ok": true
+    },
+    {
+      "name": "三边一致：createdAt",
+      "ok": true
+    },
+    {
+      "name": "三边一致：deliveredAt",
+      "ok": true
+    },
+    {
+      "name": "三边一致：repliedAt",
+      "ok": true
+    },
+    {
+      "name": "回应后甲不再等",
+      "ok": true
+    },
+    {
+      "name": "甲两台设备看到的 repliedAt 相同",
+      "ok": true
+    },
+    {
+      "name": "三方箱子里没有这条（不串味）",
+      "ok": true
+    },
+    {
+      "name": "第三方读别人的发件箱被拒（404）",
+      "ok": true
+    },
+    {
+      "name": "整库无外键问题",
+      "ok": true
+    },
+    {
+      "name": "integrity ok",
+      "ok": true
+    },
+    {
+      "name": "对照组：同一个分块发法不撤销 → 200",
+      "ok": true
+    },
+    {
+      "name": "三边字段集合完全相同（不对称字段数 = 0）",
+      "ok": true
+    },
+    {
+      "name": "挂起期间同一会话仍能写（撤销时点会话有效，支持性证据）",
+      "ok": true
+    },
+    {
+      "name": "读完 body 之前撤销 → 写被拒（404）",
+      "ok": true
+    },
+    {
+      "name": "被拒的那条没留在库里",
+      "ok": true
+    },
+    {
+      "name": "对照组那条正常落库（证明检查本身没写坏）",
+      "ok": true
+    }
+  ],
+  "parity": [
+    {
+      "field": "id",
+      "dev1": "ex_1ad467d232cf59ba4813f876",
+      "dev1b": "ex_1ad467d232cf59ba4813f876",
+      "dev2": "ex_1ad467d232cf59ba4813f876",
+      "equal": true
+    },
+    {
+      "field": "kind",
+      "dev1": "co_owner_message",
+      "dev1b": "co_owner_message",
+      "dev2": "co_owner_message",
+      "equal": true
+    },
+    {
+      "field": "payload",
+      "dev1": {
+        "kind": "co_owner_message",
+        "message": "楼下的桂花开了，你那边闻得到吗",
+        "fromOwnerOf": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92"
+      },
+      "dev1b": {
+        "kind": "co_owner_message",
+        "message": "楼下的桂花开了，你那边闻得到吗",
+        "fromOwnerOf": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92"
+      },
+      "dev2": {
+        "kind": "co_owner_message",
+        "message": "楼下的桂花开了，你那边闻得到吗",
+        "fromOwnerOf": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92"
+      },
+      "equal": true
+    },
+    {
+      "field": "createdAt",
+      "dev1": "2026-11-27T10:32:42Z",
+      "dev1b": "2026-11-27T10:32:42Z",
+      "dev2": "2026-11-27T10:32:42Z",
+      "equal": true
+    },
+    {
+      "field": "deliveredAt",
+      "dev1": "2026-11-27T10:32:46.479Z",
+      "dev1b": "2026-11-27T10:32:46.479Z",
+      "dev2": "2026-11-27T10:32:46.479Z",
+      "equal": true
+    },
+    {
+      "field": "repliedAt",
+      "dev1": "2026-11-27T10:32:49.325Z",
+      "dev1b": "2026-11-27T10:32:49.325Z",
+      "dev2": "2026-11-27T10:32:49.325Z",
+      "equal": true
+    }
+  ],
+  "asymmetricFields": [],
+  "toctou": {
+    "control": {
+      "status": 200,
+      "marker": "d9-control-split-body"
+    },
+    "revokedMidBody": {
+      "status": 404,
+      "revokedRows": 1,
+      "liveProofStatus": 200,
+      "liveProofExchangeId": "ex_f98800fd60fcce6ade1ea9f2",
+      "marker": "d9-toctou-midbody-revoke"
+    },
+    "claimLevel": "supporting",
+    "note": "服务端先解析 auth、再 await request.json()；body 分两截发送，第二截放行前先用同一会话完整写一条（200）再撤销。 这条 200 证明的是「撤销那一刻会话有效、挂起请求有机会读到有效 auth」，**不能严格推出挂起请求必然已走完首验** —— 请求调度与框架 body 缓冲都可能改变实际顺序。 未登录与复验拦截返回同一个 404 与同一句 detail，所以仅凭响应分不出两者。",
+    "deterministicCoverage": "精确命中 await 窗口的保证由已合 main 的进程内回归承担（构造已撤销会话 + 已解析 auth），本项不替代它。",
+    "negativeValidation": "见 evidence/d9-negative-cdb9eb5.json（独立记录原 SHA、临时 diff 指纹、命令与实际结果、还原检查）。"
+  },
+  "steps": [
+    {
+      "step": "dev1.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev1.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev1.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev1b.session",
+      "note": "甲的第二台设备：同一个 owner、同一只狗",
+      "method": "GET",
+      "path": "/api/session",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "send",
+      "note": "甲（dev1）托狗捎话",
+      "method": "POST",
+      "path": "/api/exchanges",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.trip.create",
+      "note": "乙的狗安排出行",
+      "method": "POST",
+      "path": "/api/dogs/dog_c3af0342-a3bc-43ef-aabb-1aaef24890ff/trips",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.trip.start",
+      "note": "出发（投递器写 delivered_at）",
+      "method": "POST",
+      "path": "/api/trips/trip_b73b043b-10d4-48e1-a8d4-989ab6307361/start",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.read.1",
+      "note": "乙第一次点开",
+      "method": "PATCH",
+      "path": "/api/exchanges/ex_1ad467d232cf59ba4813f876/read",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.read.2",
+      "note": "乙连续重复点开（同一请求立刻再打一次，不涉及时钟推进）",
+      "method": "PATCH",
+      "path": "/api/exchanges/ex_1ad467d232cf59ba4813f876/read",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.reply",
+      "note": "乙回一句（真实 HTTP）",
+      "method": "POST",
+      "path": "/api/replies",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev1.outbox",
+      "note": "甲的第一台设备：发件箱",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev1b.outbox",
+      "note": "甲的第二台设备：发件箱（换设备）",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev2.inbox",
+      "note": "乙的设备：收件箱",
+      "method": "GET",
+      "path": "/api/dogs/dog_c3af0342-a3bc-43ef-aabb-1aaef24890ff/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev3.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev3.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev3.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev3.inbox",
+      "note": "第三方（dev3）的收件箱",
+      "method": "GET",
+      "path": "/api/dogs/dog_ef76d516-9ed7-4197-8ccf-8ce202cb3801/inbox?filter=arrived",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev3.outbox.foreign",
+      "note": "第三方去读甲的狗的发件箱：应被拒（404）",
+      "method": "GET",
+      "path": "/api/exchanges?from_dog=dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "status": 404,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.control.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.control.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.control.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.tail.login",
+      "note": "开发登录（建 owner）",
+      "method": "POST",
+      "path": "/api/auth/development",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.tail.personality",
+      "note": "生成性格词与指纹",
+      "method": "POST",
+      "path": "/api/adoption/personality",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "dev.tail.adopt",
+      "note": "领养，狗落库",
+      "method": "POST",
+      "path": "/api/dogs",
+      "status": 200,
+      "cacheControl": "no-store"
+    },
+    {
+      "step": "toctou.liveProof",
+      "note": "挂起期间同一会话仍能正常写入（撤销时点会话有效）",
+      "method": "POST",
+      "path": "/api/exchanges",
+      "status": 200,
+      "cacheControl": "no-store"
+    }
+  ],
+  "facts": {
+    "integrity": "ok",
+    "foreignKeys": 0,
+    "exchange": {
+      "id": "ex_1ad467d232cf59ba4813f876",
+      "fromDog": "dog_196131e1-d57e-49ea-85f7-ff3201c3ae92",
+      "toDog": "dog_c3af0342-a3bc-43ef-aabb-1aaef24890ff",
+      "kind": "co_owner_message",
+      "payload": "{\"kind\":\"co_owner_message\",\"message\":\"楼下的桂花开了，你那边闻得到吗\",\"fromOwnerOf\":\"dog_196131e1-d57e-49ea-85f7-ff3201c3ae92\"}",
+      "seq": 1,
+      "createdAt": "2026-11-27T10:32:42Z",
+      "deliveredAt": "2026-11-27T10:32:46.479Z",
+      "repliedAt": "2026-11-27T10:32:49.325Z",
+      "readAt": "2026-11-27T10:32:48.579Z"
+    },
+    "exchangeRows": 1,
+    "replyRows": 1,
+    "replyRow": {
+      "id": "r_0fca9bcabbd54e31afc42939c9132061",
+      "text": "闻得到，风是从西边来的",
+      "kind": "text"
+    },
+    "trips": [
+      {
+        "id": "trip_b73b043b-10d4-48e1-a8d4-989ab6307361",
+        "seq": 1,
+        "status": "running",
+        "startedAt": "2026-11-27T10:32:46.479Z"
+      }
+    ]
+  },
+  "verdict": "pass",
+  "elapsedMs": 26650,
+  "db": {
+    "path": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d9-run3\\a5-development-d9.sqlite",
+    "liveBytes": 315392,
+    "liveWalBytes": 0,
+    "snapshotPath": "C:\\Users\\zxl14\\WorkBuddy\\黑客松\\_d9-run3\\a5-development-d9.evidence.sqlite",
+    "bytes": 315392,
+    "sha256": "cbb799cf09e36cae940672583dbafbc00a2d26897f86177fd3bcfe331aec2a39",
+    "openedReadOnly": true,
+    "checkedOn": "snapshot（不是源库）",
+    "problems": []
+  }
+}
