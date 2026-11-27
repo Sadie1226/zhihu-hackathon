@@ -27,13 +27,15 @@
  *   会话在「服务端读完 body 之前」被撤销 → 写必须失败、且不留残行。
  *   （d7 的三条反例全是横向越权，没有一条带时间窗。）
  *
- * 边界：开发服务、开发身份、单机多会话。**不把单机多会话说成真双设备**：
- * 真机部分需要手机连本机 LAN 地址单独拍，脚本只输出 `lanUrl` 供人工验证。
+ * 边界：开发服务、开发身份、单机多会话、无 UI 操作、无真双物理设备、无举报屏蔽。
+ * **不把单机多会话说成真双设备**：真机部分需要手机连本机 LAN 地址单独验证，
+ * 脚本只在**运行期间**绑 0.0.0.0 并打印地址，结束即停服务，不是常驻预览。
  *
  * 跑法：
  *   node scripts/d9/two-device-parity.mjs --db <新库> --out <证据.json> \
  *     --expected-sha <sha> [--allow-dirty] [--lan]
- *   `--lan` 让服务绑 0.0.0.0 并打印局域网地址，供手机/第二台机器访问。
+ *   `--lan` 让服务在本次运行期间绑 0.0.0.0 并打印局域网地址。
+ *   打印出地址 ≠ 第二台设备已能连上（校园网可能有客户端隔离），真机由 A 协调。
  */
 import { execFileSync, spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
@@ -46,6 +48,7 @@ import { networkInterfaces } from 'node:os'
 import { setTimeout } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { issueOwnerSession } from '../../lib/auth/session.ts'
+import { withTemporaryEnv } from './env-guard.mjs'
 
 const WORDS = '楼下的桂花开了，你那边闻得到吗'
 const ANSWER = '闻得到，风是从西边来的'
@@ -179,10 +182,24 @@ const codeEvidence = {
   dirty: codeIdentity.trackedDirty.length > 0,
   dirtyFiles: codeIdentity.trackedDirty.map((e) => `${e.code} ${e.path}`),
   formal: codeIdentity.trackedDirty.length === 0 && (!expectedSha || codeIdentity.head === expectedSha),
+  /**
+   * formal 的作用域必须写明：它只覆盖「本次证据跑在哪个提交、工作区干不干净」。
+   * 不代表 D9 整体验收通过，更不代表 P0 终验 —— 那些由 A 在取入 main 后做组合复验。
+   */
+  formalScope: 'formal 仅表示本次证据的代码身份（HEAD）与 tracked 干净状态；不代表 D9 全部验收，也不代表 P0 终验。',
   server: 'next dev --webpack（开发服务，非生产构建）',
   login: 'development（开发身份，非知乎身份）',
-  deviceModel: '单机多会话（dev1 / dev2 / dev1b），非两台物理设备',
+  deviceModel: '单机多会话（dev1 / dev2 / dev1b），非两台物理设备；其中 dev1b 由 issueOwnerSession 直接签发（simulated）',
+  notCovered: [
+    '真双物理设备（需同一局域网内第二台机器/手机）',
+    '完整双账号 UI 长链（无 UI 操作，全部走 HTTP）',
+    '举报与屏蔽路径',
+  ],
   lanMode,
+  lanModeNote: lanMode
+    ? '--lan 仅在本次运行期间把服务绑到 0.0.0.0 并打印局域网地址；脚本 finally 会 stop 服务，不是常驻真机预览。'
+      + ' 打印出地址不等于第二台设备已能连上（校园网可能有客户端隔离），真机验证由 A 协调服务与人工完成。'
+    : null,
   node: process.version,
   command: [process.execPath, ...process.argv.slice(1)].join(' '),
   repoRoot,
@@ -212,7 +229,8 @@ function lanAddress() {
 async function startServer() {
   mkdirSync(dirname(dbPath), { recursive: true })
   const port = await freePort()
-  // --lan 时绑 0.0.0.0：手机/第二台机器要能连进来才是真双设备。本机仍用 127.0.0.1 访问。
+  // --lan 时绑 0.0.0.0：只是让第二台设备"有机会"连进来，能不能连通取决于网络策略
+  // （校园网常有客户端隔离）。本机访问仍走 127.0.0.1。服务在本脚本结束时关闭。
   const host = lanMode ? '0.0.0.0' : '127.0.0.1'
   const base = `http://127.0.0.1:${port}`
   // `--webpack`：本工作树的 node_modules 是指向主仓的 junction，turbopack 会把它判成坏软链。
@@ -282,7 +300,7 @@ async function call(base, step, note, { method = 'GET', path, cookie, body, head
   if (response.status !== expect) {
     throw new Error(`${step} 期望 ${expect} 实得 ${response.status}：${text.slice(0, 300)}`)
   }
-  return { json, setCookie: response.headers.get('set-cookie') }
+  return { json, setCookie: response.headers.get('set-cookie'), status: response.status }
 }
 
 const cookieOf = (setCookie) => {
@@ -320,37 +338,37 @@ async function adopt(base, who, name) {
  * ⚠ 这条不是 HTTP 登录换来的：`POST /api/auth/development` 没带 cookie 时会新建 owner，
  * 拿不到「同一个 owner 的第二个设备」。所以直接调服务端同一个 `issueOwnerSession()`，
  * 用同一个 provider_subject 签第二个 token。证据里标 `simulated: true`。
+ *
+ * ⚠ 为什么取证进程要临时补环境：`issueOwnerSession()` → `activeNamespace()` 会
+ * 一边读 `process.env`（NODE_ENV / APP_IDENTITY_PROVIDER / DATABASE_PATH），
+ * 一边核实际库文件的 realpath 与开发库命名；对齐之后，才按**库内**记录的
+ * namespace / provider / subject 去读身份。所以这里补环境只是让"它认的是同一个库"，
+ * 身份本身仍从库里读 —— 不是"它只看 env、不读库"。脚本进程本来没有这几个变量
+ * （只有 next dev 子进程有），不补会抛 `Identity namespace unavailable`，
+ * 那是环境没对齐，不是权限问题。产品的隔离校验保持原样，不为模拟开任何签发口子。
  */
 function signSecondDevice(dogId) {
-  // `issueOwnerSession` 内部要判 activeNamespace()：它读 process.env 而不是库里的值。
-  // 脚本进程本来没有这几个变量（只有 next dev 子进程有），不临时补上会抛
-  // 「Identity namespace unavailable」—— 这不是权限问题，是环境没对齐。
-  const saved = {
-    nodeEnv: process.env.NODE_ENV,
-    provider: process.env.APP_IDENTITY_PROVIDER,
-    databasePath: process.env.DATABASE_PATH,
-  }
-  process.env.NODE_ENV = 'development'
-  process.env.APP_IDENTITY_PROVIDER = 'development'
-  process.env.DATABASE_PATH = dbPath
-  const db = new DatabaseSync(dbPath)
-  try {
-    db.exec('PRAGMA busy_timeout = 5000')
-    const row = db
-      .prepare(`SELECT o.id AS ownerId, o.namespace AS namespace, o.provider_subject AS subject
-        FROM dog d JOIN owner o ON o.id = d.owner_id WHERE d.id = ?`)
-      .get(dogId)
-    if (!row) throw new Error(`狗 ${dogId} 没有 owner，签不出第二台设备`)
-    const issued = issueOwnerSession(db, { provider: row.namespace, subject: row.subject })
-    return { cookie: issued.setCookie.split(';', 1)[0], ownerId: issued.ownerId, simulated: true }
-  } finally {
-    db.close()
-    process.env.NODE_ENV = saved.nodeEnv
-    if (saved.provider === undefined) delete process.env.APP_IDENTITY_PROVIDER
-    else process.env.APP_IDENTITY_PROVIDER = saved.provider
-    if (saved.databasePath === undefined) delete process.env.DATABASE_PATH
-    else process.env.DATABASE_PATH = saved.databasePath
-  }
+  return withTemporaryEnv(
+    { NODE_ENV: 'development', APP_IDENTITY_PROVIDER: 'development', DATABASE_PATH: dbPath },
+    () => {
+      let db
+      try {
+        // 开库放在 try 内：开库本身失败时也要走回收，环境不能留在改过的状态。
+        db = new DatabaseSync(dbPath)
+        db.exec('PRAGMA busy_timeout = 5000')
+        const row = db
+          .prepare(`SELECT o.id AS ownerId, o.namespace AS namespace, o.provider_subject AS subject
+            FROM dog d JOIN owner o ON o.id = d.owner_id WHERE d.id = ?`)
+          .get(dogId)
+        if (!row) throw new Error(`狗 ${dogId} 没有 owner，签不出第二台设备`)
+        const issued = issueOwnerSession(db, { provider: row.namespace, subject: row.subject })
+        return { cookie: issued.setCookie.split(';', 1)[0], ownerId: issued.ownerId, simulated: true }
+      } finally {
+        // 只关真正拿到的连接。开库失败时 db 还是 undefined。
+        if (db) db.close()
+      }
+    },
+  )
 }
 
 /** 撤销该 owner 名下所有活着的会话（模拟人主动退出登录）。 */
@@ -404,7 +422,11 @@ async function sendWithSplitBody({ base, cookie, body, onFirstHalf }) {
     duplex: 'half',
     signal: AbortSignal.timeout(60000),
   })
-  // 让服务端把 auth 解析完、卡在 await request.json() 上。
+  // 给服务端 500ms 去读 auth、进到 body 读取那一步。
+  // 这是「给它机会」，不是「保证它已经到了那一步」：请求调度、框架层的 body 缓冲
+  // 都可能让实际顺序与写脚本时的预期不同。所以本项不承诺「挂起的那一刻必然停在
+  // await request.json() 上」；要那条时间窗有确定性保证，靠进程内回归（直接构造
+  // 已撤销会话 + 已解析 auth），不靠 HTTP 时序碰运气。
   await setTimeout(500)
   const hook = onFirstHalf ? await onFirstHalf() : null
   openGate()
@@ -500,7 +522,7 @@ try {
   })
   const readAtFirst = firstRead.exchange.readAt
   if (!readAtFirst) throw new Error('点开后 readAt 仍为空')
-  const { json: secondRead } = await call(server.base, 'dev2.read.2', '乙在半小时后（模拟）再点开一次', {
+  const { json: secondRead } = await call(server.base, 'dev2.read.2', '乙连续重复点开（同一请求立刻再打一次，不涉及时钟推进）', {
     method: 'PATCH', path: `/api/exchanges/${encodeURIComponent(exchange.id)}/read`, cookie: dev2.cookie, body: {},
   })
   const readAtSecond = secondRead.exchange.readAt
@@ -599,16 +621,22 @@ try {
     },
     onFirstHalf: async () => {
       /**
-       * 关键一步：**证明撤销发生在「首验之后」**。
+       * 关键一步：**证明撤销发生的那一刻，这个会话对这条连接还是有效的**。
        *
        * 未登录和复验拦下返回的是同一个 404、同一句 detail（`这条记录不在这里`），
-       * 光看响应分不出「撤销太早，请求根本没通过首验」和「首验过了、是我复验拦的」。
-       * 所以在第一个请求还挂在 `await request.json()` 上的这一刻，
-       * 用**同一个会话**再打一条完整的写入：
-       *   · 它 200 → 会话此刻仍然有效 → 那个挂着的请求，首验必然是过了的
-       *   · 撤销 → 放行后半截 → 它 404，那就只能是事务内复验拦的
+       * 光看响应分不出「撤销太早，请求根本没通过首验」和「首验过了、是复验拦的」。
+       * 所以在第一个请求还挂着 body 的这一刻，用**同一个会话**再打一条完整的写入：
+       *   · 它 200 → 撤销之前会话确实有效，挂着的那个请求有机会读到有效 auth
+       *   · 撤销 → 放行后半截 → 它 404，说明读 body 之后的那道校验起了作用
+       *
+       * ⚠ 这条推断的力度要说清：同会话 200 只证明「那个时刻会话有效」，
+       * **不能严格推出挂起的请求必然已经走完首验**。请求调度、框架 body 缓冲
+       * 都可能让实际顺序不同 —— 挂起请求有可能压根还没进到读 auth 那行。
+       * 所以本项定位是**支持性证据**：它排除的是「撤销发生在请求还没被受理之前」
+       * 这种平凡解释；「精确命中 await 窗口」的确定性保证，由已合 main 的
+       * 进程内回归承担，不靠这条 HTTP 时序兜。
        */
-      const proof = await call(server.base, 'toctou.liveProof', '挂起期间同一会话仍能正常写入（证明首验已过）', {
+      const proof = await call(server.base, 'toctou.liveProof', '挂起期间同一会话仍能正常写入（撤销时点会话有效）', {
         method: 'POST',
         path: '/api/exchanges',
         cookie: devTail.cookie,
@@ -620,7 +648,9 @@ try {
           payload: { kind: 'co_owner_message', message: LIVE_PROOF_MARK },
         },
       })
-      return { liveProofStatus: 200, liveProofId: proof.json.exchange.id, revokedRows: revokeSessionsOf(devTail.dog.id) }
+      // 记实得状态，不写死 200：call() 在非 200 时已经抛错，但证据里该出现的
+      // 是这次请求真实返回的状态码，不是脚本希望它返回的那个数。
+      return { liveProofStatus: proof.status, liveProofId: proof.json.exchange.id, revokedRows: revokeSessionsOf(devTail.dog.id) }
     },
   })
 
@@ -650,7 +680,8 @@ try {
     ['整库无外键问题', facts.foreignKeys === 0],
     ['integrity ok', facts.integrity === 'ok'],
     ['对照组：同一个分块发法不撤销 → 200', control.status === 200],
-    ['挂起期间同一会话仍能写（首验在撤销前已通过）', revoked.hook?.liveProofStatus === 200],
+    ['三边字段集合完全相同（不对称字段数 = 0）', asym.length === 0],
+    ['挂起期间同一会话仍能写（撤销时点会话有效，支持性证据）', revoked.hook?.liveProofStatus === 200],
     ['读完 body 之前撤销 → 写被拒（404）', revoked.status === 404],
     ['被拒的那条没留在库里', countExchangeRows(TOCTOU_MARK) === 0],
     ['对照组那条正常落库（证明检查本身没写坏）', countExchangeRows(CONTROL_MARK) === 1],
@@ -669,8 +700,13 @@ try {
       liveProofExchangeId: revoked.hook?.liveProofId ?? null,
       marker: TOCTOU_MARK,
     },
-    note: '服务端先解析 auth、再 await request.json()；body 分两截发送，第二截放行前先证明会话仍有效（同会话写入 200）再撤销。'
-      + ' 未登录与复验拦截返回同一个 404 与同一句 detail，所以「首验已过」不能靠响应推断，只能靠这条同会话写入证。',
+    claimLevel: 'supporting',
+    note: '服务端先解析 auth、再 await request.json()；body 分两截发送，第二截放行前先用同一会话完整写一条（200）再撤销。'
+      + ' 这条 200 证明的是「撤销那一刻会话有效、挂起请求有机会读到有效 auth」，'
+      + '**不能严格推出挂起请求必然已走完首验** —— 请求调度与框架 body 缓冲都可能改变实际顺序。'
+      + ' 未登录与复验拦截返回同一个 404 与同一句 detail，所以仅凭响应分不出两者。',
+    deterministicCoverage: '精确命中 await 窗口的保证由已合 main 的进程内回归承担（构造已撤销会话 + 已解析 auth），本项不替代它。',
+    negativeValidation: '见 evidence/d9-negative-cdb9eb5.json（独立记录原 SHA、临时 diff 指纹、命令与实际结果、还原检查）。',
   }
   evidence.steps = trail
   evidence.facts = facts
