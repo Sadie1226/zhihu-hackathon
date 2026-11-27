@@ -12,7 +12,7 @@ import { createTripService, startsOnShanghaiDay } from '../lib/trips/service.ts'
 import { createMemorySearchCache } from '../lib/trips/search-cache.ts'
 import { revokeWish } from '../lib/wishes/contract.ts'
 import { insertDog, insertExchange, mailboxDatabase, ownedDog } from './helpers/mailbox-fixtures.mjs'
-import { draftFor, request, writeFixture } from './helpers/trip-return-fixtures.mjs'
+import { request } from './helpers/trip-return-fixtures.mjs'
 
 const spawnNode = promisify(execFile)
 const origin = '2026-11-27T03:00:00.000Z'
