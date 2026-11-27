@@ -45,6 +45,34 @@ async function fixture(t) {
   return { db, path, clock, now, owner, control, service, calls, run }
 }
 
+test('same dog zero-trip versus three done trips changes persistent Find set with exactly the same candidates', async t => {
+  const { db } = mailboxDatabase(t)
+  const owner = ownedDog(db, 'same-dog-control')
+  let at = Date.parse('2026-11-10T02:00:00.000Z')
+  const now = () => new Date(at)
+  const service = createTripService(db, { now })
+  const run = items => createTripExecutor(db, { now, ownerObservations: observations,
+    provider: async () => ({ ok: true, httpStatus: 200, fetchedAt: now().toISOString(), items }) })
+    .owner({ dogId: owner.id, request: req(owner), action: 'create' })
+  const before = await run(pool)
+  assert.equal(before.status, 'complete')
+  assert.ok(!before.finds.some(row => row.sourceUrl === url(104)))
+  // Retain this control batch as failed so it is not a positive learning event.
+  service.finish(before.trip.id, owner.sessionId, 'failed')
+  for (let index = 0; index < 3; index++) {
+    at += day
+    const done = await run([article(800 + index, `酵母发酵观察${index}`)])
+    service.finish(done.trip.id, owner.sessionId, 'done')
+  }
+  at += day
+  const after = await run(pool)
+  assert.equal(after.status, 'complete')
+  assert.ok(after.finds.some(row => row.sourceUrl === url(104)))
+  assert.equal(db.prepare("SELECT count(*) n FROM trip WHERE dog_id=? AND status='done'").get(owner.id).n, 3)
+  assert.equal(db.prepare('SELECT personality_tags FROM dog WHERE id=?').get(owner.id).personality_tags,
+    '["好奇","看物","直给"]')
+})
+
 test('three completed SQLite trips change actual Find membership and persisted Message reference; control dog and cold replay', async t => {
   const f = await fixture(t)
   const { db, run, owner, control, clock, now, path, calls } = f
