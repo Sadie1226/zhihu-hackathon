@@ -4,7 +4,7 @@ import { createTripReturn } from '../lib/trips/return.ts'
 import { createMessageStore } from '../app/(b)/b5-share.ts'
 import { createTripService } from '../lib/trips/service.ts'
 import {
-  AUTOMATIC_RETURN_ID_PATTERN, createB5ReturnPorts, createReturnMessageGenerator,
+  AUTOMATIC_RETURN_ID_PATTERN, composeReturnMessage, createB5ReturnPorts, createReturnMessageGenerator,
   isAutomaticReturnMessageId, readAutomaticReturnMessageById, writeMessageInTransaction,
 } from '../lib/messages/return-adapter.ts'
 import { mailboxDatabase, ownedDog, insertDog } from './helpers/mailbox-fixtures.mjs'
@@ -14,11 +14,11 @@ const conflict = { code: 'CONFLICT' }
 const notFound = { code: 'NOT_FOUND' }
 const autoId = 'msg_auto_return_v1_' + 'a'.repeat(64)
 
-async function ownerFixture(t) {
+async function ownerFixture(t, title) {
   const { db, path } = mailboxDatabase(t)
   const owner = ownedDog(db, 'b5-owner')
   const input = { action: 'create', dogId: owner.id, request: request(owner.cookie) }
-  const complete = await discovery(db).owner(input)
+  const complete = await discovery(db, title === undefined ? {} : { title }).owner(input)
   assert.equal(complete.status, 'complete')
   return { db, path, owner, complete, input: { ...input, tripId: complete.trip.id } }
 }
@@ -87,6 +87,40 @@ test('B5 generation uses only confirmed visible finds and current personality co
   f.db.prepare('UPDATE dog SET blocked_topics=? WHERE id=?').run('[]', f.owner.id)
   assert.equal(f.db.prepare('SELECT COUNT(*) n FROM message').get().n, 0)
   assert.equal(f.db.prepare('SELECT status FROM trip WHERE id=?').get(f.input.tripId).status, 'running')
+})
+
+test('B5 compose clips long titles to the whole quiet sentence budget', () => {
+  const cases = [
+    ['观察文章', '看到了观察文章，心里亮了一下。'],
+    ['观察文章呀', '看到了观察文…，心里亮了一下。'],
+    ['这是一段特别特别长的知乎文章标题用于回归', '看到了这是一…，心里亮了一下。'],
+  ]
+  for (const [title, expected] of cases) {
+    const draft = composeReturnMessage({ scope: 'owner', finds: [{ id: 'find-long', title }],
+      personalityTags: ['寡言', '看物', '直给'], blockedTopics: [] }, new AbortController().signal)
+    assert.equal(draft.mentionsFindId, 'find-long')
+    assert.equal(draft.text, expected)
+    assert.equal([...draft.text].length, 15)
+  }
+})
+
+test('B5 adapter confirms quiet long-title returns through the default composer', async t => {
+  for (const [title, expected] of [
+    ['观察文章', '看到了观察文章，心里亮了一下。'],
+    ['观察文章呀', '看到了观察文…，心里亮了一下。'],
+    ['这是一段特别特别长的知乎文章标题用于回归', '看到了这是一…，心里亮了一下。'],
+  ]) {
+    const f = await ownerFixture(t, title)
+    f.db.prepare('UPDATE dog SET personality_tags=? WHERE id=?')
+      .run(JSON.stringify(['寡言', '看物', '直给']), f.owner.id)
+    const result = await returnService(f.db).owner(f.input)
+    assert.equal(result.status, 'confirmed')
+    assert.equal(result.message.text, expected)
+    assert.equal([...result.message.text].length, 15)
+    assert.equal(f.db.prepare('SELECT status FROM trip WHERE id=?').get(f.input.tripId).status, 'done')
+    assert.deepEqual(readAutomaticReturnMessageById(f.db, result.message.id), result.message)
+    assert.equal((await returnService(f.db).owner(f.input)).replayed, true)
+  }
 })
 
 test('B5 generator rejects untrusted shapes and cross-owner or cross-trip inputs', async t => {
