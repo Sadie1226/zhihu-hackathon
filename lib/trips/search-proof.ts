@@ -5,6 +5,8 @@ import { ownerDiscoveryIntent } from './discovery-receipt.ts'
 import type { MemberFilter } from './discovery-receipt.ts'
 import { TripError } from './errors.ts'
 import type { FindInput } from './finds.ts'
+import { selectWithExperience } from '../adoption/a7-experience.ts'
+import type { ExperienceSelection } from '../adoption/a7-experience.ts'
 import { isFreshSearchTime, searchCacheKey, utcSearchTime, ZHIHU_CACHE_PROVIDER, ZHIHU_CACHE_VERSION } from './search-cache.ts'
 import type { SearchCache, SearchCacheRecord } from './search-cache.ts'
 
@@ -14,9 +16,12 @@ export type SearchProof = Readonly<{ readonly verifiedSearch: true }>
 type SearchScope = { tripId: string; dogId: string; ownerId: string }
 type SearchQuery = SearchScope & { query: string; category: string; blockedTopics: string[] }
 type ExecutionScope = SearchScope & { intentId: string }
-type Evidence = ExecutionScope & { query: string; category: string; fetchedAt: string; input: Readonly<FindInput> }
+type Evidence = ExecutionScope & { query: string; category: string; fetchedAt: string; input: Readonly<FindInput>;
+  assertSelectionCurrent?: () => void }
 type Degradation = { code: 'AUTH' | 'RATE_LIMITED'; alert: boolean }
 export type SearchCacheOptions = { cache?: SearchCache; now?: () => Date }
+/** Internal server dependency, never read from HTTP input. Rechecked under the store write lock. */
+export type ExperienceSearch = { selection: ExperienceSelection; assertCurrent: () => void }
 type ProofResult = {
   ok: true
   proof: SearchProof | null
@@ -63,15 +68,31 @@ function verifiedContent(item: SearchContent): Readonly<SearchContent> {
 }
 
 function success(context: SearchQuery & ExecutionScope, items: readonly Readonly<SearchContent>[], sourceMode: 'live' | 'cache',
-  fetchedAt: string | null, httpStatus: number | null, degradation?: Degradation): ProofResult {
+  fetchedAt: string | null, httpStatus: number | null, degradation?: Degradation, experience?: ExperienceSearch): ProofResult {
   const proofs: SearchProof[] = []
   if (fetchedAt !== null && !blockedBy(context.blockedTopics, context.query, context.category)) {
-    for (const item of items) {
+    let selected = items
+    if (experience) {
+      experience.assertCurrent()
+      if (experience.selection.context.dogId !== context.dogId) throw new Error('Invalid A7 search scope')
+      const unique = new Map<string, Readonly<SearchContent>>()
+      for (const item of items) {
+        const existing = unique.get(item.sourceUrl)
+        if (existing && JSON.stringify(existing) !== JSON.stringify(item)) throw new Error('Conflicting search source')
+        unique.set(item.sourceUrl, item)
+      }
+      const candidates = [...unique.values()].map(item => ({ id: item.sourceUrl, title: item.title, excerpt: item.excerpt }))
+      const result = selectWithExperience(candidates, { ...experience.selection,
+        context: { ...experience.selection.context, blockedTopics: context.blockedTopics } }, count)
+      selected = result.selectedIds.map(id => unique.get(id)!)
+    }
+    for (const item of selected) {
       if (blockedBy(context.blockedTopics, item.title, item.excerpt ?? '')) continue
       const proof: SearchProof = Object.freeze({ verifiedSearch: true })
       const { tripId, dogId, ownerId, intentId, query, category } = context
       evidence.set(proof, { tripId, dogId, ownerId, intentId, query, category, fetchedAt,
-        input: Object.freeze({ ...item, tripId, kind: 'zhihu', sourceMode, assetPath: null }) })
+        input: Object.freeze({ ...item, tripId, kind: 'zhihu', sourceMode, assetPath: null }),
+        assertSelectionCurrent: experience?.assertCurrent })
       proofs.push(proof)
     }
   }
@@ -104,12 +125,13 @@ async function storeResult(cache: SearchCache, key: string, ownerId: string,
 
 /** C5 is called once. Only AUTH and RATE_LIMITED may select a previously verified result. */
 export async function searchForTrip(context: SearchQuery & { intentId?: string }, provider?: SearchProvider,
-  { cache, now = () => new Date() }: SearchCacheOptions = {}): Promise<ProofResult> {
+  { cache, now = () => new Date(), experience }: SearchCacheOptions & { experience?: ExperienceSearch } = {}): Promise<ProofResult> {
   const execution = { ...context, intentId: ownerDiscoveryIntent(context.tripId, context.intentId) }
   try {
     const search = provider ?? (await import('../zhihu/index.ts')).searchZhihu
-    const result = await search(context.query, count)
-    const key = cache ? searchCacheKey(context.ownerId, context.query, context.category, count) : ''
+    const requestedCount = experience ? 6 : count
+    const result = await search(context.query, requestedCount)
+    const key = cache ? searchCacheKey(context.ownerId, context.query, context.category, requestedCount) : ''
     if (!result.ok) {
       if ((result.httpStatus ?? 0) >= 500 && result.error.code !== 'NETWORK') {
         return { ok: false, error: network(), httpStatus: result.httpStatus, fallback: null, alert: false }
@@ -118,7 +140,7 @@ export async function searchForTrip(context: SearchQuery & { intentId?: string }
       if (cache && (code === 'AUTH' || code === 'RATE_LIMITED')) {
         const record = await cachedResult(cache, key, context.ownerId, now)
         return success(execution, record?.items ?? [], 'cache', record?.fetchedAt ?? null, result.httpStatus,
-          { code, alert: result.alert })
+          { code, alert: result.alert }, experience)
       }
       return { ok: false, error: result.error, httpStatus: result.httpStatus, fallback: result.fallback, alert: result.alert }
     }
@@ -129,7 +151,7 @@ export async function searchForTrip(context: SearchQuery & { intentId?: string }
     const items = rawItems.map(verifiedContent)
     if (cache) await storeResult(cache, key, context.ownerId, fetchedAt,
       items.filter(item => !blockedBy(context.blockedTopics, item.title, item.excerpt ?? '')), now)
-    return success(execution, items, 'live', fetchedAt, httpStatus)
+    return success(execution, items, 'live', fetchedAt, httpStatus, undefined, experience)
   } catch {
     return { ok: false, error: network(), httpStatus: null, fallback: null, alert: false }
   }
@@ -143,6 +165,7 @@ export function eligibleSearchInput(proof: SearchProof, scope: ExecutionScope, b
       value.intentId !== scope.intentId) {
     throw new TripError('CONFLICT', '发现来源验证未通过')
   }
+  value.assertSelectionCurrent?.()
   if (value.input.sourceMode === 'cache' && !isFreshSearchTime(value.fetchedAt, Date.parse(at))) return null
   if (blockedBy(blockedTopics, value.query, value.category, value.input.title, value.input.excerpt ?? '')) return null
   const query = normalizeBlockedText(value.query)
