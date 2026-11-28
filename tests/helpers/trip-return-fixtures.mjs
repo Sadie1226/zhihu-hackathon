@@ -13,11 +13,12 @@ const scenes = count => ({ trip }) => Array.from({ length: count }, (_, index) =
   happenedAt: trip.startedAt, title: '观察材料 ' + index, excerpt: null, topics: ['街景'],
 }))
 
-export function discovery(db) {
+export function discovery(db, options = {}) {
+  const title = typeof options.title === 'string' ? options.title : '观察文章'
   return createTripExecutor(db, {
     now, ownerObservations: scenes(2), seedObservations: scenes(3),
     provider: async () => ({ ok: true, fetchedAt: at, httpStatus: 200, items: [{
-      title: '观察文章', excerpt: null, sourceUrl: 'https://www.zhihu.com/question/121',
+      title, excerpt: null, sourceUrl: 'https://www.zhihu.com/question/121',
       sourceMode: 'live', authorityLevel: null, voteUpCount: null,
     }] }),
   })

@@ -136,9 +136,24 @@ function validateDraft(draft: unknown, tags: unknown, topics: readonly string[],
   return Object.freeze({ text, mentionsFindId: mention })
 }
 
-function clip(value: string, max: number): string {
+type ReturnTemplate = Readonly<{
+  prefix: string
+  suffix: string
+  max: number
+}>
+
+const TEMPLATE_QUIET: ReturnTemplate = { prefix: '看到了', suffix: '，心里亮了一下。', max: 15 }
+const TEMPLATE_TALKATIVE: ReturnTemplate = { prefix: '这趟看到', suffix: '，越想越有意思，回来还忍不住琢磨。', max: 35 }
+const TEMPLATE_DEFAULT: ReturnTemplate = { prefix: '这趟看到', suffix: '，心里记下了。', max: 120 }
+
+/** 标题预算按整句剩余额度计算；超长时省略号也占一个字，不把最终句子挤出契约。 */
+function clipToBudget(value: string, template: ReturnTemplate): string {
+  const budget = template.max - [...template.prefix].length - [...template.suffix].length
+  if (budget < 1) throw new Error('Invalid return template budget')
   const chars = [...value.trim()]
-  return chars.length <= max ? chars.join('') : `${chars.slice(0, max).join('')}…`
+  if (chars.length <= budget) return chars.join('')
+  if (budget === 1) return '…'
+  return `${chars.slice(0, budget - 1).join('')}…`
 }
 
 /** 受控本地生成器：只使用传入的已确认可见 Find，不带主人请求、会话或回应。 */
@@ -147,13 +162,12 @@ export function composeReturnMessage(input: ReturnComposeInput, signal: AbortSig
   if (!input || input.scope !== 'owner' && input.scope !== 'seed' ||
       !Array.isArray(input.finds) || input.finds.length === 0) changed()
   const first = input.finds[0]
-  const title = clip(first.title, input.personalityTags.includes('寡言') ? 4 : 12)
-  const mention = first.id
-  let text: string
-  if (input.personalityTags.includes('寡言')) text = `看到了${title}，心里亮了一下。`
-  else if (input.personalityTags.includes('话痨')) text = `这趟看到${title}，越想越有意思，回来还忍不住琢磨。`
-  else text = `这趟看到${title}，心里记下了。`
-  return Object.freeze({ text, mentionsFindId: mention })
+  const template = input.personalityTags.includes('寡言') ? TEMPLATE_QUIET
+    : input.personalityTags.includes('话痨') ? TEMPLATE_TALKATIVE : TEMPLATE_DEFAULT
+  const title = clipToBudget(first.title, template)
+  const text = `${template.prefix}${title}${template.suffix}`
+  if ([...text].length > template.max) throw new Error('Return template exceeded sentence budget')
+  return Object.freeze({ text, mentionsFindId: first.id })
 }
 
 /**
