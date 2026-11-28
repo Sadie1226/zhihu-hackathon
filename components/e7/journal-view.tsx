@@ -35,7 +35,8 @@ import {
 } from './journal-model'
 import s from './journal.module.css'
 
-type Tab = 'trips' | 'letters' | 'gifts'
+export type JournalTab = 'trips' | 'letters' | 'gifts'
+type Tab = JournalTab
 type Phase = 'loading' | 'ready' | 'error'
 type MailState = {
   phase: Phase
@@ -47,6 +48,9 @@ type MailState = {
 }
 type Props = {
   dogId: string
+  embedded?: boolean
+  initialTab?: JournalTab
+  onBack?: () => void
   client?: JournalClient
   fixture?: boolean
   revision?: number
@@ -67,8 +71,8 @@ function messageOf(reason: unknown): string {
   return reason instanceof Error && reason.message ? reason.message : '暂时没读到，请稍后重新读取。'
 }
 
-export function JournalView({ dogId, client = journalClient, fixture = false, revision = 0, reducedMotion = false, renderReply }: Props) {
-  const [tab, setTab] = useState<Tab>('trips')
+export function JournalView({ embedded = false, initialTab = 'trips', onBack, dogId, client = journalClient, fixture = false, revision = 0, reducedMotion = false, renderReply }: Props) {
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [mailDirection, setMailDirection] = useState<'in' | 'out'>('in')
 
   const [trips, setTrips] = useState<Trip[]>([])
@@ -192,7 +196,6 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
     : undefined
   // 只有「新到」那一封第一次打开时才渐显；已读回看、关掉开关、系统减少动效都直接给全文。
   const animateOpenLetter = Boolean(openEntry && revealId === openEntry.exchange.id && revealOn && !reducedMotion && !revealedNow)
-  const canToggleReveal = Boolean(openEntry && openEntry.direction === 'in' && openEntry.exchange.deliveredAt !== null)
 
   function peerOf(item: Exchange): PublicDogSummary | undefined {
     const other = item.toDog === dogId ? item.fromDog : item.toDog
@@ -264,12 +267,12 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
     }
   }
 
-  return <div className={s.page}>
+  return <div className={`${s.page} ${embedded ? s.embedded : ''}`}>
     <header className={s.top}>
-      <Link className={s.brand} href="/home">看山出门</Link>
-      <Link className={s.back} href="/home">回小屋</Link>
+      {embedded ? <span className={s.brand}>看山出门</span> : <Link className={s.brand} href="/home">看山出门</Link>}
+      {embedded ? <button onClick={onBack}>回到手账目录</button> : <Link className={s.back} href="/home">回小屋</Link>}
     </header>
-    <main id="content">
+    <main id={embedded ? undefined : "content"}>
       {fixture && <p className={s.notice}>示例预览 · 这一页的出行、来信与礼物都是夹具，不会写入真实数据。</p>}
       <div className={s.heading}>
         <img className={s.headingIcon} src="/assets/a5-v25/home/journal.png" alt="" width="42" height="60" /><h1>手账</h1>
@@ -280,7 +283,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
         {TABS.map(([key, label]) => <button key={key} aria-pressed={tab === key} onClick={() => selectTab(key)}>{label}{key === 'letters' && unread > 0 && <span className={s.badge} aria-label={`${unread} 条新到来信`}>{unread}</span>}</button>)}
       </nav>
 
-      {tab === 'trips' && <section className={s.section} aria-label="旅途">
+      {tab === 'trips' && <section className={`${s.section} ${embedded && !reducedMotion ? s.turnPage : ''}`} aria-label="旅途">
         {tripPhase === 'loading' && <p role="status" className={s.notice}>正在翻这一本手账…</p>}
         {tripPhase === 'error' && <Failure text={tripError} onRetry={() => setTripTick(x => x + 1)} />}
         {tripPhase === 'ready' && (trips.length === 0
@@ -301,11 +304,20 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
           })}</div>)}
       </section>}
 
-      {tab === 'letters' && <section className={s.section} aria-label="来往">
+      {tab === 'letters' && <section className={`${s.section} ${embedded && !reducedMotion ? s.turnPage : ''}`} aria-label="来往">
         <nav className={s.mailTabs} aria-label="收寄分类">
           <button aria-pressed={mailDirection === 'in'} onClick={() => { setMailDirection('in'); closeLetter() }}>收到{unread > 0 && <span className={s.badge} aria-label={`${unread} 条新到来信`}>{unread}</span>}</button>
           <button aria-pressed={mailDirection === 'out'} onClick={() => { setMailDirection('out'); closeLetter() }}>寄出</button>
         </nav>
+        {mailDirection === 'in' && <div className={s.readingToolbar}>
+          <button onClick={toggleSettings} aria-expanded={settingsOpen} aria-controls="e7-reading-settings">阅读设置</button>
+          {settingsOpen && <section id="e7-reading-settings" className={s.settings} aria-label="阅读设置">
+            <p className={s.muted}>统一控制所有收到的信。新到的信第一次打开时逐字渐显，点正文可以立即显示全文。</p>
+            {reducedMotion
+              ? <p className={s.muted}>系统已开启「减少动态效果」，所有信件直接显示全文。</p>
+              : <button onClick={toggleReveal} aria-pressed={revealOn}>{revealOn ? '关掉逐字渐显' : '打开逐字渐显'}</button>}
+          </section>}
+        </div>}
         {mail.phase === 'loading' && <p role="status" className={s.notice}>正在整理收到的和寄出的…</p>}
         {mail.phase === 'error' && <Failure text={mail.error} onRetry={() => setMailTick(x => x + 1)} />}
         {mail.phase === 'ready' && <>
@@ -352,14 +364,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
             <div className={s.actions}>
               {!openEntry.exchange.repliedAt && <button onClick={() => setReplying(!replying)} aria-expanded={replying}>留个回应</button>}
               <button onClick={closeLetter}>收好，回到这一页</button>
-              {canToggleReveal && <button onClick={toggleSettings} aria-expanded={settingsOpen}>阅读设置</button>}
             </div>
-            {canToggleReveal && settingsOpen && <section id="e7-reading-settings" className={s.settings} aria-label="阅读设置">
-              <p className={s.muted}>新到的信第一次打开时，文字会一个字一个字出现。点正文可以立即显示全文。</p>
-              {reducedMotion
-                ? <p className={s.muted}>系统已开启「减少动态效果」，这一封直接显示全文。</p>
-                : <button onClick={toggleReveal}>{revealOn ? '关掉逐字渐显' : '打开逐字渐显'}</button>}
-            </section>}
             {replying && (renderReply
               ? renderReply({ exchangeId: openEntry.exchange.id }, () => { setReplying(false); closeLetter(); setMailTick(x => x + 1) }, () => setReplying(false))
               : <p className={s.notice}>回应模块尚未接入，这封信仍可继续阅读。</p>)}
@@ -367,7 +372,7 @@ export function JournalView({ dogId, client = journalClient, fixture = false, re
         </>}
       </section>}
 
-      {tab === 'gifts' && <section className={s.section} aria-label="收到的礼物">
+      {tab === 'gifts' && <section className={`${s.section} ${embedded && !reducedMotion ? s.turnPage : ''}`} aria-label="收到的礼物">
         {mail.phase === 'loading' && <p role="status" className={s.notice}>正在看有没有还没拆的礼物…</p>}
         {mail.phase === 'error' && <Failure text={mail.error} onRetry={() => setMailTick(x => x + 1)} />}
         {mail.phase === 'ready' && mail.inboxFailed && <Failure text="收件暂时读不到，礼物也一起看不到。" onRetry={() => setMailTick(x => x + 1)} />}

@@ -1,5 +1,7 @@
 'use client'
 import Link from 'next/link'
+import { useState } from 'react'
+import { HomeOpenings, type OpeningKind } from '@/components/e10/home-openings'
 import { tripCaption } from '@/lib/adoption/view'
 import { SessionGate, useAppShell } from './shell'
 import {
@@ -11,7 +13,8 @@ import {
 import { useCurrentTrip } from './use-trip'
 
 function Home() {
-  const { session, openPanel, features, bindings } = useAppShell()
+  const { session, openPanel, features, bindings, reducedMotion } = useAppShell()
+  const [openingKind, setOpeningKind] = useState<OpeningKind | null>(null)
   const dog = session!.dog!
   const { trip, loading, error, retry } = useCurrentTrip(dog.id)
   const away = trip?.status === 'running'
@@ -104,7 +107,13 @@ function Home() {
                     </>
                   )
                   return href ? (
-                    <Link key={id} className="dock-route" href={href}>
+                    <Link key={id} className="dock-route" href={href}
+                      onClick={event => {
+                        // Keep ordinary route URLs and modified-click/new-tab navigation.
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+                        event.preventDefault()
+                        setOpeningKind(id === 'mail' ? 'mail' : 'journal')
+                      }}>
                       {content}
                     </Link>
                   ) : (
@@ -173,6 +182,7 @@ function Home() {
           {dog.isSample && <p className="home-demo">示例伙伴</p>}
         </section>
       </main>
+      {openingKind && <HomeOpenings kind={openingKind} reducedMotion={reducedMotion} onClose={() => setOpeningKind(null)} />}
     </Frame>
   )
 }

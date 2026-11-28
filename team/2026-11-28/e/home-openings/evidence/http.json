@@ -1,0 +1,11 @@
+{
+  "productionHttpOnly": true,
+  "browserInteraction": "not tested here",
+  "homeStatus": 200,
+  "fixtureStatus": 404,
+  "mediaStatus": 200,
+  "mediaBytes": 124015,
+  "rangeStatus": 206,
+  "rangeBytes": 64,
+  "database": "isolated external database"
+}

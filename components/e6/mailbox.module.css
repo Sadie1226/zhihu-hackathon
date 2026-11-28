@@ -4,3 +4,6 @@
 
 /* Match the journal pixel typeface without changing mailbox behavior or layout. */
 .page h1,.page h2{font-weight:400}
+
+/* E10: reuse the real reader inside the home dialog, without another full-screen background. */
+.embedded{min-height:0!important;padding:0!important;background:transparent!important}.embedded main{margin:0!important;max-width:none!important}.embedded .top{padding-top:0}

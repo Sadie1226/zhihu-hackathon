@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ComponentProps } from 'react'
 import type { Exchange, PublicDogSummary } from '@/contracts/types'
 import { MailboxView } from './mailbox-view'
 import type { MailboxClient } from './mailbox-client'
@@ -21,13 +21,15 @@ function Composer({ peer, onCommit }: { peer: PublicDogSummary; onCommit: (text:
   </form>
 }
 
-export default function MailboxPreview() {
+type PreviewProps = Pick<ComponentProps<typeof MailboxView>, 'embedded' | 'onBack'>
+
+export default function MailboxPreview(viewProps: PreviewProps = {}) {
   const [scenario, setScenario] = useState('normal')
   return <><div style={{ padding: '12px 24px', background: '#eadcc6' }}><label htmlFor="e6-case">本地验收场景：</label><select id="e6-case" value={scenario} onChange={e => setScenario(e.target.value)}>
     <option value="normal">正常</option><option value="invitations-error">邀请首次读取失败（重试恢复）</option><option value="empty">空信箱</option><option value="error">读取失败</option><option value="read-error">已读保存失败</option><option value="slow">读取中</option><option value="blocked">伙伴已屏蔽</option>
-  </select></div><Preview key={scenario} scenario={scenario} /></>
+  </select></div><Preview key={scenario} scenario={scenario} viewProps={viewProps} /></>
 }
-function Preview({ scenario }: { scenario: string }) {
+function Preview({ scenario, viewProps }: { scenario: string; viewProps: PreviewProps }) {
   const client = useMemo<MailboxClient>(() => {
     let invitationAttempts = 0
     let rows: Exchange[] = raw.exchanges.map(row => ({ id: row.id, fromDog: row.from_dog, toDog: row.to_dog,
@@ -59,7 +61,7 @@ function Preview({ scenario }: { scenario: string }) {
       },
     } as MailboxClient & { previewSend: (text: string) => void }
   }, [scenario])
-  return <MailboxView dogId="dog_owner" fixture client={client}
+  return <MailboxView {...viewProps} dogId="dog_owner" fixture client={client}
     renderComposer={(peer, committed) => <Composer key={peer.id} peer={peer} onCommit={text => {
       (client as MailboxClient & { previewSend: (text: string) => void }).previewSend(text); committed()
     }} />}

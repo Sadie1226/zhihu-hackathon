@@ -6,11 +6,14 @@ import type { Exchange, InvitationView, PublicDogSummary, Reply } from '@/contra
 import { canOpen, letterState, letterTitle, safeSource } from './mailbox-model'
 import { mailboxClient, type MailboxClient } from './mailbox-client'
 import s from './mailbox.module.css'
+import { MailboxFan } from './mailbox-fan'
 
 type Box = 'invitations' | 'inbox' | 'outbox'
 type Target = { invitationId: string; exchangeId?: never } | { exchangeId: string; invitationId?: never }
 type Props = {
   dogId: string
+  embedded?: boolean
+  onBack?: () => void
   client?: MailboxClient
   fixture?: boolean
   revision?: number
@@ -28,7 +31,7 @@ function ExchangeText({ item }: { item: Exchange }) {
     {source && <a href={source} target="_blank" rel="noopener noreferrer">阅读原文</a>}</>
 }
 
-export function MailboxView({ dogId, client = mailboxClient, fixture = false, revision = 0, renderReply, renderComposer, renderRelationshipActions }: Props) {
+export function MailboxView({ embedded = false, onBack, dogId, client = mailboxClient, fixture = false, revision = 0, renderReply, renderComposer, renderRelationshipActions }: Props) {
   const [box, setBox] = useState<Box>('inbox')
   const [rows, setRows] = useState<Exchange[]>([])
   const [invitations, setInvitations] = useState<InvitationView[]>([])
@@ -103,9 +106,9 @@ export function MailboxView({ dogId, client = mailboxClient, fixture = false, re
     return peer ? `${peer.name}${peer.isSample ? ' · 示例伙伴' : ''}` : '伙伴身份信息暂未读到'
   }
 
-  return <div className={s.page}>
-    <header className={s.top}><Link className={s.brand} href="/home">看山出门</Link><Link href="/home">回小屋</Link></header>
-    <main id="content">
+  return <div className={`${s.page} ${embedded ? s.embedded : ''}`}>
+    <header className={s.top}>{embedded ? <span className={s.brand}>看山出门</span> : <Link className={s.brand} href="/home">看山出门</Link>}{embedded ? <button onClick={onBack}>收好，回小屋</button> : <Link href="/home">回小屋</Link>}</header>
+    <main id={embedded ? undefined : "content"}>
       {fixture && <p className={s.notice}>示例预览 · 所有来信与伙伴均为夹具。操作只影响当前预览，不会联系真人。</p>}
       <div className={s.heading}><div><h1>来信</h1><p className={s.intro}>有些话，会在路上多走一会儿。</p></div>
         <button className={s.primary} onClick={() => { setCompose(!compose); closeDetail() }} aria-expanded={compose}>捎句话</button></div>
@@ -124,7 +127,7 @@ export function MailboxView({ dogId, client = mailboxClient, fixture = false, re
       {phase === 'ready' && <>
         <div className={s.actions}><button onClick={() => setReload(x => x + 1)}>刷新这一叠信</button></div>
         {!selected && <div className={s.list}>
-          {box === 'invitations' ? invitations.length ? invitations.map(item => <article className={s.card} key={item.id}><div className={s.cardHead}><h2>它留给你的邀请</h2><span className={s.status}>{item.state === 'replied' ? '已回应' : item.state === 'gone_alone' ? '它先去看看了' : '安静地等着'}</span></div><p>{item.text}</p><button onClick={() => { setSelected(item); setReplying(false) }}>打开邀请</button></article>) : <Empty text="这里还没有邀请。先一起过会儿日子吧。" /> : rows.length ? rows.filter(item => box === 'outbox' ? item.fromDog === dogId && item.kind === 'co_owner_message' : item.toDog === dogId).map(item => <article className={s.card} key={item.id}>
+          {embedded && box === 'inbox' && rows.some(item => item.toDog === dogId) ? <MailboxFan rows={rows} dogId={dogId} peerLabel={peerLabel} onOpen={item => { void openLetter(item) }} /> : box === 'invitations' ? invitations.length ? invitations.map(item => <article className={s.card} key={item.id}><div className={s.cardHead}><h2>它留给你的邀请</h2><span className={s.status}>{item.state === 'replied' ? '已回应' : item.state === 'gone_alone' ? '它先去看看了' : '安静地等着'}</span></div><p>{item.text}</p><button onClick={() => { setSelected(item); setReplying(false) }}>打开邀请</button></article>) : <Empty text="这里还没有邀请。先一起过会儿日子吧。" /> : rows.length ? rows.filter(item => box === 'outbox' ? item.fromDog === dogId && item.kind === 'co_owner_message' : item.toDog === dogId).map(item => <article className={s.card} key={item.id}>
             <p className={s.muted}>{peerLabel(item)}</p><div className={s.cardHead}><h2>{letterTitle(item, dogId)}</h2><span className={s.status}>{letterState(item)}</span></div>
             {!item.deliveredAt && <p className={s.muted}>{box === 'outbox' ? '对方下次出行开始时，才会收到。' : '伙伴下次出行开始时，才会带来。不用守着等。'}</p>}
             {box === 'outbox' ? <><ExchangeText item={item} /><p className={s.muted}>{item.deliveredAt ? '已经送达。不必等对方马上回应。' : '已交给伙伴，尚未送达。'}</p></> : canOpen(item, dogId) && <button disabled={opening} onClick={() => void openLetter(item)}>拆开看看</button>}

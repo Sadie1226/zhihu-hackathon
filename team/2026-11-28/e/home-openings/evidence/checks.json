@@ -1,0 +1,49 @@
+{
+  "base": "6bf08dfb0adc50458c02bbc8b7addd7466bd3b24",
+  "checks": {
+    "typecheck": "exit 0",
+    "targetedEslint": "exit 0",
+    "regressionTests": {
+      "passed": 29,
+      "failed": 0
+    },
+    "productionWebpackBuild": "exit 0",
+    "productionHttp": "see http.json",
+    "browserInteraction": "NOT RUN: no usable browser; browser download blocked with HTTP 403",
+    "phone": "NOT RUN"
+  },
+  "media": {
+    "journal": {
+      "sourceName": "像素手账开启动效.mp4",
+      "sourceSha256": "3ec01cce7863aff046bbb6f4ddf725ab0964e110e951103a90d3b3e161bec2e6",
+      "outputSha256": "47d1993e4ee45f736031aeae304abda89e6cd390ef79bb62dd21a8f7316eed96",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 640,
+            "height": 640,
+            "pix_fmt": "yuv420p"
+          }
+        ],
+        "format": {
+          "duration": "1.100000",
+          "size": "124015"
+        }
+      },
+      "edit": "source 1.5–6.3s, 4.4x speed, silent H.264; AI label retained in frame"
+    },
+    "mail": {
+      "sourceName": "像素信封展开动效.mp4",
+      "sourceSha256": "cbd83f5dbcc69176366952dd68888efe3500ba5fc0a7057d31aa6694ec7cb0a3",
+      "sourceBytes": 221157,
+      "declaredDurationSeconds": 10.016667,
+      "declaredFrames": 241,
+      "decodedFrames": 8,
+      "result": "partial file / invalid NAL unit size; not deployed",
+      "fallback": "original repository envelope + CSS paper-fan opening, 720ms"
+    }
+  }
+}

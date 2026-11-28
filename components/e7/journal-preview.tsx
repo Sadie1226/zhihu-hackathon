@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ComponentProps } from 'react'
 import type { Exchange, Find, Message, PublicDogSummary, Reply, Trip } from '@/contracts/types'
 import { JournalView } from './journal-view'
 import type { JournalClient } from './journal-client'
@@ -216,7 +216,9 @@ function FixtureReply({ onReplied, onClose }: { onReplied: (reply: Reply) => voi
   </form>
 }
 
-export default function JournalPreview() {
+type PreviewProps = Pick<ComponentProps<typeof JournalView>, 'embedded' | 'initialTab' | 'onBack' | 'reducedMotion'>
+
+export default function JournalPreview(viewProps: PreviewProps = {}) {
   const [scenario, setScenario] = useState('normal')
   return <>
     <div style={{ padding: '12px 16px', background: '#eadcc6', color: '#493c30', font: '16px/1.6 "Microsoft YaHei",sans-serif' }}>
@@ -232,12 +234,12 @@ export default function JournalPreview() {
         <option value="sealed">只有未送达收件</option>
       </select>
     </div>
-    <Preview key={scenario} scenario={scenario} />
+    <Preview key={scenario} scenario={scenario} viewProps={viewProps} />
   </>
 }
 
-function Preview({ scenario }: { scenario: string }) {
+function Preview({ scenario, viewProps }: { scenario: string; viewProps: PreviewProps }) {
   const client = useMemo(() => makeClient(scenario), [scenario])
-  return <JournalView dogId={DOG} client={client} fixture
+  return <JournalView {...viewProps} dogId={DOG} client={client} fixture
     renderReply={(_, onReplied, onClose) => <FixtureReply onReplied={onReplied} onClose={onClose} />} />
 }

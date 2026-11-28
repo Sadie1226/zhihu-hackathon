@@ -1,0 +1,106 @@
+/* global document, localStorage, getComputedStyle */
+import assert from 'node:assert/strict'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { pathToFileURL } from 'node:url'
+
+const spec = process.env.E10_PLAYWRIGHT_MODULE || 'playwright'
+const { chromium } = await import(spec.startsWith('/') || /^[A-Z]:[\\/]/i.test(spec) ? pathToFileURL(spec).href : spec)
+const base = process.env.E10_BASE_URL || 'http://localhost:3117'
+const out = process.env.E10_EVIDENCE_DIR || 'team/2026-11-28/e/home-openings/evidence/browser'
+await mkdir(out, { recursive: true })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.E10_CHROME, args: ['--no-sandbox'] })
+const results = []
+try {
+  for (const [width, height] of [[375,667], [320,568], [1440,900]]) {
+    const page = await browser.newPage({ viewport: { width,height } })
+    const errors = [], writes = []
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('request', request => {
+      if (['POST','PATCH','PUT','DELETE'].includes(request.method()) && new URL(request.url()).pathname.startsWith('/api/')) writes.push(request.url())
+    })
+    await page.goto(`${base}/openings-preview`)
+    const dialog = page.getByRole('dialog')
+    const mailTrigger = page.getByRole('button', { name: '试开来信', exact:true })
+    // The preview action itself is the hydration witness; no React-private internals.
+    await mailTrigger.click()
+    await dialog.waitFor()
+    const skip = dialog.getByRole('button', { name:'跳过动画，直接打开', exact:true })
+    if (await skip.count()) await skip.click()
+    const select = dialog.getByRole('button', { name: /^选中：/ }).first()
+    await select.waitFor()
+    assert.equal(await dialog.getByRole('button',{name:'拆开看看',exact:true}).count(),0)
+    await select.hover()
+    assert.equal(await dialog.getByRole('region',{name:'来信正文',exact:true}).count(),0)
+    await select.click()
+    assert.equal(await dialog.getByRole('region',{name:'来信正文',exact:true}).count(),0)
+    await dialog.getByRole('button',{name:'拆开看看',exact:true}).click()
+    await dialog.getByRole('region',{name:'来信正文',exact:true}).waitFor()
+    assert(!((await dialog.textContent()) || '').includes('未投递秘密标题'))
+    assert(!((await dialog.textContent()) || '').includes('未投递秘密正文'))
+    await page.screenshot({path:`${out}/${width}-mail.png`})
+    await dialog.getByRole('button',{name:'关闭，回到小屋',exact:true}).click()
+    await dialog.waitFor({state:'detached'})
+    assert(await mailTrigger.evaluate(node => node === document.activeElement))
+    assert.equal(await page.evaluate(() => document.body.style.overflow),'')
+
+    await page.getByRole('button',{name:'试开手账',exact:true}).click()
+    await dialog.getByRole('heading',{name:'手账目录',exact:true}).waitFor()
+    assert.equal(await dialog.getByRole('navigation',{name:'手账目录'}).getByRole('button').count(),3)
+    await page.screenshot({path:`${out}/${width}-directory.png`})
+    await dialog.getByRole('navigation',{name:'手账目录'}).getByRole('button',{name:/来往/}).click()
+    await dialog.getByRole('button',{name:'阅读设置',exact:true}).waitFor()
+    assert.equal(await dialog.getByRole('button',{name:/逐字渐显/}).count(),0)
+    await dialog.getByRole('button',{name:'阅读设置',exact:true}).click()
+    await dialog.getByRole('button',{name:'关掉逐字渐显',exact:true}).click()
+    assert.equal(await page.evaluate(() => localStorage.getItem('e7-journal:reveal')),'off')
+    await dialog.getByRole('button',{name:'阅读设置',exact:true}).click()
+    await dialog.getByRole('button',{name:'拆开看看',exact:true}).first().click()
+    const paper = dialog.getByRole('region',{name:'这一封的内容',exact:true})
+    await paper.waitFor()
+    assert.equal(await paper.getByRole('button',{name:'阅读设置',exact:true}).count(),0)
+    assert.equal(await paper.locator('[class*="glyph"]').count(),0)
+    assert.equal(await dialog.getByRole('button',{name:'阅读设置',exact:true}).count(),1)
+    assert(!((await dialog.textContent()) || '').includes('未投递秘密正文'))
+    await page.screenshot({path:`${out}/${width}-reading-settings.png`})
+    const bounds = await dialog.evaluate(node => ({ scroll:node.scrollWidth, width:node.clientWidth, rect:node.getBoundingClientRect().toJSON() }))
+    assert(bounds.scroll <= bounds.width + 1, JSON.stringify(bounds))
+    assert(bounds.rect.x >= 0 && bounds.rect.right <= width, JSON.stringify(bounds))
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('dialog'),'::backdrop').backdropFilter.includes('blur')),true)
+    await page.keyboard.press('Escape')
+    await dialog.waitFor({state:'detached'})
+    await page.reload()
+    await page.getByRole('button',{name:'试开手账',exact:true}).click()
+    await dialog.getByRole('heading',{name:'手账目录',exact:true}).waitFor()
+    await dialog.getByRole('navigation',{name:'手账目录'}).getByRole('button',{name:/来往/}).click()
+    await dialog.getByRole('button',{name:'阅读设置',exact:true}).waitFor()
+    assert.equal(await dialog.getByRole('button',{name:'阅读设置',exact:true}).getAttribute('aria-expanded'),'false')
+    await dialog.getByRole('button',{name:'阅读设置',exact:true}).click()
+    await dialog.getByRole('button',{name:'打开逐字渐显',exact:true}).waitFor()
+    await page.keyboard.press('Escape')
+
+    await page.getByRole('checkbox',{name:'减少动效（试样）'}).check()
+    const reducedMedia = []
+    page.on('request', request => { if (request.url().endsWith('journal-open.mp4')) reducedMedia.push(request.url()) })
+    await page.getByRole('button',{name:'试开手账',exact:true}).click()
+    await dialog.getByRole('heading',{name:'手账目录',exact:true}).waitFor()
+    assert.equal(await dialog.locator('video').count(),0)
+    assert.deepEqual(reducedMedia,[])
+    await page.keyboard.press('Escape')
+    await page.emulateMedia({reducedMotion:'reduce'})
+    await page.getByRole('button',{name:'试开来信',exact:true}).click()
+    await dialog.getByRole('button',{name:/^选中：/}).first().waitFor()
+    assert.deepEqual(errors,[])
+    assert.deepEqual(writes,[])
+    results.push({width,height,selectionDoesNotRead:true,sealedHidden:true,explicitOpen:true,directory:true,globalReadingSetting:true,persisted:true,focusRestored:true,scrollRestored:true,escapeCloses:true,noOverflow:true,reducedSkipsVideo:true,pageErrors:errors,apiWrites:writes})
+    await page.close()
+  }
+  // A failed decorative video must not block the directory.
+  const page = await browser.newPage()
+  await page.route('**/assets/e10-openings/journal-open.mp4',route => route.abort())
+  await page.goto(`${base}/openings-preview`)
+  await page.getByRole('button',{name:'试开手账',exact:true}).click()
+  await page.getByRole('heading',{name:'手账目录',exact:true}).waitFor()
+  await page.close()
+  await writeFile(`${out}/verification.json`,JSON.stringify({fixtureOnly:true,results,failedVideoDoesNotBlock:true},null,2))
+  console.log(JSON.stringify({results,failedVideoDoesNotBlock:true},null,2))
+} finally { await browser.close() }

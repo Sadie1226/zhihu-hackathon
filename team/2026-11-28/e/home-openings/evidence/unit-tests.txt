@@ -1,0 +1,37 @@
+✔ undelivered incoming content stays sealed, including inconsistent timestamps (1.214717ms)
+✔ only recipient can open delivered mail; read is distinct from replied (0.214933ms)
+✔ outgoing author may see own words while delivery remains pending (0.187702ms)
+✔ source links reject active protocols, malformed links, and embedded credentials (0.273592ms)
+✔ mailbox reads use authenticated no-store requests; failed reads never become empty arrays (5.101213ms)
+✔ inbox and outbox merge by exchange id, keep direction, newest first (2.226149ms)
+✔ rows that belong to neither side are dropped instead of being called outgoing (0.237758ms)
+✔ undelivered incoming keeps title and body out of reach even if timestamps lie (1.394848ms)
+✔ delivered incoming may be opened and marked read; outgoing never writes read state (0.231098ms)
+✔ gift without a note stays null so the view can say so instead of inventing text (0.257888ms)
+✔ received gifts exclude pending, outgoing and non-gift rows (0.283596ms)
+✔ failed and timeout trips are never reported as a normal return (0.389826ms)
+✔ place comes only from this trip scene find and is never invented (0.215935ms)
+✔ empty return line is treated as absent, not as a placeholder (0.241573ms)
+✔ reveal sample only runs for a first unread opening, never for sealed or outgoing (0.376486ms)
+✔ reveal head only covers a short first line and never invents text (0.270547ms)
+✔ reads are authenticated, no-store, and failures reject instead of returning empty arrays (4.892009ms)
+✔ outgoing state describes the recipient; undelivered wins over inconsistent read timestamps (0.43216ms)
+✔ find and gift provenance covers all four modes without guessing from content (0.442756ms)
+✔ return-message failure and retry preserve successful finds, without a false empty state (0.507133ms)
+✔ new mail count excludes pending, outgoing, read and replied entries (0.308595ms)
+✔ correspondence separates direction and pins undelivered without revealing contents (0.277567ms)
+✔ gift thumbnails only use existing public assets, not guessed private endpoints (0.302976ms)
+✔ glyph stagger is 64ms and a single glyph fades in 280ms, opacity only (0.295595ms)
+✔ reading settings stay collapsed unless explicitly opened, and reveal defaults on (0.262185ms)
+✔ failed save leaves unread state intact; retry writes once; reread keeps first timestamp (2.431227ms)
+✔ failure budget is per letter; another unread letter stays unread (0.330237ms)
+✔ aborted initial and retry requests never mark read or consume a fresh failure (0.47848ms)
+✔ sealed and missing letters cannot be marked read, including retries (0.237748ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 169.014916
